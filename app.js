@@ -1,19 +1,20 @@
 (() => {
   'use strict';
   const KEY = 'chokin-event-app.v0.1';
-  const APP_VERSION = '0.8.2';
+  const RECOVERY_KEY = `${KEY}.recovery`;
+  const APP_VERSION = '0.9.1';
   const GUIDE_KEY = 'chokin-event-app.firstGuide.v0.8.1';
   const BACKUP_VERSION = 1;
   const DEFAULT_QUICK_AMOUNTS = [100, 500, 1000, 3000, 5000];
   const defaults = {version: 1, entries: [], settings: {sound: true, vibration: true, effects: true}, futureSettings: {}, quickAmounts: DEFAULT_QUICK_AMOUNTS};
-  let state; let formMode = 'save'; let deletingId = null; let revengeAmount = 0; let quickLocked = false; let pendingQuickId = null; let undoTimer = null; let amountAnimationToken = 0; let previewActive = false; let collectionFilter = 'all';
+  let state; let formMode = 'save'; let deletingId = null; let revengeAmount = 0; let quickLocked = false; let gachaLocked = false; let pendingQuickId = null; let undoTimer = null; let amountAnimationToken = 0; let previewActive = false; let collectionFilter = 'all';
   const $ = s => document.querySelector(s);
   const yen = n => `¥${Number(n || 0).toLocaleString('ja-JP')}`;
   const categoryNames = {regret:'後悔散財', necessary:'必要経費', best:'最高の散財'};
   const saveState = () => localStorage.setItem(KEY, JSON.stringify(state));
   const validEntry = entry => entry && typeof entry.id === 'string' && (entry.type === 'save' || entry.type === 'spend') && Number.isInteger(entry.amount) && entry.amount > 0 && typeof entry.createdAt === 'string' && (entry.type === 'save' ? entry.category === null : ['regret','necessary','best'].includes(entry.category)) && typeof entry.memo === 'string';
   const validQuickAmounts = values => Array.isArray(values) && values.length === 5 && values.every(value => Number.isInteger(value) && value > 0);
-  const backupPayload = () => ({backupVersion: BACKUP_VERSION, exportedAt: new Date().toISOString(), appVersion: APP_VERSION, data: {version: state.version, entries: state.entries, settings: state.settings, futureSettings: state.futureSettings || {}, quickAmounts: state.quickAmounts, catCollection: window.ChokinCollection.exportData()}});
+  const backupPayload = () => ({backupVersion: BACKUP_VERSION, exportedAt: new Date().toISOString(), appVersion: APP_VERSION, data: {version: state.version, entries: state.entries, settings: state.settings, futureSettings: state.futureSettings || {}, quickAmounts: state.quickAmounts, catCollection: window.ChokinCollection.exportData(), catCoins: window.ChokinCoins.exportData()}});
   function exportBackup() {
     const stamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '_').slice(0, 13);
     const blob = new Blob([JSON.stringify(backupPayload(), null, 2)], {type: 'application/json'});
@@ -28,12 +29,22 @@
         if (!backup || backup.backupVersion !== BACKUP_VERSION || !backup.data || !Array.isArray(backup.data.entries) || !backup.data.entries.every(validEntry) || !backup.data.settings || typeof backup.data.settings !== 'object') throw new Error('形式が異なります');
         if (!confirm('現在の記録は、読み込んだバックアップ内容で置き換えられます。続行しますか？')) return;
         state = {version: Number.isInteger(backup.data.version) ? backup.data.version : 1, entries: backup.data.entries, settings: {...defaults.settings, ...backup.data.settings}, futureSettings: backup.data.futureSettings && typeof backup.data.futureSettings === 'object' ? backup.data.futureSettings : {}, quickAmounts: validQuickAmounts(backup.data.quickAmounts) ? backup.data.quickAmounts : [...DEFAULT_QUICK_AMOUNTS]};
-        window.ChokinCollection.importData(backup.data.catCollection || null); saveState(); render(); alert('バックアップを読み込みました。');
+        window.ChokinCollection.importData(backup.data.catCollection || null);if(backup.data.catCoins){window.ChokinCoins.importData(backup.data.catCoins);window.ChokinCoins.grantWelcome();}else window.ChokinCoins.importData({schemaVersion:1,welcomeCoinGranted:true}); saveState(); render(); alert('バックアップを読み込みました。');
       } catch { alert('バックアップを読み込めませんでした。正しい貯金アプリのJSONファイルを選択してください。'); }
     };
     reader.onerror = () => alert('ファイルを読み込めませんでした。'); reader.readAsText(file, 'utf-8');
   }
-  const load = () => { try { const saved = JSON.parse(localStorage.getItem(KEY) || 'null'); state = {...defaults, ...saved, settings: {...defaults.settings, ...(saved?.settings || {})}, quickAmounts: validQuickAmounts(saved?.quickAmounts) ? saved.quickAmounts : [...DEFAULT_QUICK_AMOUNTS]}; } catch { state = structuredClone(defaults); } };
+  const load = () => {
+    const raw = localStorage.getItem(KEY);
+    if (raw === null) { state = structuredClone(defaults); return; }
+    try {
+      const saved = JSON.parse(raw);
+      state = {...defaults, ...saved, settings: {...defaults.settings, ...(saved?.settings || {})}, quickAmounts: validQuickAmounts(saved?.quickAmounts) ? saved.quickAmounts : [...DEFAULT_QUICK_AMOUNTS]};
+    } catch {
+      try { localStorage.setItem(`${RECOVERY_KEY}.${Date.now()}`, raw); } catch {}
+      state = structuredClone(defaults);
+    }
+  };
   const isThisMonth = iso => { const d = new Date(iso), n = new Date(); return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth(); };
   function render() {
     const month = state.entries.filter(x => isThisMonth(x.createdAt));
@@ -46,12 +57,18 @@
     renderList($('#recentList'), state.entries.slice(0,4)); renderList($('#historyList'), state.entries); renderQuickButtons();
     Object.entries(state.settings).forEach(([k,v]) => { $(`#${k}`).checked = v; });
     document.querySelectorAll('[data-quick-input]').forEach((input, index) => { input.value = state.quickAmounts[index]; });
-    renderCollection();
+    renderCollection(); renderCoins();
   }
   function renderQuickButtons() {
     const container = $('#quickButtons'); if (!container) return;
     container.innerHTML = state.quickAmounts.map((amount, index) => `<button class="quick-button" data-quick="${amount}" ${quickLocked ? 'disabled' : ''}>＋${yen(amount).replace('¥','')}円</button>`).join('');
   }
+  function renderCoins(){const coin=window.ChokinCoins.getState(),button=$('#catGacha');$('#coinBalance').textContent=`🪙 ${coin.balance}`;$('#dailyCoinStatus').textContent=`本日のねこコイン：${window.ChokinCoins.hasDailyAward()?'獲得済み':'未獲得'}`;button.disabled=gachaLocked||coin.balance<1;$('#coinHint').textContent=coin.balance<1?'ねこコインがありません。今日初めて貯金すると1枚獲得できます。':'';}
+  function scheduleCoinDayRefresh(){
+    const now=new Date(),next=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1);
+    setTimeout(()=>{renderCoins();scheduleCoinDayRefresh();},Math.max(1000,next.getTime()-now.getTime()+1000));
+  }
+  function showWelcomeCoin(){const toast=document.createElement('div');toast.className='coin-welcome-toast';toast.innerHTML='<b>ウェルカムねこコイン</b><strong>🪙 ＋1</strong>';document.body.append(toast);setTimeout(()=>toast.remove(),3600);}
   function showQuickUndo(entry) {
     const toast = $('#quickUndo'); if (!pendingQuickId || pendingQuickId !== entry.id) return;
     clearTimeout(undoTimer); $('#quickUndoText').textContent = `${yen(entry.amount)}を貯金しました`;
@@ -61,7 +78,7 @@
     if (quickLocked || !Number.isInteger(amount) || amount <= 0) return;
     quickLocked = true; renderQuickButtons();
     const entry = {id:crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`, type:'save', amount, category:null, memo:'', createdAt:new Date().toISOString(), quick:true};
-    state.entries.unshift(entry); pendingQuickId = entry.id; saveState(); enhancedCelebrate(entry);
+    state.entries.unshift(entry); pendingQuickId = entry.id; saveState(); const dailyCoinAwarded=window.ChokinCoins.awardDaily(); enhancedCelebrate(entry,null,false,null,{dailyCoinAwarded});
   }
   function renderList(el, entries) {
     el.innerHTML = entries.length ? entries.map(x => `<article class="record"><div><b>${x.type==='save'?'貯金':categoryNames[x.category]}</b> <span class="tag">${x.type==='save'?'未来へ':x.category==='regret'?'記録済み':categoryNames[x.category]}</span><small>${new Date(x.createdAt).toLocaleString('ja-JP',{dateStyle:'short',timeStyle:'short'})}${x.memo ? `　${escapeHtml(x.memo)}` : ''}</small></div><div><b>${yen(x.amount)}</b>${el.id==='historyList'?` <button class="delete" aria-label="削除" data-delete="${x.id}">×</button>`:''}</div></article>`).join('') : '<p class="sub">まだ記録はありません。最初のイベントを起こしましょう。</p>';
@@ -87,14 +104,6 @@
   function stageSound(rarity, confirmed) { if(!state.settings.sound||!window.AudioContext)return; try{const context=new AudioContext(),rank=['NORMAL','RARE','SUPER','ULTRA','LEGEND'].indexOf(rarity),tone=(frequency,start,duration,gain=.08)=>{const oscillator=context.createOscillator(),volume=context.createGain();oscillator.connect(volume);volume.connect(context.destination);oscillator.type=rank>=3?'sawtooth':'sine';oscillator.frequency.setValueAtTime(frequency,context.currentTime+start);volume.gain.setValueAtTime(.001,context.currentTime+start);volume.gain.exponentialRampToValueAtTime(gain,context.currentTime+start+.02);volume.gain.exponentialRampToValueAtTime(.001,context.currentTime+start+duration);oscillator.start(context.currentTime+start);oscillator.stop(context.currentTime+start+duration+.02);};tone(330,0,.16,.05);tone(440,.48,.18,.055);if(confirmed)tone(880,1.35,.16,.07);[523,659,784].slice(0,rank>=3?3:2).forEach((frequency,index)=>tone(frequency,2.12+index*.05,.55,.1));}catch{} }
   function stageHaptic(rarity) { if(!state.settings.vibration||!navigator.vibrate)return; const strong=['ULTRA','LEGEND'].includes(rarity);navigator.vibrate(strong?[25,160,35,700,90,35,140]:[20,190,25,850,70]); }
   const pick = a => a[Math.floor(Math.random()*a.length)];
-  function celebrate(entry) {
-    const box=$('#celebration'), type=entry.type==='save'?'save':entry.category;
-    const messages={save:['未来資産への入金を確認','あなたの未来が、また少し強くなりました','人類史に新たな貯金が刻まれました','歴史的貯金を検知しました','この貯金は未来まで届きます'],regret:['予定外の出費を検知しました','未来資産への軽微な影響を確認','記録した時点で、昨日より一歩前進しています'],necessary:['必要な支出です','生活維持費を確認しました','未来への影響：問題なし'],best:['最高の出費を確認しました','これは浪費ではありません。人生への課金です','お金は減りました。しかし人生経験が増加しました','満足度の高い支出を確認しました']};
-    let variant=''; if(type==='save'&&state.settings.effects&&!matchMedia('(prefers-reduced-motion: reduce)').matches) variant=pick(['gold','space','energy']);
-    box.className=`celebration show ${type} ${variant}`; $('#eventIcon').textContent=type==='save'?'✦':type==='regret'?'⚠':type==='necessary'?'▣':'✿'; $('#eventType').textContent=type==='save'?'貯金イベント':categoryNames[type]; $('#eventMessage').textContent=pick(messages[type]); $('#eventAmount').textContent=yen(entry.amount); $('#eventNote').textContent=entry.memo || (type==='save'?'未来への一歩を記録しました。':'記録はいつでも削除できます。');
-    $('#revenge').hidden=type!=='regret'; revengeAmount=Math.round(entry.amount*.1); $('#particles').innerHTML=state.settings.effects?Array.from({length:32},(_,i)=>`<i style="--x:${Math.random()*100}%;--y:${55+Math.random()*50}%;--d:${i*.07}s"></i>`).join(''):'';
-    box.setAttribute('aria-hidden','false'); sound(type); haptic(type);
-  }
   const sceneSvg = (className, content) => `<svg class="scene-svg ${className}" viewBox="0 0 400 520" role="img" aria-label="${className.replace('-scene','')}演出"><defs><linearGradient id="goldMetal" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff3a3"/><stop offset=".48" stop-color="#f7b52c"/><stop offset="1" stop-color="#9a4f09"/></linearGradient><linearGradient id="catFur" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff4dc"/><stop offset="1" stop-color="#df9f65"/></linearGradient><radialGradient id="spaceCore"><stop stop-color="#fff"/><stop offset=".25" stop-color="#9ee5ff"/><stop offset=".7" stop-color="#7865e8" stop-opacity=".7"/><stop offset="1" stop-color="#171342" stop-opacity="0"/></radialGradient></defs>${content}</svg>`;
   const catBodySvg = (className='cat-body') => `<g class="${className}"><ellipse class="cat-shadow" cx="205" cy="420" rx="104" ry="22" fill="#000" opacity=".32"/><path class="cat-tail ink" d="M118 364C48 357 54 284 94 300C120 310 88 339 73 319" fill="none" stroke="#c8814f" stroke-width="26"/><ellipse class="ink" cx="202" cy="351" rx="91" ry="81" fill="url(#catFur)"/><path class="ink" d="M124 246L139 161L187 201C198 197 211 197 223 201L269 161L282 247Z" fill="url(#catFur)"/><ellipse class="ink" cx="203" cy="252" rx="86" ry="71" fill="url(#catFur)"/><path d="M142 205L149 180L172 204" fill="#e89e9e"/><path d="M237 204L260 180L267 208" fill="#e89e9e"/><g class="cat-eyes" fill="#291b22"><ellipse cx="171" cy="244" rx="8" ry="12"/><ellipse cx="236" cy="244" rx="8" ry="12"/></g><path class="fine" d="M196 267Q203 274 210 267M203 274V282M203 282Q190 290 181 280M203 282Q216 291 226 280" fill="none" stroke="#291b22" stroke-width="5" stroke-linecap="round"/><path d="M196 264L210 264L203 273Z" fill="#d97878"/><path class="fine" d="M155 269L113 259M155 280L109 283M250 269L293 258M250 280L298 284" stroke="#291b22" stroke-width="5" stroke-linecap="round"/><path class="cat-paw ink" d="M248 356Q294 322 304 349Q308 374 262 388" fill="url(#catFur)"/><path class="ink" d="M158 395Q153 430 175 436M239 395Q244 430 223 436" fill="none" stroke="#291b22" stroke-width="22"/></g>`;
   const buildSceneVisual = (showName, type) => {
@@ -108,14 +117,15 @@
     if (type === 'necessary') return sceneSvg('necessary-scene', `<g class="desk-cat">${catBodySvg()}</g><path d="M55 374H345V456H55Z" fill="#355366" stroke="#b1d7e9" stroke-width="8"/><g class="receipt"><path class="ink" d="M236 120H351V345L336 332L322 345L307 332L292 345L277 332L262 345L248 332L236 345Z" fill="#f2f4ef"/><path d="M260 165H329M260 198H320M260 232H334" stroke="#7891a0" stroke-width="7"/></g><g class="stamp"><rect x="250" y="251" width="91" height="54" rx="6" fill="none" stroke="#2e75a0" stroke-width="9"/><path d="M266 279H325" stroke="#2e75a0" stroke-width="8"/></g>`);
     return sceneSvg('best-scene', `<g class="spotlights"><path d="M48 0L177 436H82Z" fill="#ffb4ec" opacity=".26"/><path d="M352 0L223 436H318Z" fill="#ffe989" opacity=".25"/></g><g class="royal-cat">${catBodySvg()}<path d="M120 324Q82 373 120 430L173 386Z" fill="#833ab5" stroke="#291b22" stroke-width="8"/><path class="royal-paw ink" d="M255 348Q310 305 322 338Q326 371 270 394" fill="url(#catFur)"/></g><g class="crown"><path class="ink" d="M145 185L160 112L198 150L235 108L260 185Z" fill="url(#goldMetal)"/><circle cx="160" cy="112" r="9" fill="#ef5f8f"/><circle cx="235" cy="108" r="9" fill="#68cfff"/></g>`);
   };
-  function animateEventAmount(amount, reduced) {
+  function animateEventAmount(amount, reduced, plus=false) {
     const token = ++amountAnimationToken, target = $('#eventAmount');
-    if (reduced) { target.textContent = yen(amount); return; }
-    target.textContent = yen(0);
-    setTimeout(() => { const start = performance.now(), duration = 760; const tick = now => { if (token !== amountAnimationToken) return; const progress = Math.min(1,(now-start)/duration), eased = 1-Math.pow(1-progress,3); target.textContent = yen(Math.round(amount*eased)); if (progress < 1) requestAnimationFrame(tick); }; requestAnimationFrame(tick); }, 2420);
+    const format=value=>`${plus?'＋':''}${yen(value)}`;
+    if (reduced) { target.textContent = format(amount); return; }
+    target.textContent = format(0);
+    setTimeout(() => { const start = performance.now(), duration = 760; const tick = now => { if (token !== amountAnimationToken) return; const progress = Math.min(1,(now-start)/duration), eased = 1-Math.pow(1-progress,3); target.textContent = format(Math.round(amount*eased)); if (progress < 1) requestAnimationFrame(tick); }; requestAnimationFrame(tick); }, 2420);
   }
-  function enhancedCelebrate(entry, forcedShow = null, preview = false, forcedRarity = null) {
-    const box = $('#celebration'), type = entry.type === 'save' ? 'save' : entry.category;
+  function enhancedCelebrate(entry, forcedShow = null, preview = false, forcedRarity = null, options={}) {
+    const box = $('#celebration'), isGacha=entry.type==='gacha', type = entry.type === 'save'||isGacha ? 'save' : entry.category;
     const reduced = !state.settings.effects || matchMedia('(prefers-reduced-motion: reduce)').matches;
     const power = entry.amount >= 10000 ? 'legendary' : entry.amount >= 5000 ? 'large' : entry.amount < 1000 ? 'small' : 'medium';
     const expenseShows = {
@@ -123,38 +133,36 @@
       necessary: [{name:'necessary'},{name:'necessary calm'}],
       best: [{name:'best'},{name:'best royal'}]
     };
-    const gamePlan=type==='save'?window.ChokinGameFX.plan({amount:entry.amount,forcedShow,forcedRarity}):null;
+    const gamePlan=options.gamePlan||(type==='save'?window.ChokinGameFX.plan({amount:entry.amount,forcedShow,forcedRarity}):null);
     const show=type==='save'?{name:gamePlan.show,rare:gamePlan.rarity==='LEGEND'}:pick(expenseShows[type]);
     const rarity=gamePlan?.rarity||'NORMAL',confirmed=!!gamePlan?.confirmed;
-    const focusCat=gamePlan?.cat||(gamePlan?.slotResult?(gamePlan.slotResult.same?gamePlan.slotResult.cats[0]:gamePlan.slotResult.cats[1]||gamePlan.slotResult.cats.find(Boolean)):null);
-    const collectionResult=!preview&&type==='save'&&focusCat?window.ChokinCollection.record(focusCat,entry.amount):null;
+    const focusCat=options.collectionResult?.cat||gamePlan?.cat||(gamePlan?.slotResult?(gamePlan.slotResult.same?gamePlan.slotResult.cats[0]:gamePlan.slotResult.cats[1]||gamePlan.slotResult.cats.find(Boolean)):null);
+    const collectionResult=options.collectionResult||null;
     let gameVisual=gamePlan?window.ChokinGameFX.visual(gamePlan):'';
-    if(collectionResult){const progress=`猫図鑑 ${collectionResult.stats.obtained} / ${collectionResult.stats.total}匹`;gameVisual+=`<div class="collection-reveal ${collectionResult.isNew?'new':'duplicate'}" style="--cat-accent:${focusCat.accentColor};--cat-theme:${focusCat.themeColor}"><span class="collection-badge">${collectionResult.isNew?(focusCat.rarity==='LEGEND'?'NEW LEGEND CAT！':'NEW CAT！'):'再会ボーナス'}</span><img src="./${focusCat.imagePath}" alt="${escapeHtml(focusCat.name)}" onerror="this.hidden=true"><b>${escapeHtml(focusCat.name)}・${focusCat.rarity}</b><small>${collectionResult.isNew?'猫図鑑に登録されました':`猫メダル ＋${collectionResult.medals}・累計登場 ${collectionResult.record.obtainedCount}回`}<br>${progress}</small><strong class="collection-result-amount">＋${yen(entry.amount)}</strong></div>`;if(collectionResult.completedNow)gameVisual+='<div class="collection-complete"><b>CAT COLLECTION COMPLETE</b><span>全猫コンプリート！<br>猫図鑑完成</span></div>';}
-    const messages = {
-      save:['未来資産への超入金を確認','歴史的貯金を検知しました','あなたの未来が大幅に強化されました','貯金エネルギーが限界突破しました','人類史に新たな貯金が刻まれました','この貯金は未来まで届きます','猫も大絶賛しています','本日の貯金、非常にえらいです'],
-      regret:['予定外の出費を検知しました','未来資産への軽微なダメージを確認','しかし記録したあなたは立派です','猫も少し驚いています'],
-      necessary:['必要な支出です','生活維持費を確認しました','未来への影響：問題なし','冷静に処理されました'],
-      best:['最高の出費を確認しました','これは浪費ではありません。人生への課金です','お金は減りました。しかし人生経験が増加しました','満足度の高い支出でした']
-    };
+    if(isGacha&&gamePlan?.cutIn&&!gamePlan.show.startsWith('gacha-'))gameVisual+=`<div class="hot-cutin"><img src="./${focusCat.imagePath}" alt="" aria-hidden="true"><b>激熱</b></div>`;
+    if(collectionResult){const progress=`猫図鑑 ${collectionResult.stats.obtained} / ${collectionResult.stats.total}匹`;gameVisual+=`<div class="collection-reveal ${collectionResult.isNew?'new':'duplicate'}" style="--cat-accent:${focusCat.accentColor};--cat-theme:${focusCat.themeColor}"><strong class="gacha-result-rarity">${focusCat.rarity}</strong><span class="collection-badge">${collectionResult.isNew?(focusCat.rarity==='LEGEND'?'NEW LEGEND CAT！':'NEW CAT！'):'再会'}</span><span class="collection-fallback-result" aria-hidden="true">CAT</span><img src="./${focusCat.imagePath}" alt="${escapeHtml(focusCat.name)}" onerror="this.hidden=true"><b>${escapeHtml(focusCat.name)}</b><small>${collectionResult.medals?`猫メダル ＋${collectionResult.medals}<br>`:''}${progress}</small></div>`;if(collectionResult.completedNow)gameVisual+='<div class="collection-complete"><b>CAT COLLECTION COMPLETE</b><span>全猫コンプリート！<br>猫図鑑完成</span></div>';}
+    if(options.dailyCoinAwarded)gameVisual+='<div class="daily-coin-award"><b>本日のねこコイン獲得！</b><strong>🪙 ＋1</strong></div>';
     previewActive = preview;
     const modeClass=show.name==='cat-slot'?' slot':show.name.startsWith('gacha-')?' gacha':'';
-    box.className = `celebration show four-stage ${type} ${show.name} ${power} rarity-${rarity.toLowerCase()} omen-${gamePlan?.omen||'eyes'}${confirmed?' confirmed':''}${modeClass}${reduced ? ' reduced' : ''}${preview ? ' preview-mode' : ''}${collectionResult?collectionResult.isNew?' new-cat':' duplicate-cat':''}${collectionResult?.completedNow?' collection-completed':''}`;
+    box.className = `celebration show four-stage ${type} ${show.name} ${power} rarity-${rarity.toLowerCase()} omen-${gamePlan?.omen||'eyes'}${confirmed?' confirmed':''}${modeClass}${reduced ? ' reduced' : ''}${preview ? ' preview-mode' : ''}${isGacha?' gacha-result-mode':''}${collectionResult?collectionResult.isNew?' new-cat':' duplicate-cat':''}${collectionResult?.completedNow?' collection-completed':''}`;
     window.ChokinAssets?.clear($('#sceneVisual'));
     $('#sceneVisual').innerHTML = gameVisual || buildSceneVisual(show.name, type);
-    const dynamicCat=gamePlan?.cat||gamePlan?.slotResult;
+    const dynamicCat=show.name.startsWith('gacha-')||show.name==='cat-slot'?(gamePlan?.cat||gamePlan?.slotResult):null;
     const assetMount=dynamicCat?Promise.resolve(false):window.ChokinAssets?.mount($('#sceneVisual'), show.name, type);
-    if(gamePlan?.cutIn)assetMount?.then(()=>{const image=$('#sceneVisual .asset-gacha-cat'),cutin=$('#sceneVisual .hot-cutin');if(image&&cutin)cutin.style.backgroundImage=`url("${image.src}")`;});
     window.ChokinCanvasFX?.start($('#fxCanvas'), show.name, type, {reduced,rarity:gamePlan?.rarity||'NORMAL'});
-    $('#eventType').textContent = preview ? `${rarity} 演出プレビュー` : type === 'save' ? rarity==='LEGEND'?'LEGEND・猫フィーバー':`${rarity} 貯金演出` : categoryNames[type];
-    $('#eventMessage').textContent = collectionResult?`${collectionResult.isNew?'NEW':'また会えました'}　${focusCat.name}`:gamePlan?.cat?`${rarity}　${gamePlan.cat.name}`:gamePlan?.slotResult?.special?gamePlan.slotResult.title:confirmed?'未来資産、限界突破':pick(messages[type]); animateEventAmount(entry.amount, reduced);
-    $('#eventNote').textContent = collectionResult?`${gamePlan?.slotResult&&!gamePlan?.cat?'今回の注目猫：':''}${focusCat.message}　図鑑 ${collectionResult.stats.obtained}/${collectionResult.stats.total}匹${collectionResult.medals?`　猫メダル＋${collectionResult.medals}`:''}`:gamePlan?.cat?`${gamePlan.cat.message}${preview?'（プレビュー）':''}`:preview ? 'プレビューでは記録データを変更しません。' : entry.memo || (type === 'save' ? '未来への一歩を、盛大に記録しました。' : '記録したあなたは、もう次の一歩へ進んでいます。');
+    $('#eventType').textContent = isGacha?rarity:preview?'演出プレビュー':type==='save'?'貯金成功！':categoryNames[type];
+    $('#eventMessage').textContent = isGacha?(collectionResult?.isNew?'NEW CAT':'再会'):'';
+    $('#eventNote').textContent = '';
+    if(isGacha){amountAnimationToken++;$('#eventAmount').textContent=focusCat?.name||'CAT';}else animateEventAmount(entry.amount,reduced,type==='save');
     $('#revenge').hidden = type !== 'regret'; revengeAmount = Math.round(entry.amount * .1);
     const canvasPrimary = show.name === 'cosmic' || show.name.includes('treasure') || show.name.includes('legendary');
     const count = reduced || canvasPrimary ? 0 : type === 'save' ? 12 : 8;
     $('#particles').innerHTML = Array.from({length:count}, (_,i) => `<i style="--x:${Math.random()*100}%;--y:${42+Math.random()*72}%;--d:${(i%14)*.075}s;transform:scale(${.55+Math.random()*1.8})"></i>`).join('');
     box.setAttribute('aria-hidden','false'); if(type==='save'){stageSound(rarity,confirmed);stageHaptic(rarity);}else{sound(type);haptic(type);}
   }
-  function closeEvent() { const wasPreview = previewActive, quickEntry = !wasPreview && pendingQuickId && state.entries.find(entry => entry.id === pendingQuickId); previewActive = false; amountAnimationToken++; window.ChokinCanvasFX?.stop(true); window.ChokinAssets?.clear($('#sceneVisual')); $('#celebration').className='celebration'; $('#celebration').setAttribute('aria-hidden','true'); $('#sceneVisual').innerHTML=''; $('#particles').innerHTML=''; $('#closeEvent').textContent='ホームへ'; quickLocked = false; navigate(wasPreview ? 'settings' : 'home'); render(); if (quickEntry) showQuickUndo(quickEntry); }
+  function showGachaFallback(plan,result){const cat=result.cat,progress=`猫図鑑 ${result.stats.obtained} / ${result.stats.total}匹`,box=$('#celebration');box.className=`celebration show save gacha-result-mode rarity-${cat.rarity.toLowerCase()} ${result.isNew?'new-cat':'duplicate-cat'}`;$('#sceneVisual').innerHTML=`<div class="collection-reveal ${result.isNew?'new':'duplicate'}" style="--cat-accent:${cat.accentColor};--cat-theme:${cat.themeColor}"><strong class="gacha-result-rarity">${cat.rarity}</strong><span class="collection-badge">${result.isNew?'NEW CAT！':'再会'}</span><span class="collection-fallback-result">CAT</span><img src="./${cat.imagePath}" alt="${escapeHtml(cat.name)}" onerror="this.hidden=true"><b>${escapeHtml(cat.name)}</b><small>${result.medals?`猫メダル ＋${result.medals}<br>`:''}${progress}</small></div>`;$('#eventType').textContent=cat.rarity;$('#eventMessage').textContent=result.isNew?'NEW CAT':'再会';$('#eventAmount').textContent=cat.name;$('#eventNote').textContent='';$('#revenge').hidden=true;box.setAttribute('aria-hidden','false');window.ChokinCanvasFX?.start($('#fxCanvas'),'gold','save',{reduced:true,rarity:cat.rarity});}
+  function startCatGacha(){if(gachaLocked||!window.ChokinCoins.canSpend(1))return;gachaLocked=true;renderCoins();let plan=null,result=null,spent=false;try{plan=window.ChokinGameFX.gachaPlan();result=window.ChokinCollection.record(plan.cat,null);spent=window.ChokinCoins.spend(1);if(!spent){gachaLocked=false;render();return;}enhancedCelebrate({type:'gacha',amount:0,category:null,memo:'',createdAt:new Date().toISOString()},null,false,null,{gamePlan:plan,collectionResult:result});}catch(error){console.error('ねこガチャ演出を簡易表示へ切り替えました。',error);if(spent&&result)showGachaFallback(plan,result);else{gachaLocked=false;render();}}}
+  function closeEvent() { const wasPreview = previewActive, quickEntry = !wasPreview && pendingQuickId && state.entries.find(entry => entry.id === pendingQuickId); previewActive = false; amountAnimationToken++; window.ChokinCanvasFX?.stop(true); window.ChokinAssets?.clear($('#sceneVisual')); $('#celebration').className='celebration'; $('#celebration').setAttribute('aria-hidden','true'); $('#sceneVisual').innerHTML=''; $('#particles').innerHTML=''; $('#closeEvent').textContent='ホームへ'; quickLocked = false; gachaLocked=false; navigate(wasPreview ? 'settings' : 'home'); render(); if (quickEntry) showQuickUndo(quickEntry); }
   function setupQuickSettings() {
     const host = $('#settings'); if (!host || $('#quickSettings')) return;
     const section = document.createElement('section'); section.id = 'quickSettings'; section.className = 'quick-settings';
@@ -184,12 +192,14 @@
   }
   function showFirstGuide(){const dialog=$('#firstGuide');if(dialog&&!dialog.open)dialog.showModal();}
   function setupCollectionSettings(){const host=$('#settings'),tools=host?.querySelector('.data-tools');if(!tools||$('#resetCollection'))return;const guide=document.createElement('button');guide.id='showFirstGuide';guide.className='data-button';guide.textContent='初回案内を表示';tools.append(guide);guide.onclick=showFirstGuide;const diagnostic=document.createElement('button');diagnostic.id='collectionDiagnostics';diagnostic.className='data-button';diagnostic.textContent='猫図鑑診断';tools.append(diagnostic);diagnostic.onclick=()=>{const result=window.ChokinCollection.getDiagnostics(),labels={empty:'初期状態',ok:'正常',repaired:'修復済み',recovered:'破損データを退避して復旧'};const dialog=$('#catDiagnosticsDialog');$('#catDiagnosticsBody').innerHTML=`<h3>猫図鑑診断</h3><p>総猫数：${result.total}匹<br>取得猫数：${result.obtained}匹<br>未取得猫数：${result.unobtained}匹<br>完成率：${result.percent}％<br>猫メダル合計：${result.totalCatMedals}枚<br>読込状態：${labels[result.loadState]||result.loadState}<br>カタログ外データ：${result.unknownCats}件<br>データ異常：${result.anomalies}件</p><strong>${result.loadState==='recovered'?'元データを退避して安全に復旧しました':'診断ではデータを変更していません'}</strong>`;dialog.showModal();};const button=document.createElement('button');button.id='resetCollection';button.className='data-button danger-outline';button.textContent='猫図鑑をリセット';tools.append(button);button.onclick=()=>{if(!confirm('猫図鑑の取得状況と猫メダルをリセットしますか？'))return;if(!confirm('取得した猫、初取得日時、登場回数、猫メダルがすべて消去されます。本当にリセットしますか？'))return;window.ChokinCollection.reset();render();alert('猫図鑑をリセットしました。');};}
+  function setupCoinSettings(){const tools=$('#settings')?.querySelector('.data-tools');if(!tools||$('#resetCatCoins'))return;const button=document.createElement('button');button.id='resetCatCoins';button.className='data-button danger-outline';button.textContent='ねこコインをリセット';tools.append(button);button.onclick=()=>{if(!confirm('ねこコインの残高と獲得・使用履歴をリセットしますか？'))return;if(!confirm('この操作は元に戻せません。本当にリセットしますか？'))return;window.ChokinCoins.reset();render();alert('ねこコインをリセットしました。');};}
   function setupPwaSupport(){const host=$('#settings'),tools=host?.querySelector('.data-tools');if(!tools||$('#pwaDiagnostics'))return;const install=document.createElement('button');install.className='data-button';install.textContent='スマホのホーム画面に追加';tools.append(install);const diagnostic=document.createElement('button');diagnostic.id='pwaDiagnostics';diagnostic.className='data-button';diagnostic.textContent='PWA・公開診断';tools.append(diagnostic);const dialog=document.createElement('dialog');dialog.className='cat-diagnostics-dialog';dialog.innerHTML='<button class="cat-detail-close" aria-label="閉じる">×</button><div id="pwaDiagnosticsBody"></div>';document.body.append(dialog);const close=()=>dialog.close();dialog.querySelector('.cat-detail-close').onclick=close;dialog.addEventListener('click',event=>{if(event.target===dialog)close();});install.onclick=()=>{$('#pwaDiagnosticsBody').innerHTML='<h3>スマホのホーム画面に追加</h3><p><b>Android</b><br>Chromeのメニュー → ホーム画面に追加 → インストール</p><p><b>iPhone</b><br>Safariで開く → 共有 → ホーム画面に追加</p><small>OSやブラウザにより表示名が異なる場合があります。</small>';dialog.showModal();};diagnostic.onclick=async()=>{let registration=null;try{registration=await navigator.serviceWorker?.getRegistration();}catch{}const images=[...document.querySelectorAll('#catGallery img')],loaded=images.filter(image=>image.complete&&image.naturalWidth>0).length,manifest=document.querySelector('link[rel="manifest"]');$('#pwaDiagnosticsBody').innerHTML=`<h3>PWA・公開診断</h3><p>現在のURL：${escapeHtml(location.href)}<br>HTTPS：${location.protocol==='https:'?'はい':'いいえ'}<br>localhost：${['localhost','127.0.0.1'].includes(location.hostname)?'はい':'いいえ'}<br>Service Worker対応：${'serviceWorker' in navigator?'はい':'いいえ'}<br>登録状態：${registration?.active?.state||registration?.waiting?.state||registration?.installing?.state||'未登録'}<br>制御状態：${navigator.serviceWorker?.controller?'制御中':'未制御'}<br>Manifest URL：${escapeHtml(manifest?new URL(manifest.href,document.baseURI).href:'なし')}<br>standalone：${matchMedia('(display-mode: standalone)').matches?'はい':'いいえ'}<br>通信状態：${navigator.onLine?'オンライン':'オフライン'}<br>猫画像：${loaded} / ${images.length}<br>アプリ：v${APP_VERSION}</p><strong>診断ではデータを変更していません</strong>`;dialog.showModal();};}
   function showUpdate(registration){if($('#pwaUpdate'))return;const notice=document.createElement('div');notice.id='pwaUpdate';notice.className='pwa-update';notice.innerHTML='<span>新しいバージョンがあります</span><button>更新する</button>';document.body.append(notice);notice.querySelector('button').onclick=()=>{window.__pwaRefreshing=true;registration.waiting?.postMessage({type:'SKIP_WAITING'});};}
   async function setupPwaRegistration(){if(!('serviceWorker' in navigator))return;try{const registration=await navigator.serviceWorker.register('./service-worker.js',{scope:'./'});if(registration.waiting)showUpdate(registration);registration.addEventListener('updatefound',()=>{const worker=registration.installing;worker?.addEventListener('statechange',()=>{if(worker.state==='installed'&&navigator.serviceWorker.controller)showUpdate(registration);});});navigator.serviceWorker.addEventListener('controllerchange',()=>{if(window.__pwaRefreshing)location.reload();});}catch(error){console.warn('Service Workerを登録できませんでした。',error);}}
-  $('#entryForm').addEventListener('submit', e=>{ e.preventDefault(); const amount=Math.floor(Number($('#amount').value)); if(!Number.isFinite(amount)||amount<=0){ $('#amount').setCustomValidity('1円以上の金額を入力してください。'); $('#amount').reportValidity(); return; } $('#amount').setCustomValidity(''); const entry={id:crypto.randomUUID?.()||`${Date.now()}-${Math.random()}`,type:formMode,amount,category:formMode==='spend'?$('#category').value:null,memo:$('#memo').value.trim(),createdAt:new Date().toISOString()}; state.entries.unshift(entry); saveState(); enhancedCelebrate(entry); });
+  $('#entryForm').addEventListener('submit', e=>{ e.preventDefault(); if(quickLocked)return; const amount=Math.floor(Number($('#amount').value)); if(!Number.isFinite(amount)||amount<=0){ $('#amount').setCustomValidity('1円以上の金額を入力してください。'); $('#amount').reportValidity(); return; } $('#amount').setCustomValidity('');quickLocked=true; const entry={id:crypto.randomUUID?.()||`${Date.now()}-${Math.random()}`,type:formMode,amount,category:formMode==='spend'?$('#category').value:null,memo:$('#memo').value.trim(),createdAt:new Date().toISOString()}; state.entries.unshift(entry); saveState();const dailyCoinAwarded=entry.type==='save'&&window.ChokinCoins.awardDaily(); enhancedCelebrate(entry,null,false,null,{dailyCoinAwarded}); });
   document.addEventListener('click', e=>{ const nav=e.target.closest('[data-nav]'); if(nav) navigate(nav.dataset.nav); const open=e.target.closest('[data-open]'); if(open) openForm(open.dataset.open); const quick=e.target.closest('[data-quick]'); if(quick) quickSave(Number(quick.dataset.quick)); const del=e.target.closest('[data-delete]'); if(del){deletingId=del.dataset.delete; $('#deleteDialog').showModal();} const filter=e.target.closest('[data-collection-filter]');if(filter){collectionFilter=filter.dataset.collectionFilter;renderCollection();}const collectionCat=e.target.closest('[data-collection-cat]');if(collectionCat)openCollectionDetail(collectionCat.dataset.collectionCat);if(e.target.matches('[data-tip]')){const t=$('#tip');t.textContent=e.target.dataset.tip;t.style.display='block';setTimeout(()=>t.style.display='none',3500);} });
   $('#closeEvent').onclick=closeEvent; $('#skipEvent').onclick=closeEvent; $('#revenge').onclick=()=>{ closeEvent(); openForm('save', revengeAmount); };
+  $('#catGacha').onclick=startCatGacha;
   $('#confirmDelete').onclick=()=>{state.entries=state.entries.filter(x=>x.id!==deletingId);saveState();render();};
   $('#undoQuick').onclick=()=>{ if (!pendingQuickId) return; state.entries = state.entries.filter(entry => entry.id !== pendingQuickId); pendingQuickId = null; clearTimeout(undoTimer); $('#quickUndo').hidden = true; saveState(); render(); };
   ['sound','vibration','effects'].forEach(k=> $(`#${k}`).addEventListener('change',e=>{state.settings[k]=e.target.checked;saveState();}));
@@ -201,5 +211,5 @@
   $('#closeFirstGuide').onclick=()=>{localStorage.setItem(GUIDE_KEY,'seen');$('#firstGuide').close();};
   window.addEventListener('load',setupPwaRegistration);
   document.querySelector('.app-version').textContent = `v${APP_VERSION}`;
-  const firstUse=localStorage.getItem(KEY)===null;load(); setupQuickSettings(); setupEffectPreview(); setupCatGallery(); setupCollectionSettings(); setupPwaSupport(); render();if(firstUse&&localStorage.getItem(GUIDE_KEY)!=='seen')showFirstGuide();
+  const firstUse=localStorage.getItem(KEY)===null,welcomeCoinGranted=window.ChokinCoins.grantWelcome();load(); setupQuickSettings(); setupEffectPreview(); setupCatGallery(); setupCollectionSettings(); setupCoinSettings(); setupPwaSupport(); render();scheduleCoinDayRefresh();if(firstUse&&localStorage.getItem(GUIDE_KEY)!=='seen')showFirstGuide();if(welcomeCoinGranted)setTimeout(showWelcomeCoin,500);
 })();
