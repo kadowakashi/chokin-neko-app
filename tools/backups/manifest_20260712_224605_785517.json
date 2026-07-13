@@ -1,0 +1,28 @@
+{
+  "available": [
+    "assets/cats/cat_celebrate.png",
+    "assets/cats/cat_black.png",
+    "assets/cats/cat_calico.png",
+    "assets/cats/cat_orange_tabby.png",
+    "assets/cats/cat_hachiware.png",
+    "assets/cats/cat_gray.png",
+    "assets/cats/cat_surprised.png",
+    "assets/cats/cat_ninja.png",
+    "assets/cats/cat_wizard.png",
+    "assets/cats/cat_detective.png",
+    "assets/cats/cat_chef.png",
+    "assets/cats/cat_cosmic.png",
+    "assets/cats/cat_samurai.png",
+    "assets/cats/cat_pirate.png",
+    "assets/cats/cat_knight.png",
+    "assets/cats/cat_angel.png",
+    "assets/cats/cat_dragon.png",
+    "assets/cats/cat_royal.png",
+    "assets/cats/cat_deity.png",
+    "assets/cats/cat_codex_test.png",
+    "assets/scenes/treasure_chest_closed.png",
+    "assets/scenes/treasure_chest_open.png",
+    "assets/scenes/cat_temple_bg.png",
+    "assets/scenes/space_bg.png"
+  ]
+}
