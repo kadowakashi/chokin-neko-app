@@ -60,3 +60,31 @@
 
 /* v0.9.3 cat edge safety */
 .save-cheer-cat.cheer-1{left:8%}.save-cheer-cat.cheer-2{right:8%}
+
+/* v0.9.3 mobile scene separation */
+.celebration.save-spectacle{--save-amount-top:64%}
+.celebration.save-spectacle .generated-scene-main{top:37%;width:min(66vw,340px);height:min(34vh,310px)}
+.celebration.save-spectacle.treasure .generated-scene-main{top:38%;width:min(72vw,370px);height:min(36vh,330px)}
+.celebration.save-spectacle .save-cheer-layer{z-index:8;inset:calc(52px + env(safe-area-inset-top)) 0 44%}
+.celebration.save-spectacle .save-cheer-cat{width:min(20vw,92px);height:min(15vh,122px)}
+.celebration.save-spectacle .save-cheer-cat.cheer-1{left:0;top:27%}
+.celebration.save-spectacle .save-cheer-cat.cheer-2{right:0;top:23%}
+.celebration.save-spectacle .save-cheer-cat.cheer-3{left:50%;width:min(20vw,92px);height:min(13vh,106px);translate:-50% 0}
+.celebration.save-spectacle .save-cheer-layer.cheer-count-1 .cheer-1{left:50%;width:min(20vw,92px);height:min(13vh,106px);translate:-50% 0}
+.celebration.save-spectacle .event-card strong{top:var(--save-amount-top);height:15%;left:18px;right:18px;display:flex;align-items:center;justify-content:center;gap:0;letter-spacing:0;font-family:ui-rounded,-apple-system,BlinkMacSystemFont,"SF Pro Rounded","Arial Rounded MT Bold","Hiragino Sans","Yu Gothic UI",sans-serif;font-weight:900;-webkit-text-stroke:1.5px #291500;text-shadow:0 2px 1px #000,0 0 7px #fff7c7,0 0 24px var(--amount-glow,#ffd22e),0 0 54px var(--amount-glow,#ffd22e)}
+.celebration.save-spectacle .event-card strong .amount-plus{font-size:.74em;margin-right:.02em}
+.celebration.save-spectacle .event-card strong .amount-yen{font-size:.78em;margin-right:.08em;font-weight:900}
+.celebration.save-spectacle .event-card strong .amount-digits{font-size:1em;font-weight:900}
+@media(max-width:430px){.celebration.save-spectacle .generated-scene-main{width:min(56vw,242px);height:min(33vh,284px)}.celebration.save-spectacle.treasure .generated-scene-main{width:min(72vw,310px);height:min(35vh,300px)}.celebration.save-spectacle .event-card strong{left:16px;right:16px;-webkit-text-stroke-width:1.35px}}
+@media(max-width:390px){.celebration.save-spectacle .generated-scene-main{top:36%;width:56vw;height:32vh}.celebration.save-spectacle.treasure .generated-scene-main{top:37%;width:70vw;height:34vh}.celebration.save-spectacle .save-cheer-cat{width:19vw;height:14vh}.celebration.save-spectacle .save-cheer-cat.cheer-3,.celebration.save-spectacle .save-cheer-layer.cheer-count-1 .cheer-1{width:19vw;height:12vh}.celebration.save-spectacle .event-card strong{-webkit-text-stroke-width:1.2px}}
+
+/* v0.9.5 even cheer layout and single-line amount */
+.celebration.save-spectacle .save-cheer-cat{translate:none}
+.celebration.save-spectacle .save-cheer-cat.cheer-1{left:8px;right:auto;top:8px}
+.celebration.save-spectacle .save-cheer-cat.cheer-2{left:auto;right:8px;top:20px}
+.celebration.save-spectacle .save-cheer-cat.cheer-3{left:8px;right:auto;top:auto;bottom:8px;width:min(20vw,92px);height:min(15vh,122px);translate:none}
+.celebration.save-spectacle .save-cheer-cat.cheer-4{left:auto;right:8px;top:auto;bottom:20px;translate:none;--cat-tilt:7deg;animation-delay:1.78s,2.42s}
+.celebration.save-spectacle .event-card strong{width:auto;max-width:calc(100% - 24px);min-width:0;display:flex;flex-flow:row nowrap;align-items:baseline;justify-content:center;white-space:nowrap;word-break:keep-all;overflow-wrap:normal;line-break:auto;font-variant-numeric:tabular-nums}
+.celebration.save-spectacle .event-card strong>span{display:inline-block;flex:0 0 auto;position:static;line-height:.92;white-space:nowrap;word-break:keep-all}
+@media(max-width:430px){.celebration.save-spectacle .save-cheer-cat{width:min(20vw,86px);height:min(14vh,116px)}.celebration.save-spectacle .save-cheer-cat.cheer-3,.celebration.save-spectacle .save-cheer-cat.cheer-4{width:min(20vw,86px);height:min(14vh,116px)}.celebration.save-spectacle .event-card strong{left:12px;right:12px;max-width:calc(100% - 24px)}}
+@media(max-width:390px){.celebration.save-spectacle .save-cheer-cat{width:min(19vw,74px);height:min(13vh,106px)}.celebration.save-spectacle .save-cheer-cat.cheer-3,.celebration.save-spectacle .save-cheer-cat.cheer-4{width:min(19vw,74px);height:min(13vh,106px)}}

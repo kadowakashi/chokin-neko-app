@@ -1,4 +1,4 @@
-const CACHE='chokin-v094-living-bg1';
+const CACHE='chokin-v095-mobile-layout1';
 const ASSETS=['./','./index.html','./favicon.svg','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-512.png','./icons/apple-touch-icon.png','./styles.css','./fixes.css','./v021-quick.css','./v03-scenes.css','./v04-canvas.css','./v05-fever.css','./v05-controls.css','./v051-polish.css','./v06-cats.css','./v08-collection.css','./v092-save-spectacle.css','./v093-assets.css','./visual-assets.js','./cat-image-processor.js','./cat-collection.js','./cat-coins.js','./cat-characters.js','./game-effects.js','./asset-loader.js','./canvas-effects.js','./app.js','./assets/manifest.json','./assets/cats/cat-catalog.json','./assets/coins/cat_coin.png','./manifest.webmanifest'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS))));
 self.addEventListener('activate',event=>event.waitUntil(Promise.all([caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('chokin-')&&key!==CACHE).map(key=>caches.delete(key)))),self.clients.claim()])));
