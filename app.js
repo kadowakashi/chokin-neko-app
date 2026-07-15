@@ -2,14 +2,24 @@
   'use strict';
   const KEY = 'chokin-event-app.v0.1';
   const RECOVERY_KEY = `${KEY}.recovery`;
-  const APP_VERSION = '0.9.1';
+  const APP_VERSION = '0.9.3';
   const GUIDE_KEY = 'chokin-event-app.firstGuide.v0.8.1';
   const BACKUP_VERSION = 1;
   const DEFAULT_QUICK_AMOUNTS = [100, 500, 1000, 3000, 5000];
+  const SAVE_RANKS = Object.freeze([
+    {key:'choko',min:1,max:49,label:'ちょこっと貯金！',level:0,minCats:1,maxCats:1},
+    {key:'nice',min:50,max:99,label:'いい貯金！',level:1,minCats:1,maxCats:1},
+    {key:'great',min:100,max:299,label:'GREAT SAVE!',level:2,minCats:1,maxCats:2},
+    {key:'super',min:300,max:499,label:'SUPER SAVE!',level:3,minCats:2,maxCats:2},
+    {key:'ultra',min:500,max:999,label:'ULTRA SAVE!',level:4,minCats:2,maxCats:3},
+    {key:'fever',min:1000,max:Infinity,label:'FEVER SAVE!',level:5,minCats:3,maxCats:3}
+  ]);
   const defaults = {version: 1, entries: [], settings: {sound: true, vibration: true, effects: true}, futureSettings: {}, quickAmounts: DEFAULT_QUICK_AMOUNTS};
   let state; let formMode = 'save'; let deletingId = null; let revengeAmount = 0; let quickLocked = false; let gachaLocked = false; let pendingQuickId = null; let undoTimer = null; let amountAnimationToken = 0; let previewActive = false; let collectionFilter = 'all';
   const $ = s => document.querySelector(s);
   const yen = n => `¥${Number(n || 0).toLocaleString('ja-JP')}`;
+  const coinIcon = (kind='cat') => window.ChokinVisualAssets?.coinMarkup(kind) || '🪙';
+  const saveRankFor = amount => SAVE_RANKS.find(rank=>amount>=rank.min&&amount<=rank.max)||SAVE_RANKS[0];
   const categoryNames = {regret:'後悔散財', necessary:'必要経費', best:'最高の散財'};
   const saveState = () => localStorage.setItem(KEY, JSON.stringify(state));
   const validEntry = entry => entry && typeof entry.id === 'string' && (entry.type === 'save' || entry.type === 'spend') && Number.isInteger(entry.amount) && entry.amount > 0 && typeof entry.createdAt === 'string' && (entry.type === 'save' ? entry.category === null : ['regret','necessary','best'].includes(entry.category)) && typeof entry.memo === 'string';
@@ -63,12 +73,12 @@
     const container = $('#quickButtons'); if (!container) return;
     container.innerHTML = state.quickAmounts.map((amount, index) => `<button class="quick-button" data-quick="${amount}" ${quickLocked ? 'disabled' : ''}>＋${yen(amount).replace('¥','')}円</button>`).join('');
   }
-  function renderCoins(){const coin=window.ChokinCoins.getState(),button=$('#catGacha');$('#coinBalance').textContent=`🪙 ${coin.balance}`;$('#dailyCoinStatus').textContent=`本日のねこコイン：${window.ChokinCoins.hasDailyAward()?'獲得済み':'未獲得'}`;button.disabled=gachaLocked||coin.balance<1;$('#coinHint').textContent=coin.balance<1?'ねこコインがありません。今日初めて貯金すると1枚獲得できます。':'';}
+  function renderCoins(){const coin=window.ChokinCoins.getState(),button=$('#catGacha');$('#coinBalance').innerHTML=`${coinIcon()} ${coin.balance}`;$('#dailyCoinStatus').textContent=`本日のねこコイン：${window.ChokinCoins.hasDailyAward()?'獲得済み':'未獲得'}`;button.disabled=gachaLocked||coin.balance<1;$('#coinHint').textContent=coin.balance<1?'ねこコインがありません。今日初めて貯金すると1枚獲得できます。':'';}
   function scheduleCoinDayRefresh(){
     const now=new Date(),next=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1);
     setTimeout(()=>{renderCoins();scheduleCoinDayRefresh();},Math.max(1000,next.getTime()-now.getTime()+1000));
   }
-  function showWelcomeCoin(){const toast=document.createElement('div');toast.className='coin-welcome-toast';toast.innerHTML='<b>ウェルカムねこコイン</b><strong>🪙 ＋1</strong>';document.body.append(toast);setTimeout(()=>toast.remove(),3600);}
+  function showWelcomeCoin(){const toast=document.createElement('div');toast.className='coin-welcome-toast';toast.innerHTML=`<b>ウェルカムねこコイン</b><strong>${coinIcon()} ＋1</strong>`;document.body.append(toast);setTimeout(()=>toast.remove(),3600);}
   function showQuickUndo(entry) {
     const toast = $('#quickUndo'); if (!pendingQuickId || pendingQuickId !== entry.id) return;
     clearTimeout(undoTimer); $('#quickUndoText').textContent = `${yen(entry.amount)}を貯金しました`;
@@ -101,8 +111,8 @@
   function openForm(mode, preset=0) { formMode=mode; $('#formTitle').textContent=mode==='save'?'貯金する':'お金を使った'; $('#categoryWrap').hidden=mode==='save'; $('#amount').value=preset||''; $('#memo').value=''; $('#entryForm .submit').textContent=mode==='save'?'記録して、イベントを起こす':'記録して、イベントを起こす'; navigate('form'); setTimeout(()=>$('#amount').focus(),50); }
   function sound(kind) { if(!state.settings.sound || !window.AudioContext) return; try { const c=new AudioContext(), o=c.createOscillator(), g=c.createGain(); o.connect(g);g.connect(c.destination);o.frequency.value=kind==='regret'?160:kind==='best'?520:760;g.gain.setValueAtTime(.001,c.currentTime);g.gain.exponentialRampToValueAtTime(.12,c.currentTime+.02);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+.45);o.start();o.stop(c.currentTime+.46); } catch {} }
   function haptic(kind) { if(state.settings.vibration && navigator.vibrate) navigator.vibrate(kind==='regret'?[80,60,80]:[35,35,70]); }
-  function stageSound(rarity, confirmed) { if(!state.settings.sound||!window.AudioContext)return; try{const context=new AudioContext(),rank=['NORMAL','RARE','SUPER','ULTRA','LEGEND'].indexOf(rarity),tone=(frequency,start,duration,gain=.08)=>{const oscillator=context.createOscillator(),volume=context.createGain();oscillator.connect(volume);volume.connect(context.destination);oscillator.type=rank>=3?'sawtooth':'sine';oscillator.frequency.setValueAtTime(frequency,context.currentTime+start);volume.gain.setValueAtTime(.001,context.currentTime+start);volume.gain.exponentialRampToValueAtTime(gain,context.currentTime+start+.02);volume.gain.exponentialRampToValueAtTime(.001,context.currentTime+start+duration);oscillator.start(context.currentTime+start);oscillator.stop(context.currentTime+start+duration+.02);};tone(330,0,.16,.05);tone(440,.48,.18,.055);if(confirmed)tone(880,1.35,.16,.07);[523,659,784].slice(0,rank>=3?3:2).forEach((frequency,index)=>tone(frequency,2.12+index*.05,.55,.1));}catch{} }
-  function stageHaptic(rarity) { if(!state.settings.vibration||!navigator.vibrate)return; const strong=['ULTRA','LEGEND'].includes(rarity);navigator.vibrate(strong?[25,160,35,700,90,35,140]:[20,190,25,850,70]); }
+  function stageSound(rarity, confirmed, tierLevel=0) { if(!state.settings.sound||!window.AudioContext)return; try{const context=new AudioContext(),rank=Math.max(['NORMAL','RARE','SUPER','ULTRA','LEGEND'].indexOf(rarity),Math.max(0,tierLevel-1)),tone=(frequency,start,duration,gain=.08)=>{const oscillator=context.createOscillator(),volume=context.createGain();oscillator.connect(volume);volume.connect(context.destination);oscillator.type=rank>=3?'sawtooth':'sine';oscillator.frequency.setValueAtTime(frequency,context.currentTime+start);volume.gain.setValueAtTime(.001,context.currentTime+start);volume.gain.exponentialRampToValueAtTime(gain,context.currentTime+start+.02);volume.gain.exponentialRampToValueAtTime(.001,context.currentTime+start+duration);oscillator.start(context.currentTime+start);oscillator.stop(context.currentTime+start+duration+.02);};tone(330,0,.16,.05);tone(440,.48,.18,.055);if(confirmed||tierLevel>=4)tone(880,1.35,.16,.07);[523,659,784].slice(0,rank>=3?3:2).forEach((frequency,index)=>tone(frequency,2.12+index*.05,.55,.08+Math.min(3,tierLevel)*.008));}catch{} }
+  function stageHaptic(rarity, tierLevel=0) { if(!state.settings.vibration||!navigator.vibrate)return; const strong=['ULTRA','LEGEND'].includes(rarity)||tierLevel>=4,fever=tierLevel>=5;navigator.vibrate(fever?[30,80,45,110,90,40,130]:strong?[25,160,35,700,90,35,140]:tierLevel>=2?[20,130,30,260,65]:[20,190,25,850,70]); }
   const pick = a => a[Math.floor(Math.random()*a.length)];
   const sceneSvg = (className, content) => `<svg class="scene-svg ${className}" viewBox="0 0 400 520" role="img" aria-label="${className.replace('-scene','')}演出"><defs><linearGradient id="goldMetal" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff3a3"/><stop offset=".48" stop-color="#f7b52c"/><stop offset="1" stop-color="#9a4f09"/></linearGradient><linearGradient id="catFur" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff4dc"/><stop offset="1" stop-color="#df9f65"/></linearGradient><radialGradient id="spaceCore"><stop stop-color="#fff"/><stop offset=".25" stop-color="#9ee5ff"/><stop offset=".7" stop-color="#7865e8" stop-opacity=".7"/><stop offset="1" stop-color="#171342" stop-opacity="0"/></radialGradient></defs>${content}</svg>`;
   const catBodySvg = (className='cat-body') => `<g class="${className}"><ellipse class="cat-shadow" cx="205" cy="420" rx="104" ry="22" fill="#000" opacity=".32"/><path class="cat-tail ink" d="M118 364C48 357 54 284 94 300C120 310 88 339 73 319" fill="none" stroke="#c8814f" stroke-width="26"/><ellipse class="ink" cx="202" cy="351" rx="91" ry="81" fill="url(#catFur)"/><path class="ink" d="M124 246L139 161L187 201C198 197 211 197 223 201L269 161L282 247Z" fill="url(#catFur)"/><ellipse class="ink" cx="203" cy="252" rx="86" ry="71" fill="url(#catFur)"/><path d="M142 205L149 180L172 204" fill="#e89e9e"/><path d="M237 204L260 180L267 208" fill="#e89e9e"/><g class="cat-eyes" fill="#291b22"><ellipse cx="171" cy="244" rx="8" ry="12"/><ellipse cx="236" cy="244" rx="8" ry="12"/></g><path class="fine" d="M196 267Q203 274 210 267M203 274V282M203 282Q190 290 181 280M203 282Q216 291 226 280" fill="none" stroke="#291b22" stroke-width="5" stroke-linecap="round"/><path d="M196 264L210 264L203 273Z" fill="#d97878"/><path class="fine" d="M155 269L113 259M155 280L109 283M250 269L293 258M250 280L298 284" stroke="#291b22" stroke-width="5" stroke-linecap="round"/><path class="cat-paw ink" d="M248 356Q294 322 304 349Q308 374 262 388" fill="url(#catFur)"/><path class="ink" d="M158 395Q153 430 175 436M239 395Q244 430 223 436" fill="none" stroke="#291b22" stroke-width="22"/></g>`;
@@ -120,14 +130,23 @@
   function animateEventAmount(amount, reduced, plus=false) {
     const token = ++amountAnimationToken, target = $('#eventAmount');
     const format=value=>`${plus?'＋':''}${yen(value)}`;
+    const amountLength=format(amount).length;target.className=amountLength>=12?'amount-xxl':amountLength>=10?'amount-xl':amountLength>=8?'amount-long':'';
     if (reduced) { target.textContent = format(amount); return; }
     target.textContent = format(0);
     setTimeout(() => { const start = performance.now(), duration = 760; const tick = now => { if (token !== amountAnimationToken) return; const progress = Math.min(1,(now-start)/duration), eased = 1-Math.pow(1-progress,3); target.textContent = format(Math.round(amount*eased)); if (progress < 1) requestAnimationFrame(tick); }; requestAnimationFrame(tick); }, 2420);
   }
+  function buildSaveCheerCats(saveRank) {
+    if (!window.ChokinCats?.all) return '';
+    const pool = window.ChokinCats.all.filter(cat => cat.enabled !== false && (cat.rarity === 'NORMAL' || cat.rarity === 'RARE'));
+    if (!pool.length) return '';
+    const count = saveRank.minCats + Math.floor(Math.random()*(saveRank.maxCats-saveRank.minCats+1));
+    const selected = pool.slice().sort(() => Math.random() - .5).slice(0, count);
+    return selected.map((cat,index)=>`<span class="save-cheer-cat cheer-${index+1}" data-cat-id="${cat.id}" data-rarity="${cat.rarity}" style="--cat-accent:${cat.accentColor};--cat-theme:${cat.themeColor}"><span>CAT</span><img src="./${cat.imagePath}" alt="" onerror="this.hidden=true"></span>`).join('');
+  }
   function enhancedCelebrate(entry, forcedShow = null, preview = false, forcedRarity = null, options={}) {
     const box = $('#celebration'), isGacha=entry.type==='gacha', type = entry.type === 'save'||isGacha ? 'save' : entry.category;
     const reduced = !state.settings.effects || matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const power = entry.amount >= 10000 ? 'legendary' : entry.amount >= 5000 ? 'large' : entry.amount < 1000 ? 'small' : 'medium';
+    const power = entry.amount >= 10000 ? 'legendary' : entry.amount >= 5000 ? 'large' : entry.amount < 1000 ? 'small' : 'medium', saveRank=saveRankFor(Math.max(1,entry.amount));
     const expenseShows = {
       regret: [{name:'regret'},{name:'regret shock'}],
       necessary: [{name:'necessary'},{name:'necessary calm'}],
@@ -138,31 +157,35 @@
     const rarity=gamePlan?.rarity||'NORMAL',confirmed=!!gamePlan?.confirmed;
     const focusCat=options.collectionResult?.cat||gamePlan?.cat||(gamePlan?.slotResult?(gamePlan.slotResult.same?gamePlan.slotResult.cats[0]:gamePlan.slotResult.cats[1]||gamePlan.slotResult.cats.find(Boolean)):null);
     const collectionResult=options.collectionResult||null;
+    const saveSpectacle=type==='save'&&!isGacha&&show.name!=='cat-slot'&&!show.name.startsWith('gacha-');
     let gameVisual=gamePlan?window.ChokinGameFX.visual(gamePlan):'';
     if(isGacha&&gamePlan?.cutIn&&!gamePlan.show.startsWith('gacha-'))gameVisual+=`<div class="hot-cutin"><img src="./${focusCat.imagePath}" alt="" aria-hidden="true"><b>激熱</b></div>`;
     if(collectionResult){const progress=`猫図鑑 ${collectionResult.stats.obtained} / ${collectionResult.stats.total}匹`;gameVisual+=`<div class="collection-reveal ${collectionResult.isNew?'new':'duplicate'}" style="--cat-accent:${focusCat.accentColor};--cat-theme:${focusCat.themeColor}"><strong class="gacha-result-rarity">${focusCat.rarity}</strong><span class="collection-badge">${collectionResult.isNew?(focusCat.rarity==='LEGEND'?'NEW LEGEND CAT！':'NEW CAT！'):'再会'}</span><span class="collection-fallback-result" aria-hidden="true">CAT</span><img src="./${focusCat.imagePath}" alt="${escapeHtml(focusCat.name)}" onerror="this.hidden=true"><b>${escapeHtml(focusCat.name)}</b><small>${collectionResult.medals?`猫メダル ＋${collectionResult.medals}<br>`:''}${progress}</small></div>`;if(collectionResult.completedNow)gameVisual+='<div class="collection-complete"><b>CAT COLLECTION COMPLETE</b><span>全猫コンプリート！<br>猫図鑑完成</span></div>';}
-    if(options.dailyCoinAwarded)gameVisual+='<div class="daily-coin-award"><b>本日のねこコイン獲得！</b><strong>🪙 ＋1</strong></div>';
+    if(options.dailyCoinAwarded)gameVisual+=`<div class="daily-coin-award"><b>本日のねこコイン獲得！</b><strong>${coinIcon()} ＋1</strong></div>`;
     previewActive = preview;
     const modeClass=show.name==='cat-slot'?' slot':show.name.startsWith('gacha-')?' gacha':'';
-    box.className = `celebration show four-stage ${type} ${show.name} ${power} rarity-${rarity.toLowerCase()} omen-${gamePlan?.omen||'eyes'}${confirmed?' confirmed':''}${modeClass}${reduced ? ' reduced' : ''}${preview ? ' preview-mode' : ''}${isGacha?' gacha-result-mode':''}${collectionResult?collectionResult.isNew?' new-cat':' duplicate-cat':''}${collectionResult?.completedNow?' collection-completed':''}`;
+    box.className = `celebration show four-stage ${type} ${show.name} ${power} rarity-${rarity.toLowerCase()} omen-${gamePlan?.omen||'eyes'}${confirmed?' confirmed':''}${modeClass}${saveSpectacle?` save-spectacle save-tier-${saveRank.key}`:''}${reduced ? ' reduced' : ''}${preview ? ' preview-mode' : ''}${isGacha?' gacha-result-mode':''}${collectionResult?collectionResult.isNew?' new-cat':' duplicate-cat':''}${collectionResult?.completedNow?' collection-completed':''}`;
     window.ChokinAssets?.clear($('#sceneVisual'));
     $('#sceneVisual').innerHTML = gameVisual || buildSceneVisual(show.name, type);
+    $('#saveCheer').innerHTML = saveSpectacle ? buildSaveCheerCats(saveRank) : '';
+    $('#saveCheer').className=`save-cheer-layer cheer-count-${saveSpectacle?$('#saveCheer').children.length:0}`;
     const dynamicCat=show.name.startsWith('gacha-')||show.name==='cat-slot'?(gamePlan?.cat||gamePlan?.slotResult):null;
     const assetMount=dynamicCat?Promise.resolve(false):window.ChokinAssets?.mount($('#sceneVisual'), show.name, type);
-    window.ChokinCanvasFX?.start($('#fxCanvas'), show.name, type, {reduced,rarity:gamePlan?.rarity||'NORMAL'});
-    $('#eventType').textContent = isGacha?rarity:preview?'演出プレビュー':type==='save'?'貯金成功！':categoryNames[type];
+    window.ChokinCanvasFX?.start($('#fxCanvas'), show.name, type, {reduced,rarity:gamePlan?.rarity||'NORMAL',spectacle:saveSpectacle,spectacleLevel:saveRank.level});
+    $('#eventType').textContent = isGacha?rarity:saveSpectacle?saveRank.label:preview?'演出プレビュー':categoryNames[type];
     $('#eventMessage').textContent = isGacha?(collectionResult?.isNew?'NEW CAT':'再会'):'';
     $('#eventNote').textContent = '';
     if(isGacha){amountAnimationToken++;$('#eventAmount').textContent=focusCat?.name||'CAT';}else animateEventAmount(entry.amount,reduced,type==='save');
     $('#revenge').hidden = type !== 'regret'; revengeAmount = Math.round(entry.amount * .1);
     const canvasPrimary = show.name === 'cosmic' || show.name.includes('treasure') || show.name.includes('legendary');
-    const count = reduced || canvasPrimary ? 0 : type === 'save' ? 12 : 8;
+    const tierParticles=[18,24,32,40,48,56][saveRank.level];
+    const count = reduced ? 0 : saveSpectacle ? (canvasPrimary ? Math.max(12,Math.round(tierParticles*.55)) : tierParticles) : type === 'save' ? 12 : 8;
     $('#particles').innerHTML = Array.from({length:count}, (_,i) => `<i style="--x:${Math.random()*100}%;--y:${42+Math.random()*72}%;--d:${(i%14)*.075}s;transform:scale(${.55+Math.random()*1.8})"></i>`).join('');
-    box.setAttribute('aria-hidden','false'); if(type==='save'){stageSound(rarity,confirmed);stageHaptic(rarity);}else{sound(type);haptic(type);}
+    box.setAttribute('aria-hidden','false'); if(type==='save'){stageSound(rarity,confirmed,saveRank.level);stageHaptic(rarity,saveRank.level);}else{sound(type);haptic(type);}
   }
   function showGachaFallback(plan,result){const cat=result.cat,progress=`猫図鑑 ${result.stats.obtained} / ${result.stats.total}匹`,box=$('#celebration');box.className=`celebration show save gacha-result-mode rarity-${cat.rarity.toLowerCase()} ${result.isNew?'new-cat':'duplicate-cat'}`;$('#sceneVisual').innerHTML=`<div class="collection-reveal ${result.isNew?'new':'duplicate'}" style="--cat-accent:${cat.accentColor};--cat-theme:${cat.themeColor}"><strong class="gacha-result-rarity">${cat.rarity}</strong><span class="collection-badge">${result.isNew?'NEW CAT！':'再会'}</span><span class="collection-fallback-result">CAT</span><img src="./${cat.imagePath}" alt="${escapeHtml(cat.name)}" onerror="this.hidden=true"><b>${escapeHtml(cat.name)}</b><small>${result.medals?`猫メダル ＋${result.medals}<br>`:''}${progress}</small></div>`;$('#eventType').textContent=cat.rarity;$('#eventMessage').textContent=result.isNew?'NEW CAT':'再会';$('#eventAmount').textContent=cat.name;$('#eventNote').textContent='';$('#revenge').hidden=true;box.setAttribute('aria-hidden','false');window.ChokinCanvasFX?.start($('#fxCanvas'),'gold','save',{reduced:true,rarity:cat.rarity});}
   function startCatGacha(){if(gachaLocked||!window.ChokinCoins.canSpend(1))return;gachaLocked=true;renderCoins();let plan=null,result=null,spent=false;try{plan=window.ChokinGameFX.gachaPlan();result=window.ChokinCollection.record(plan.cat,null);spent=window.ChokinCoins.spend(1);if(!spent){gachaLocked=false;render();return;}enhancedCelebrate({type:'gacha',amount:0,category:null,memo:'',createdAt:new Date().toISOString()},null,false,null,{gamePlan:plan,collectionResult:result});}catch(error){console.error('ねこガチャ演出を簡易表示へ切り替えました。',error);if(spent&&result)showGachaFallback(plan,result);else{gachaLocked=false;render();}}}
-  function closeEvent() { const wasPreview = previewActive, quickEntry = !wasPreview && pendingQuickId && state.entries.find(entry => entry.id === pendingQuickId); previewActive = false; amountAnimationToken++; window.ChokinCanvasFX?.stop(true); window.ChokinAssets?.clear($('#sceneVisual')); $('#celebration').className='celebration'; $('#celebration').setAttribute('aria-hidden','true'); $('#sceneVisual').innerHTML=''; $('#particles').innerHTML=''; $('#closeEvent').textContent='ホームへ'; quickLocked = false; gachaLocked=false; navigate(wasPreview ? 'settings' : 'home'); render(); if (quickEntry) showQuickUndo(quickEntry); }
+  function closeEvent() { const wasPreview = previewActive, quickEntry = !wasPreview && pendingQuickId && state.entries.find(entry => entry.id === pendingQuickId); previewActive = false; amountAnimationToken++; window.ChokinCanvasFX?.stop(true); window.ChokinAssets?.clear($('#sceneVisual')); $('#celebration').className='celebration'; $('#celebration').setAttribute('aria-hidden','true'); $('#sceneVisual').innerHTML=''; $('#saveCheer').innerHTML=''; $('#saveCheer').className='save-cheer-layer'; $('#particles').innerHTML=''; $('#closeEvent').textContent='ホームへ'; quickLocked = false; gachaLocked=false; navigate(wasPreview ? 'settings' : 'home'); render(); if (quickEntry) showQuickUndo(quickEntry); }
   function setupQuickSettings() {
     const host = $('#settings'); if (!host || $('#quickSettings')) return;
     const section = document.createElement('section'); section.id = 'quickSettings'; section.className = 'quick-settings';
@@ -174,9 +197,9 @@
     const host = $('#settings'); if (!host || $('#effectPreview')) return;
     const previews = window.ChokinGameFX.PREVIEWS;
     const section = document.createElement('section'); section.id='effectPreview'; section.className='effect-preview';
-    section.innerHTML=`<h3>演出プレビュー</h3><p>履歴や集計を変更せずに再生します。</p><div class="preview-grid">${previews.map(([label,name,rarity])=>`<button class="preview-button" data-preview="${name}" data-rarity="${name==='cat-slot'?'LEGEND':rarity}">${label}</button>`).join('')}</div>`;
+    section.innerHTML=`<h3>演出プレビュー</h3><p>履歴や集計を変更せずに再生します。</p><div class="preview-grid">${previews.map(([label,name,rarity,amount])=>`<button class="preview-button" data-preview="${name}" data-rarity="${name==='cat-slot'?'LEGEND':rarity}" data-preview-amount="${amount||5000}">${label}</button>`).join('')}</div>`;
     const dataTools=host.querySelector('.data-tools'); host.insertBefore(section,dataTools||null);
-    section.querySelectorAll('[data-preview]').forEach(button=>button.addEventListener('click',()=>{ $('#closeEvent').textContent='設定へ戻る'; enhancedCelebrate({type:'save',amount:5000,category:null,memo:'',createdAt:new Date().toISOString()},button.dataset.preview,true,button.dataset.rarity); }));
+    section.querySelectorAll('[data-preview]').forEach(button=>button.addEventListener('click',()=>{ $('#closeEvent').textContent='設定へ戻る'; enhancedCelebrate({type:'save',amount:Number(button.dataset.previewAmount)||5000,category:null,memo:'',createdAt:new Date().toISOString()},button.dataset.preview,true,button.dataset.rarity); }));
   }
   function setupCatGallery() {
     const host=$('#settings');if(!host||$('#catGallery'))return;

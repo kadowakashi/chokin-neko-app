@@ -1,20 +1,10 @@
 (() => {
   'use strict';
-  const assets = {
-    cosmic: [{src:'assets/scenes/space_bg.png',mode:'background',className:'asset-space-bg'},{src:'assets/cats/cat_cosmic.png',mode:'main',className:'asset-cosmic-cat'}],
-    treasure: [{src:'assets/scenes/treasure_chest_closed.png',mode:'main',className:'asset-chest-closed'},{src:'assets/scenes/treasure_chest_open.png',mode:'main',className:'asset-chest-open'}],
-    cat: [{src:'assets/cats/cat_celebrate.png',mode:'main',className:'asset-celebrate-cat'}],
-    temple: [{src:'assets/scenes/cat_temple_bg.png',mode:'background',className:'asset-temple-bg'},{src:'assets/cats/cat_royal.png',mode:'main',className:'asset-royal-cat'}],
-    gachaNormal: [{src:'assets/cats/cat_celebrate.png',mode:'main',className:'asset-gacha-cat'}],
-    gachaSuper: [{src:'assets/cats/cat_cosmic.png',mode:'main',className:'asset-gacha-cat'}],
-    gachaLegend: [{src:'assets/cats/cat_royal.png',mode:'main',className:'asset-gacha-cat'}],
-    regret: [{src:'assets/cats/cat_surprised.png',mode:'main',className:'asset-surprised-cat'}],
-    best: [{src:'assets/cats/cat_royal.png',mode:'main',className:'asset-royal-cat'}]
-  };
+  const assets = window.ChokinVisualAssets?.SCENES || {};
   let mountToken = 0;
   let availabilityPromise = null;
   const objectUrls = new Set();
-  const keyFor = (showName, type) => showName.includes('legendary') ? 'temple' : showName.includes('treasure') ? 'treasure' : showName === 'cosmic' ? 'cosmic' : showName.includes('cat-blessing') ? 'cat' : showName.includes('gacha-legend') ? 'gachaLegend' : showName.includes('gacha-super') || showName.includes('gacha-ultra') ? 'gachaSuper' : showName.includes('gacha-') ? 'gachaNormal' : type === 'regret' ? 'regret' : type === 'best' ? 'best' : null;
+  const keyFor = (showName, type) => showName.includes('legendary') ? 'temple' : showName.includes('treasure') ? 'treasure' : showName === 'cosmic' ? 'cosmic' : showName === 'gold' ? 'gold' : showName === 'shock' ? 'shock' : showName.includes('cat-blessing') ? 'cat' : showName.includes('gacha-legend') ? 'gachaLegend' : showName.includes('gacha-super') || showName.includes('gacha-ultra') ? 'gachaSuper' : showName.includes('gacha-') ? 'gachaNormal' : type === 'regret' ? 'regret' : type === 'necessary' ? 'necessary' : type === 'best' ? 'best' : null;
   const availableAssets = () => availabilityPromise || (availabilityPromise = fetch('./assets/manifest.json').then(response => response.ok ? response.json() : {available:[]}).then(data => Array.isArray(data.available) ? data.available : []).catch(() => []));
   async function mount(container, showName, type) {
     const token = ++mountToken, entries = assets[keyFor(showName, type)];

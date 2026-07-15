@@ -3,7 +3,9 @@
   const RARITY_RATES = Object.freeze({NORMAL:50,RARE:28,SUPER:14,ULTRA:6,LEGEND:2});
   const RARITIES = ['NORMAL','RARE','SUPER','ULTRA','LEGEND'];
   const PREVIEWS = Object.freeze([
-    ['通常演出','normal','NORMAL'],['猫スロット','cat-slot','SUPER'],
+    ['10円・ちょこっと','normal','NORMAL',10],['50円・NICE','normal','NORMAL',50],['100円・GREAT','normal','RARE',100],
+    ['300円・SUPER','normal','SUPER',300],['500円・ULTRA','normal','ULTRA',500],['1,000円・FEVER','normal','LEGEND',1000],
+    ['猫スロット','cat-slot','SUPER'],
     ['猫ガチャ NORMAL','gacha-normal','NORMAL'],['猫ガチャ RARE','gacha-rare','RARE'],['猫ガチャ SUPER','gacha-super','SUPER'],
     ['猫ガチャ ULTRA','gacha-ultra','ULTRA'],['猫ガチャ LEGEND','gacha-legend','LEGEND'],
     ['激熱カットイン','hot-cutin','ULTRA'],['猫神社','temple','LEGEND'],['宇宙猫','cosmic','SUPER'],['宝箱','treasure','RARE']
