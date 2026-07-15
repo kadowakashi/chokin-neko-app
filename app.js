@@ -2,7 +2,7 @@
   'use strict';
   const KEY = 'chokin-event-app.v0.1';
   const RECOVERY_KEY = `${KEY}.recovery`;
-  const APP_VERSION = '0.9.3';
+  const APP_VERSION = '0.9.4';
   const GUIDE_KEY = 'chokin-event-app.firstGuide.v0.8.1';
   const BACKUP_VERSION = 1;
   const DEFAULT_QUICK_AMOUNTS = [100, 500, 1000, 3000, 5000];
@@ -129,12 +129,34 @@
   };
   function animateEventAmount(amount, reduced, plus=false) {
     const token = ++amountAnimationToken, target = $('#eventAmount');
-    const format=value=>`${plus?'＋':''}${yen(value)}`;
+    const format=value=>`${plus?'＋':''}￥${Number(value||0).toLocaleString('ja-JP')}`;
+    target.replaceChildren();
+    const appendPart=(className,text)=>{const part=document.createElement('span');part.className=className;part.textContent=text;target.append(part);return part;};
+    if(plus)appendPart('amount-plus','＋');
+    appendPart('amount-yen','￥');
+    const digits=appendPart('amount-digits','0'),render=value=>{digits.textContent=Number(value||0).toLocaleString('ja-JP');};
     const amountLength=format(amount).length;target.className=amountLength>=12?'amount-xxl':amountLength>=10?'amount-xl':amountLength>=8?'amount-long':'';
-    if (reduced) { target.textContent = format(amount); return; }
-    target.textContent = format(0);
-    setTimeout(() => { const start = performance.now(), duration = 760; const tick = now => { if (token !== amountAnimationToken) return; const progress = Math.min(1,(now-start)/duration), eased = 1-Math.pow(1-progress,3); target.textContent = format(Math.round(amount*eased)); if (progress < 1) requestAnimationFrame(tick); }; requestAnimationFrame(tick); }, 2420);
+    if (reduced) { render(amount); return; }
+    render(0);
+    setTimeout(() => { const start = performance.now(), duration = 760; const tick = now => { if (token !== amountAnimationToken) return; const progress = Math.min(1,(now-start)/duration), eased = 1-Math.pow(1-progress,3); render(Math.round(amount*eased)); if (progress < 1) requestAnimationFrame(tick); }; requestAnimationFrame(tick); }, 2420);
   }
+  function layoutSaveCheerCats() {
+    const box=$('#celebration'),layer=$('#saveCheer'),scene=$('#sceneVisual');
+    if(!box?.classList.contains('save-spectacle')||!layer||!scene)return;
+    const count=layer.children.length,center=count===1?layer.querySelector('.cheer-1'):count>=3?layer.querySelector('.cheer-3'):null;
+    const hero=scene.querySelector('.generated-scene-main:not(.asset-chest-closed)')||scene.querySelector('.generated-scene-main')||scene.querySelector('.scene-svg');
+    if(!center||!hero)return;
+    const layerRect=layer.getBoundingClientRect(),sceneRect=scene.getBoundingClientRect();
+    let heroTop=hero.getBoundingClientRect().top;
+    if(hero.classList.contains('generated-scene-main')){
+      const ratio=hero.naturalWidth&&hero.naturalHeight?hero.naturalHeight/hero.naturalWidth:1;
+      const contentHeight=Math.min(hero.offsetHeight,hero.offsetWidth*ratio);
+      heroTop=sceneRect.top+hero.offsetTop-contentHeight/2;
+    }
+    const gap=Math.max(10,Math.round(innerHeight*.014));
+    center.style.top=`${Math.max(0,Math.round(heroTop-layerRect.top-center.offsetHeight-gap))}px`;
+  }
+  addEventListener('resize',()=>requestAnimationFrame(layoutSaveCheerCats),{passive:true});
   function buildSaveCheerCats(saveRank) {
     if (!window.ChokinCats?.all) return '';
     const pool = window.ChokinCats.all.filter(cat => cat.enabled !== false && (cat.rarity === 'NORMAL' || cat.rarity === 'RARE'));
@@ -171,6 +193,7 @@
     $('#saveCheer').className=`save-cheer-layer cheer-count-${saveSpectacle?$('#saveCheer').children.length:0}`;
     const dynamicCat=show.name.startsWith('gacha-')||show.name==='cat-slot'?(gamePlan?.cat||gamePlan?.slotResult):null;
     const assetMount=dynamicCat?Promise.resolve(false):window.ChokinAssets?.mount($('#sceneVisual'), show.name, type);
+    if(saveSpectacle){requestAnimationFrame(layoutSaveCheerCats);Promise.resolve(assetMount).finally(()=>requestAnimationFrame(layoutSaveCheerCats));}
     window.ChokinCanvasFX?.start($('#fxCanvas'), show.name, type, {reduced,rarity:gamePlan?.rarity||'NORMAL',spectacle:saveSpectacle,spectacleLevel:saveRank.level});
     $('#eventType').textContent = isGacha?rarity:saveSpectacle?saveRank.label:preview?'演出プレビュー':categoryNames[type];
     $('#eventMessage').textContent = isGacha?(collectionResult?.isNew?'NEW CAT':'再会'):'';

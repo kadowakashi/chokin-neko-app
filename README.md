@@ -1,4 +1,4 @@
-# 貯金アプリ v0.9.1
+# 貯金アプリ v0.9.4
 
 スマートフォン向け・静的Webアプリです。`index.html` をWebサーバー経由で開くか、GitHub Pagesで公開してください。
 
@@ -50,3 +50,9 @@
 - `sync_cats.bat`：`cat-catalog.json`からJavaScriptとmanifestを再同期します。
 - `validate_cats.bat`：重複、画像不足、manifest漏れ、未登録画像などを検査します。
 - 猫情報の正式な管理元は `assets/cats/cat-catalog.json` です。`cat-characters.js`は直接編集しないでください。
+
+## v0.9.3 素材差し替え
+
+コイン素材は `assets/coins/`、演出主役素材は `assets/scenes/` に配置し、`assets/manifest.json` の `available` へパスを追加します。未配置時は従来のSVG・CSS・Canvas表現へ戻ります。
+
+追加可能な主役素材：`gold_sun.png`、`energy_core.png`、`cat_temple_foreground.png`、`receipt_stamp.png`。既存の `space_bg.png`、`cat_temple_bg.png`、宝箱素材も同じ読込経路です。
