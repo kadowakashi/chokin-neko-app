@@ -167,23 +167,21 @@
     const svgHero=scene.querySelector('.maneki,.burst-core,.planet,.reactor,.cat-body,.royal-cat,.desk-cat,.chest-body');
     const hero=mounted||svgHero||scene.querySelector('.scene-svg');
     if(!hero)return;
-    const layerRect=layer.getBoundingClientRect(),heroRect=visibleHeroRect(hero),edge=18,margin=Math.max(16,Math.min(24,innerWidth*.055)),placementGap=6;
-    const safe={left:heroRect.left-layerRect.left-margin,right:heroRect.right-layerRect.left+margin,top:heroRect.top-layerRect.top-margin,bottom:heroRect.bottom-layerRect.top+margin};
+    const layerRect=layer.getBoundingClientRect(),heroRect=visibleHeroRect(hero),edge=24;
+    const safe={left:heroRect.left-layerRect.left+heroRect.width*.2,right:heroRect.right-layerRect.left-heroRect.width*.2,top:heroRect.top-layerRect.top+heroRect.height*.2,bottom:heroRect.bottom-layerRect.top-heroRect.height*.2};
     layer.dataset.heroSafe=`${Math.round(safe.left)},${Math.round(safe.top)},${Math.round(safe.right)},${Math.round(safe.bottom)}`;
-    cats.forEach((cat,index)=>{
+    const metrics=cats.map(cat=>{cat.style.removeProperty('width');cat.style.removeProperty('height');cat.style.removeProperty('right');cat.style.removeProperty('translate');return {cat,width:cat.offsetWidth,height:cat.offsetHeight};});
+    const leftTop=edge,rightBottom=Math.max(edge,layerRect.height-metrics[0].height-edge),rightShift=cats.length===4?Math.max(42,(rightBottom-leftTop)*.3):Math.max(42,layerRect.height*.17),leftBottom=Math.max(edge,rightBottom-rightShift),rightTop=Math.min(rightBottom,leftTop+rightShift);
+    metrics.forEach(({cat},index)=>{
       cat.style.removeProperty('width');cat.style.removeProperty('height');cat.style.removeProperty('right');cat.style.removeProperty('translate');
       let width=cat.offsetWidth,height=cat.offsetHeight;
       const slot=cat.dataset.slot||(['left-top','right-top','left-bottom','right-bottom'][index]),left=slot.startsWith('left'),top=slot.endsWith('top');
-      const verticalY=top?safe.top-placementGap-height:safe.bottom+placementGap,maxY=layerRect.height-height-edge,canClearVertically=top?verticalY>=edge:verticalY<=maxY;
-      let x,y;
-      if(canClearVertically){
+      let x=left?edge:layerRect.width-width-edge,y=slot==='left-top'?leftTop:slot==='right-top'?rightTop:slot==='left-bottom'?leftBottom:rightBottom;
+      const overlapArea=()=>{const overlapW=Math.max(0,Math.min(x+width,safe.right)-Math.max(x,safe.left)),overlapH=Math.max(0,Math.min(y+height,safe.bottom)-Math.max(y,safe.top));return overlapW*overlapH;};
+      if(overlapArea()>width*height*.18){
+        const available=Math.max(0,left?safe.left-edge-4:layerRect.width-safe.right-edge-4),scale=Math.min(1,available/Math.max(1,width));
+        if(scale<.94){const safeScale=Math.max(.82,scale);width=Math.round(width*safeScale);height=Math.round(height*safeScale);cat.style.width=`${width}px`;cat.style.height=`${height}px`;}
         x=left?edge:layerRect.width-width-edge;
-        y=top?verticalY-(left?12:0):verticalY+(left?12:0);
-      }else{
-        const available=Math.max(0,left?safe.left-placementGap-edge:layerRect.width-safe.right-placementGap-edge),scale=Math.min(1,available/Math.max(1,width));
-        if(scale<1){const safeScale=Math.max(.25,scale);width=Math.round(width*safeScale);height=Math.round(height*safeScale);cat.style.width=`${width}px`;cat.style.height=`${height}px`;}
-        x=left?safe.left-placementGap-width:safe.right+placementGap;
-        y=top?edge+(left?0:12):layerRect.height-height-edge-(left?0:12);
       }
       x=Math.max(edge,Math.min(layerRect.width-width-edge,x));y=Math.max(edge,Math.min(layerRect.height-height-edge,y));
       cat.style.left=`${Math.round(x)}px`;cat.style.top=`${Math.round(y)}px`;

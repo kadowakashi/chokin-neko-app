@@ -88,3 +88,8 @@
 .celebration.save-spectacle .event-card strong>span{display:inline-block;flex:0 0 auto;position:static;line-height:.92;white-space:nowrap;word-break:keep-all}
 @media(max-width:430px){.celebration.save-spectacle .save-cheer-cat{width:min(20vw,86px);height:min(14vh,116px)}.celebration.save-spectacle .save-cheer-cat.cheer-3,.celebration.save-spectacle .save-cheer-cat.cheer-4{width:min(20vw,86px);height:min(14vh,116px)}.celebration.save-spectacle .event-card strong{left:12px;right:12px;max-width:calc(100% - 24px)}}
 @media(max-width:390px){.celebration.save-spectacle .save-cheer-cat{width:min(19vw,74px);height:min(13vh,106px)}.celebration.save-spectacle .save-cheer-cat.cheer-3,.celebration.save-spectacle .save-cheer-cat.cheer-4{width:min(19vw,74px);height:min(13vh,106px)}}
+
+/* v0.9.5 cheer size adjustment */
+.celebration.save-spectacle .save-cheer-layer{bottom:38%}
+.celebration.save-spectacle .save-cheer-layer.cheer-count-2 .save-cheer-cat{width:min(26vw,112px);height:min(18vh,146px)}
+.celebration.save-spectacle .save-cheer-layer.cheer-count-4 .save-cheer-cat{width:min(23vw,99px);height:min(16vh,130px)}
