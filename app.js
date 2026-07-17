@@ -2,7 +2,7 @@
   'use strict';
   const KEY = 'chokin-event-app.v0.1';
   const RECOVERY_KEY = `${KEY}.recovery`;
-  const APP_VERSION = '0.9.8.1';
+  const APP_VERSION = '0.9.8.2';
   const GUIDE_KEY = 'chokin-event-app.firstGuide.v0.8.1';
   const BACKUP_VERSION = 1;
   const DEFAULT_QUICK_AMOUNTS = [100, 500, 1000, 3000, 5000];
@@ -158,7 +158,7 @@
     const date=record.firstObtainedAt?new Date(record.firstObtainedAt).toLocaleString('ja-JP',{dateStyle:'medium',timeStyle:'short'}):'―';
     $('#collectionDetailBody').innerHTML=`<div style="--cat-accent:${cat.accentColor}"><img src="./${cat.imagePath}" alt="${escapeHtml(cat.name)}" onerror="this.hidden=true"><small>${cat.rarity}</small><h3>${escapeHtml(cat.name)}</h3><p>${escapeHtml(cat.message)}</p><dl><dt>初取得</dt><dd>${date}</dd><dt>初取得金額</dt><dd>${record.firstAmount?yen(record.firstAmount):'―'}</dd><dt>累計登場</dt><dd>${record.obtainedCount}回</dd><dt>重複</dt><dd>${record.duplicateCount}回</dd><dt>獲得メダル</dt><dd>${record.medalsEarned}枚</dd><dt>FEVER</dt><dd>${escapeHtml(cat.feverTitle)}</dd></dl></div>`;$('#collectionDetail').showModal();
   }
-  function navigate(id) { document.querySelectorAll('.screen').forEach(x=>x.classList.toggle('active',x.id===id)); window.scrollTo(0,0); if(id==='calendar') showCurrentCalendarMonth(); if(id==='goal') window.ChokinSavingsGoal.renderDetail(); if(id==='history'||id==='collection') render(); }
+  function navigate(id) { window.ChokinSavingsGoal?.onNavigate?.(); document.querySelectorAll('.screen').forEach(x=>x.classList.toggle('active',x.id===id)); window.scrollTo(0,0); if(id==='calendar') showCurrentCalendarMonth(); if(id==='goal') window.ChokinSavingsGoal.renderDetail(); if(id==='history'||id==='collection') render(); }
   function openForm(mode, preset=0) { formMode=mode; $('#formTitle').textContent=mode==='save'?'貯金する':'お金を使った'; $('#categoryWrap').hidden=mode==='save'; $('#amount').value=preset||''; $('#memo').value=''; $('#entryForm .submit').textContent=mode==='save'?'記録して、イベントを起こす':'記録して、イベントを起こす'; navigate('form'); setTimeout(()=>$('#amount').focus(),50); }
   function sound(kind) { if(!state.settings.sound || !window.AudioContext) return; try { const c=new AudioContext(), o=c.createOscillator(), g=c.createGain(); o.connect(g);g.connect(c.destination);o.frequency.value=kind==='regret'?160:kind==='best'?520:760;g.gain.setValueAtTime(.001,c.currentTime);g.gain.exponentialRampToValueAtTime(.12,c.currentTime+.02);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+.45);o.start();o.stop(c.currentTime+.46); } catch {} }
   function haptic(kind) { if(state.settings.vibration && navigator.vibrate) navigator.vibrate(kind==='regret'?[80,60,80]:[35,35,70]); }
@@ -332,7 +332,7 @@
   $('#catGacha').onclick=startCatGacha;
   $('#confirmDelete').onclick=()=>{state.entries=state.entries.filter(x=>x.id!==deletingId);saveState();render();};
   $('#undoQuick').onclick=()=>{ if (!pendingQuickId) return; state.entries = state.entries.filter(entry => entry.id !== pendingQuickId); pendingQuickId = null; clearTimeout(undoTimer); $('#quickUndo').hidden = true; saveState(); render(); };
-  ['sound','vibration','effects'].forEach(k=> $(`#${k}`).addEventListener('change',e=>{state.settings[k]=e.target.checked;saveState();}));
+  ['sound','vibration','effects'].forEach(k=> $(`#${k}`).addEventListener('change',e=>{state.settings[k]=e.target.checked;saveState();if(k==='effects'){window.ChokinSavingsGoal.renderHome();if($('#goal')?.classList.contains('active'))window.ChokinSavingsGoal.renderDetail();}}));
   $('#exportBackup').onclick = exportBackup;
   $('#importBackup').onclick = () => $('#backupFile').click();
   $('#backupFile').addEventListener('change', e => { const file = e.target.files[0]; if (file) importBackup(file); e.target.value = ''; });

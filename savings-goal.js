@@ -5,6 +5,7 @@
   const SCHEMA_VERSION = 1;
   const MAX_TARGET = 99999999;
   const CAT_IMAGE = 'assets/cats/cat_hachiware.png';
+  const ACHIEVEMENT_SPARKLES = 52;
   const ICONS = Object.freeze({
     piggy:{label:'貯金箱',symbol:'🐷'}, game:{label:'ゲーム',symbol:'🎮'}, book:{label:'本',symbol:'📚'},
     bicycle:{label:'自転車',symbol:'🚲'}, toy:{label:'おもちゃ',symbol:'🧸'}, clothes:{label:'服',symbol:'👕'},
@@ -29,6 +30,14 @@
     const [year,month,day] = value.split('-').map(Number), date = new Date(year,month-1,day);
     return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
   };
+  const catMarkup = (className, alt='目標へ進むハチワレ') => `<span class="${className} goal-cat-position" style="--goal-position:0%"><span class="goal-cat-sway"><span class="goal-cat-fallback" aria-hidden="true">🐾</span><img src="./${CAT_IMAGE}" alt="${alt}" onload="this.previousElementSibling.hidden=true" onerror="this.hidden=true;this.previousElementSibling.hidden=false"></span></span>`;
+  function milestoneIcon(value) {
+    const star='<path class="milestone-main" d="M24 4.5l5.9 12 13.2 1.9-9.5 9.3 2.2 13.1L24 34.6l-11.8 6.2 2.2-13.1-9.5-9.3 13.2-1.9z"/>';
+    if (value===25) return `<svg class="goal-milestone-icon milestone-25" viewBox="0 0 48 48" aria-hidden="true">${star}</svg>`;
+    if (value===50) return `<svg class="goal-milestone-icon milestone-50" viewBox="0 0 48 48" aria-hidden="true"><path class="milestone-accent" d="M14 7l3.2 6.5 7.2 1-5.2 5.1 1.2 7.1-6.4-3.4-6.4 3.4 1.2-7.1-5.2-5.1 7.2-1z"/><g transform="translate(10 8) scale(.78)">${star}</g></svg>`;
+    if (value===75) return `<svg class="goal-milestone-icon milestone-75" viewBox="0 0 48 48" aria-hidden="true"><path class="milestone-crown" d="M9 17l7 5 8-11 8 11 7-5-3 14H12z"/><path class="milestone-main" d="M24 23l3.7 7.5 8.3 1.2-6 5.8 1.4 8.2-7.4-3.9-7.4 3.9 1.4-8.2-6-5.8 8.3-1.2z"/></svg>`;
+    return `<svg class="goal-milestone-icon milestone-100" viewBox="0 0 48 48" aria-hidden="true"><path class="milestone-rainbow rainbow-a" d="M7 17a17 17 0 0134 0h-4a13 13 0 00-26 0z"/><path class="milestone-rainbow rainbow-b" d="M11 17a13 13 0 0126 0h-4a9 9 0 00-18 0z"/><path class="milestone-cup" d="M15 12h18v8c0 7-3.8 11-7 12v5h7v5H15v-5h7v-5c-3.2-1-7-5-7-12z"/><path class="milestone-accent" d="M10 14H5v5c0 5 4 9 9 9v-4c-3 0-5-2-5-5v-1h3zm28 0h5v5c0 5-4 9-9 9v-4c3 0 5-2 5-5v-1h-3z"/></svg>`;
+  }
 
   function validateGoal(value) {
     if (!value || typeof value !== 'object' || Array.isArray(value) || value.schemaVersion !== SCHEMA_VERSION) return null;
@@ -71,10 +80,18 @@
     }
     return stats;
   }
+  function setMascotPositions(root, percent) {
+    const destination=`${Math.max(0,Math.min(100,percent))}%`, reduced=matchMedia('(prefers-reduced-motion: reduce)').matches || !getSettings().effects;
+    root.classList.toggle('goal-motion-reduced',reduced);
+    root.querySelectorAll('.goal-cat-position').forEach(mascot=>{
+      if (reduced) mascot.style.setProperty('--goal-position',destination);
+      else requestAnimationFrame(()=>requestAnimationFrame(()=>mascot.style.setProperty('--goal-position',destination)));
+    });
+  }
 
   function homeMarkup(goal, stats) {
     const icon = ICONS[goal.icon] || ICONS.piggy;
-    return `<button type="button" class="goal-home-open" data-goal-open aria-label="貯金目標 ${escapeHtml(goal.itemName)}、達成率${stats.percent}％、詳細を開く"><span class="goal-home-icon" aria-hidden="true">${icon.symbol}</span><span class="goal-home-copy"><small>現在の目標</small><b>${escapeHtml(goal.itemName)}</b><span>${yen(stats.progress)} / ${yen(goal.targetAmount)}</span></span><strong>${stats.achieved?'目標達成！':`あと ${yen(stats.remaining)}`}</strong><span class="goal-home-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${stats.barPercent}" aria-valuetext="達成率 ${stats.percent}％"><i style="width:${stats.barPercent}%"></i></span><em>達成率 ${stats.percent}％</em></button>`;
+    return `<button type="button" class="goal-home-open" data-goal-open aria-label="貯金目標 ${escapeHtml(goal.itemName)}、達成率${stats.percent}％、詳細を開く"><span class="goal-home-icon" aria-hidden="true">${icon.symbol}</span><span class="goal-home-copy"><small>現在の目標</small><b>${escapeHtml(goal.itemName)}</b><span>${yen(stats.progress)} / ${yen(goal.targetAmount)}</span></span><strong>${stats.achieved?'目標達成！':`あと ${yen(stats.remaining)}`}</strong><span class="goal-home-journey" aria-hidden="true"><span class="goal-home-route">${catMarkup('goal-home-mascot','')}</span><span class="goal-home-target">${icon.symbol}</span></span><span class="goal-home-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${stats.barPercent}" aria-valuetext="達成率 ${stats.percent}％"><i style="width:${stats.barPercent}%"></i></span><em>達成率 ${stats.percent}％</em></button>`;
   }
   function renderHome() {
     const host = $('#goalHomeCard'); if (!host) return;
@@ -85,6 +102,7 @@
     }
     const stats = updateStatus(goal,{showNewAchievement:true,showPending:true});
     host.innerHTML = homeMarkup(goal,stats);
+    setMascotPositions(host,stats.barPercent);
   }
 
   function deadlineText(deadline) {
@@ -103,9 +121,8 @@
     const goal = readGoal();
     if (!goal) { host.innerHTML = '<section class="goal-missing"><h3>目標はまだありません</h3><p>ほしいものを決めて、最初の一歩を始めましょう。</p><button type="button" class="submit" data-goal-create>目標を設定する</button></section>'; return; }
     const stats = updateStatus(goal,{showPending:options.showPending===true}), icon = ICONS[goal.icon] || ICONS.piggy, milestones=[25,50,75,100];
-    host.innerHTML = `<section class="goal-hero${stats.achieved?' achieved':''}"><div class="goal-title-row"><span class="goal-detail-icon" aria-hidden="true">${icon.symbol}</span><div><small>ほしいもの</small><h3>${escapeHtml(goal.itemName)}</h3><p>${yen(stats.progress)} / ${yen(goal.targetAmount)}</p></div></div><div class="goal-journey" aria-label="猫が目標へ進む表示"><div class="goal-route"><span class="goal-mascot" style="--goal-position:0%"><span class="goal-cat-fallback" aria-hidden="true">🐾</span><img src="./${CAT_IMAGE}" alt="目標へ進むハチワレ" onerror="this.hidden=true"></span></div><span class="goal-target-icon" aria-label="目標 ${escapeHtml(icon.label)}">${icon.symbol}</span></div><div class="goal-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${stats.barPercent}" aria-valuetext="達成率 ${stats.percent}％、${yen(stats.progress)}、目標 ${yen(goal.targetAmount)}"><i style="width:${stats.barPercent}%"></i></div><div class="goal-progress-copy"><strong>達成率 ${stats.percent}％</strong><b>${milestoneMessage(stats.percent)}</b></div><div class="goal-milestones">${milestones.map(value=>`<span class="${stats.percent>=value?'reached':''}"><i aria-hidden="true">★</i>${value}％</span>`).join('')}</div></section><section class="goal-numbers"><div><span>現在の進捗</span><b>${yen(stats.progress)}</b></div><div><span>${stats.achieved?'達成額':'あと'}</span><b>${stats.achieved?'目標達成！':yen(stats.remaining)}</b></div></section>${goal.deadline?`<p class="goal-deadline">${deadlineText(goal.deadline)}</p>`:''}${goal.memo?`<section class="goal-memo"><h3>メモ</h3><p>${escapeHtml(goal.memo)}</p></section>`:''}<section class="goal-recent"><h3>最近の貯金</h3>${recentMarkup(goal)}</section><div class="goal-actions"><button type="button" data-goal-edit>目標を編集</button><button type="button" data-goal-new>新しい目標に変更</button><button type="button" class="danger-outline" data-goal-delete>目標を削除</button></div>`;
-    const mascot = host.querySelector('.goal-mascot'), destination = `${stats.barPercent}%`, reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (mascot) { if (reduced) mascot.style.setProperty('--goal-position',destination); else requestAnimationFrame(()=>requestAnimationFrame(()=>mascot.style.setProperty('--goal-position',destination))); }
+    host.innerHTML = `<section class="goal-hero${stats.achieved?' achieved':''}"><div class="goal-title-row"><span class="goal-detail-icon" aria-hidden="true">${icon.symbol}</span><div><small>ほしいもの</small><h3>${escapeHtml(goal.itemName)}</h3><p>${yen(stats.progress)} / ${yen(goal.targetAmount)}</p></div></div><div class="goal-journey" aria-label="猫が目標へ進む表示"><div class="goal-route">${catMarkup('goal-mascot')}</div><span class="goal-target-icon" aria-label="目標 ${escapeHtml(icon.label)}">${icon.symbol}</span></div><div class="goal-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${stats.barPercent}" aria-valuetext="達成率 ${stats.percent}％、${yen(stats.progress)}、目標 ${yen(goal.targetAmount)}"><i style="width:${stats.barPercent}%"></i></div><div class="goal-progress-copy"><strong>達成率 ${stats.percent}％</strong><b>${milestoneMessage(stats.percent)}</b></div><div class="goal-milestones">${milestones.map(value=>`<span class="milestone-${value} ${stats.percent>=value?'reached':''}">${milestoneIcon(value)}<b>${value}％</b></span>`).join('')}</div></section><section class="goal-numbers"><div><span>現在の進捗</span><b>${yen(stats.progress)}</b></div><div><span>${stats.achieved?'達成額':'あと'}</span><b>${stats.achieved?'目標達成！':yen(stats.remaining)}</b></div></section>${goal.deadline?`<p class="goal-deadline">${deadlineText(goal.deadline)}</p>`:''}${goal.memo?`<section class="goal-memo"><h3>メモ</h3><p>${escapeHtml(goal.memo)}</p></section>`:''}<section class="goal-recent"><h3>最近の貯金</h3>${recentMarkup(goal)}</section><div class="goal-actions"><button type="button" data-goal-edit>目標を編集</button><button type="button" data-goal-new>新しい目標に変更</button><button type="button" class="danger-outline" data-goal-delete>目標を削除</button></div>`;
+    setMascotPositions(host,stats.barPercent);
   }
 
   function openForm(mode) {
@@ -154,32 +171,49 @@
   function clearAchievementAnimation() {
     if (achievementTimer) { clearTimeout(achievementTimer); achievementTimer = 0; }
   }
+  function sparkleMarkup() {
+    return Array.from({length:ACHIEVEMENT_SPARKLES},(_,index)=>{
+      const type=index<36?'tiny':index<48?'star':'glow', direction=index%2===0?1:-1;
+      return `<i class="sparkle-${type} sparkle-motion-${index%3}" style="--sx:${(index*43+7)%96}%;--sy:${(index*67+11)%92}%;--size:${type==='tiny'?5+(index%4)*2:type==='star'?13+(index%4)*3:28+(index%3)*8}px;--spark-duration:${(4.8+(index%9)*.55).toFixed(2)}s;--spark-delay:-${((index%13)*.43).toFixed(2)}s;--dx:${direction*(5+(index%5)*3)}px;--dy:${-6-(index%6)*3}px;--spin:${direction*(30+(index%5)*22)}deg;--spark-opacity:${(.34+(index%5)*.1).toFixed(2)}"></i>`;
+    }).join('');
+  }
+  function stopAchievementDecorations() {
+    const overlay=$('#goalAchievement'), particles=$('#goalAchievementParticles'), sparkles=$('#goalAchievementSparkles');
+    clearAchievementAnimation();
+    if (particles) particles.innerHTML='';
+    if (sparkles) sparkles.innerHTML='';
+    if (overlay) overlay.classList.remove('animating','paused');
+  }
   function finishAchievementAnimation() {
-    const overlay=$('#goalAchievement'), particles=$('#goalAchievementParticles'), skip=$('#skipGoalAchievement');
+    const overlay=$('#goalAchievement'), particles=$('#goalAchievementParticles');
     if (!overlay || overlay.hidden) return;
     clearAchievementAnimation();
     overlay.classList.remove('animating');
     overlay.classList.add('settled');
     if (particles) particles.innerHTML='';
-    if (skip) skip.hidden=true;
     const mascot=$('#goalDetailBody .goal-mascot');
     if (mascot) mascot.style.setProperty('--goal-position','100%');
     markAchievementShown();
   }
+  function syncAchievementVisibility() {
+    const overlay=$('#goalAchievement');
+    if (!overlay || overlay.hidden) return;
+    overlay.classList.toggle('paused',document.visibilityState==='hidden');
+  }
   function showAchievement(goal,stats) {
     const overlay=$('#goalAchievement'); if (!overlay || !overlay.hidden) return;
     $('#goalAchievementName').textContent=goal.itemName; $('#goalAchievementAmount').textContent=yen(stats.progress);
-    const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches, effects=getSettings().effects&&!reduced, particles=$('#goalAchievementParticles'), skip=$('#skipGoalAchievement');
+    const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches || !getSettings().effects, effects=!reduced, particles=$('#goalAchievementParticles'), sparkles=$('#goalAchievementSparkles');
     const colors=['#ffd75a','#ffffff','#a983ff','#6fe6ff','#ff86c8','#ff9f43'];
+    stopAchievementDecorations();
     particles.innerHTML=effects?Array.from({length:56},(_,index)=>{
       const width=6+(index%4)*2, height=index%3===0?width:10+(index%4)*3, drift=(index%2?1:-1)*(12+(index%7)*7);
       return `<i style="--x:${(index*47)%100}%;--d:${((index%14)*.06).toFixed(2)}s;--fall:${(2.35+(index%9)*.1).toFixed(2)}s;--drift:${drift}px;--spin:${360+(index%5)*180}deg;--c:${colors[index%colors.length]};--w:${width}px;--h:${height}px;--radius:${index%5===0?'50%':index%3===0?'2px':'1px'}"></i>`;
     }).join(''):'';
+    sparkles.innerHTML=sparkleMarkup();
     activeAchievementGoal=goal;
-    clearAchievementAnimation();
-    overlay.classList.remove('show','animating','settled');
-    overlay.classList.toggle('reduced',!effects);
-    if (skip) skip.hidden=!effects;
+    overlay.classList.remove('show','animating','settled','paused');
+    overlay.classList.toggle('reduced',reduced);
     overlay.hidden=false;
     requestAnimationFrame(()=>{
       overlay.classList.add('show');
@@ -188,15 +222,19 @@
     });
     if (effects) achievementTimer=setTimeout(finishAchievementAnimation,3400);
     else overlay.classList.add('settled');
+    syncAchievementVisibility();
     achievementSound(); if (getSettings().vibration && navigator.vibrate) navigator.vibrate([40,60,80,50,120]);
   }
-  function hideAchievement(){
+  function hideAchievement(immediate=false){
     const overlay=$('#goalAchievement');if(!overlay)return;
-    markAchievementShown(); clearAchievementAnimation(); overlay.classList.remove('show','animating');
-    setTimeout(()=>{overlay.hidden=true;overlay.classList.remove('settled','reduced');$('#goalAchievementParticles').innerHTML='';activeAchievementGoal=null;},200);
+    markAchievementShown(); stopAchievementDecorations(); overlay.classList.remove('show');
+    const finish=()=>{overlay.hidden=true;overlay.classList.remove('settled','reduced','paused');activeAchievementGoal=null;};
+    if (immediate) finish(); else setTimeout(finish,200);
   }
   function openGoalReplacementDialog() {
     const goal=readGoal(), dialog=$('#goalReplaceDialog'); if (!goal || !dialog) return;
+    const overlay=$('#goalAchievement');
+    if (overlay && !overlay.hidden) { markAchievementShown(); stopAchievementDecorations(); }
     const stats=progressFor(goal);
     $('#goalReplaceName').textContent=goal.itemName;
     $('#goalReplaceAmount').textContent=yen(stats.progress);
@@ -219,15 +257,16 @@
       if (event.target.closest('[data-goal-delete]')) { const goal=readGoal();if(goal&&confirm(`「${goal.itemName}」の目標を削除しますか？\n\n貯金記録そのものは削除されません。`)){localStorage.removeItem(KEY);navigate('home');renderHome();} }
       if (event.target.closest('[data-goal-cancel]')) { const goal=readGoal();navigate(goal?'goal':'home');if(goal)renderDetail(); }
     });
-    $('#closeGoalAchievement').onclick=hideAchievement;
-    $('#skipGoalAchievement').onclick=finishAchievementAnimation;
+    $('#closeGoalAchievement').onclick=()=>hideAchievement();
     $('#newGoalAfterAchievement').onclick=openGoalReplacementDialog;
     $('#confirmGoalReplacement').onclick=confirmGoalReplacement;
+    document.addEventListener('visibilitychange',syncAchievementVisibility);
     renderHome();
   }
 
   function exportData(){const goal=readGoal();return goal?structuredClone(goal):null;}
   function importData(value){if(value===null){localStorage.removeItem(KEY);renderHome();return true;}const goal=validateGoal(value);if(!goal)return false;writeGoal(goal);renderHome();return true;}
 
-  window.ChokinSavingsGoal=Object.freeze({setup,renderHome,renderDetail,exportData,importData,getStorageKey:()=>KEY});
+  const onNavigate=()=>{const overlay=$('#goalAchievement');if(overlay&&!overlay.hidden)hideAchievement(true);else stopAchievementDecorations();};
+  window.ChokinSavingsGoal=Object.freeze({setup,renderHome,renderDetail,exportData,importData,onNavigate,getStorageKey:()=>KEY});
 })();
