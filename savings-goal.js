@@ -23,6 +23,8 @@
   let achievementTimer = 0;
   const $ = selector => document.querySelector(selector);
   const yen = amount => `¥${Number(amount || 0).toLocaleString('ja-JP')}`;
+  const historyCount = () => window.ChokinGoalHistory?.getCount?.() || 0;
+  const historyLinkMarkup = className => `<button type="button" class="goal-history-link ${className}" data-goal-history-open>達成アルバム${historyCount()?`　${historyCount()}件`:''}</button>`;
   const escapeHtml = value => String(value).replace(/[&<>"']/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[character]));
   const validDate = value => typeof value === 'string' && value !== '' && !Number.isNaN(new Date(value).getTime());
   const validDeadline = value => {
@@ -96,13 +98,13 @@
   }
   function renderHome() {
     const host = $('#goalHomeCard'); if (!host) return;
-    const goal = readGoal();
+    const goal = readGoal(), albumLink = historyCount() ? historyLinkMarkup('goal-home-history-link') : '';
     if (!goal) {
-      host.innerHTML = '<div class="goal-home-empty"><span aria-hidden="true">⭐</span><div><small>貯金目標</small><b>ほしいものを決めよう</b></div><button type="button" data-goal-create>目標を設定する</button></div>';
+      host.innerHTML = `<div class="goal-home-empty"><span aria-hidden="true">⭐</span><div><small>貯金目標</small><b>ほしいものを決めよう</b></div><button type="button" data-goal-create>目標を設定する</button></div>${albumLink}`;
       return;
     }
     const stats = updateStatus(goal,{showNewAchievement:true,showPending:true});
-    host.innerHTML = homeMarkup(goal,stats);
+    host.innerHTML = `${homeMarkup(goal,stats)}${historyLinkMarkup('goal-home-history-link')}`;
     setMascotPositions(host,stats.barPercent);
   }
 
@@ -120,9 +122,10 @@
   function renderDetail(options={}) {
     const host = $('#goalDetailBody'); if (!host) return;
     const goal = readGoal();
-    if (!goal) { host.innerHTML = '<section class="goal-missing"><h3>目標はまだありません</h3><p>ほしいものを決めて、最初の一歩を始めましょう。</p><button type="button" class="submit" data-goal-create>目標を設定する</button></section>'; return; }
+    if (!goal) { host.innerHTML = `<section class="goal-missing"><h3>目標はまだありません</h3><p>ほしいものを決めて、最初の一歩を始めましょう。</p><button type="button" class="submit" data-goal-create>目標を設定する</button>${historyCount()?historyLinkMarkup('goal-detail-history-link'):''}</section>`; return; }
     const stats = updateStatus(goal,{showPending:options.showPending===true}), icon = ICONS[goal.icon] || ICONS.piggy, milestones=[25,50,75,100];
-    host.innerHTML = `<section class="goal-hero${stats.achieved?' achieved':''}"><div class="goal-title-row"><span class="goal-detail-icon" aria-hidden="true">${icon.symbol}</span><div><small>ほしいもの</small><h3>${escapeHtml(goal.itemName)}</h3><p>${yen(stats.progress)} / ${yen(goal.targetAmount)}</p></div></div><div class="goal-journey" aria-label="猫が目標へ進む表示"><div class="goal-route">${catMarkup('goal-mascot')}</div><span class="goal-target-icon" aria-label="目標 ${escapeHtml(icon.label)}">${icon.symbol}</span></div><div class="goal-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${stats.barPercent}" aria-valuetext="達成率 ${stats.percent}％、${yen(stats.progress)}、目標 ${yen(goal.targetAmount)}"><i style="width:${stats.barPercent}%"></i></div><div class="goal-progress-copy"><strong>達成率 ${stats.percent}％</strong><b>${milestoneMessage(stats.percent)}</b></div><div class="goal-milestones">${milestones.map(value=>`<span class="milestone-${value} ${stats.percent>=value?'reached':''}">${milestoneIcon(value)}<b>${value}％</b></span>`).join('')}</div></section><section class="goal-numbers"><div><span>現在の進捗</span><b>${yen(stats.progress)}</b></div><div><span>${stats.achieved?'達成額':'あと'}</span><b>${stats.achieved?'目標達成！':yen(stats.remaining)}</b></div></section>${goal.deadline?`<p class="goal-deadline">${deadlineText(goal.deadline)}</p>`:''}${goal.memo?`<section class="goal-memo"><h3>メモ</h3><p>${escapeHtml(goal.memo)}</p></section>`:''}<section class="goal-recent"><h3>最近の貯金</h3>${recentMarkup(goal)}</section><div class="goal-actions"><button type="button" data-goal-edit>目標を編集</button><button type="button" data-goal-new>新しい目標に変更</button><button type="button" class="danger-outline" data-goal-delete>目標を削除</button></div>`;
+    const archiveAction = stats.achieved ? '<button type="button" class="goal-archive-end" data-goal-archive-end>アルバムに残して目標を終了</button>' : '';
+    host.innerHTML = `<section class="goal-hero${stats.achieved?' achieved':''}"><div class="goal-title-row"><span class="goal-detail-icon" aria-hidden="true">${icon.symbol}</span><div><small>ほしいもの</small><h3>${escapeHtml(goal.itemName)}</h3><p>${yen(stats.progress)} / ${yen(goal.targetAmount)}</p></div></div><div class="goal-journey" aria-label="猫が目標へ進む表示"><div class="goal-route">${catMarkup('goal-mascot')}</div><span class="goal-target-icon" aria-label="目標 ${escapeHtml(icon.label)}">${icon.symbol}</span></div><div class="goal-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${stats.barPercent}" aria-valuetext="達成率 ${stats.percent}％、${yen(stats.progress)}、目標 ${yen(goal.targetAmount)}"><i style="width:${stats.barPercent}%"></i></div><div class="goal-progress-copy"><strong>達成率 ${stats.percent}％</strong><b>${milestoneMessage(stats.percent)}</b></div><div class="goal-milestones">${milestones.map(value=>`<span class="milestone-${value} ${stats.percent>=value?'reached':''}">${milestoneIcon(value)}<b>${value}％</b></span>`).join('')}</div></section><section class="goal-numbers"><div><span>現在の進捗</span><b>${yen(stats.progress)}</b></div><div><span>${stats.achieved?'達成額':'あと'}</span><b>${stats.achieved?'目標達成！':yen(stats.remaining)}</b></div></section>${goal.deadline?`<p class="goal-deadline">${deadlineText(goal.deadline)}</p>`:''}${goal.memo?`<section class="goal-memo"><h3>メモ</h3><p>${escapeHtml(goal.memo)}</p></section>`:''}<section class="goal-recent"><h3>最近の貯金</h3>${recentMarkup(goal)}</section><div class="goal-actions"><button type="button" data-goal-edit>目標を編集</button><button type="button" data-goal-new>新しい目標に変更</button>${historyLinkMarkup('goal-detail-history-link')}${archiveAction}<button type="button" class="danger-outline" data-goal-delete>目標を削除</button></div>`;
     setMascotPositions(host,stats.barPercent);
   }
 
@@ -153,7 +156,22 @@
     const draft={schemaVersion:SCHEMA_VERSION,...values,createdAt,updatedAt:now,achieved:false,achievementShown:false,highestMilestone:0}, stats=progressFor(draft), milestone=milestoneFor(stats.percent);
     draft.achieved=stats.achieved; draft.highestMilestone=formMode==='edit'&&oldGoal?Math.max(oldGoal.highestMilestone,milestone):milestone;
     draft.achievementShown=stats.achieved&&formMode==='edit'&&oldGoal?.achieved&&oldGoal.achievementShown;
-    writeGoal(draft); navigate('goal'); renderDetail({showPending:true}); renderHome();
+    const history=window.ChokinGoalHistory, goalRaw=localStorage.getItem(KEY), historyRaw=history?.getRaw?.() ?? null;
+    try {
+      if (formMode==='replace' && oldGoal) {
+        const oldStats=progressFor(oldGoal);
+        if (oldStats.achieved) {
+          if (!history?.archiveGoal) throw new Error('達成アルバムを利用できません。');
+          history.archiveGoal(oldGoal,oldStats.progress,getEntries());
+        }
+      }
+      writeGoal(draft);
+    } catch {
+      try { if (goalRaw===null)localStorage.removeItem(KEY);else localStorage.setItem(KEY,goalRaw); } catch {}
+      try { history?.restoreRaw?.(historyRaw); } catch {}
+      error.textContent='保存できませんでした。現在の目標は変更されていません。'; return;
+    }
+    navigate('goal'); renderDetail({showPending:true}); renderHome();
   }
 
   function achievementSound() {
@@ -246,6 +264,31 @@
     openForm('replace');
   }
 
+  function openArchiveEndDialog() {
+    const goal=readGoal(), dialog=$('#goalArchiveEndDialog'); if(!goal||!dialog)return;
+    const stats=progressFor(goal); if(!stats.achieved)return;
+    $('#goalArchiveEndName').textContent=goal.itemName;
+    $('#goalArchiveEndTarget').textContent=yen(goal.targetAmount);
+    $('#goalArchiveEndProgress').textContent=yen(stats.progress);
+    if(!dialog.open)dialog.showModal();
+  }
+
+  function confirmArchiveEnd() {
+    const goal=readGoal(), history=window.ChokinGoalHistory, dialog=$('#goalArchiveEndDialog'); if(!goal)return;
+    const stats=progressFor(goal); if(!stats.achieved){dialog?.close();renderDetail();return;}
+    const goalRaw=localStorage.getItem(KEY), historyRaw=history?.getRaw?.() ?? null;
+    try {
+      if(!history?.archiveGoal)throw new Error('達成アルバムを利用できません。');
+      history.archiveGoal(goal,stats.progress,getEntries());
+      localStorage.removeItem(KEY);
+    } catch {
+      try { if(goalRaw===null)localStorage.removeItem(KEY);else localStorage.setItem(KEY,goalRaw); } catch {}
+      try { history?.restoreRaw?.(historyRaw); } catch {}
+      dialog?.close(); alert('保存できませんでした。現在の目標は変更されていません。'); return;
+    }
+    dialog?.close(); navigate('home'); renderHome();
+  }
+
   function setup(options) {
     if (setupDone) return; setupDone=true;
     getEntries=options.getEntries; getSettings=options.getSettings; navigate=options.navigate;
@@ -255,12 +298,15 @@
       if (event.target.closest('[data-goal-open]')) { navigate('goal'); renderDetail(); }
       if (event.target.closest('[data-goal-edit]')) openForm('edit');
       if (event.target.closest('[data-goal-new]')) openGoalReplacementDialog();
-      if (event.target.closest('[data-goal-delete]')) { const goal=readGoal();if(goal&&confirm(`「${goal.itemName}」の目標を削除しますか？\n\n貯金記録そのものは削除されません。`)){localStorage.removeItem(KEY);navigate('home');renderHome();} }
+      if (event.target.closest('[data-goal-archive-end]')) openArchiveEndDialog();
+      if (event.target.closest('[data-goal-delete]')) { const goal=readGoal();if(goal){const achieved=progressFor(goal).achieved, note=achieved?'\n\nこの操作では達成アルバムに保存されません。\n履歴へ残したい場合は、「アルバムに残して目標を終了」を使用してください。':'';if(confirm(`「${goal.itemName}」の目標を削除しますか？\n\n貯金記録そのものは削除されません。${note}`)){localStorage.removeItem(KEY);navigate('home');renderHome();}} }
       if (event.target.closest('[data-goal-cancel]')) { const goal=readGoal();navigate(goal?'goal':'home');if(goal)renderDetail(); }
     });
     $('#closeGoalAchievement').onclick=()=>hideAchievement();
     $('#newGoalAfterAchievement').onclick=openGoalReplacementDialog;
     $('#confirmGoalReplacement').onclick=confirmGoalReplacement;
+    $('#cancelGoalArchiveEnd').onclick=()=>$('#goalArchiveEndDialog').close();
+    $('#confirmGoalArchiveEnd').onclick=confirmArchiveEnd;
     document.addEventListener('visibilitychange',syncAchievementVisibility);
     renderHome();
   }
