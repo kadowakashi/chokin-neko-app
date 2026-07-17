@@ -17,6 +17,8 @@
   let navigate = () => {};
   let formMode = 'create';
   let setupDone = false;
+  let activeAchievementGoal = null;
+  let achievementTimer = 0;
   const $ = selector => document.querySelector(selector);
   const yen = amount => `¥${Number(amount || 0).toLocaleString('ja-JP')}`;
   const escapeHtml = value => String(value).replace(/[&<>"']/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[character]));
@@ -65,7 +67,7 @@
     if (changed) { goal.updatedAt = new Date().toISOString(); writeGoal(goal); }
     const newlyAchieved = stats.achieved && !wasAchieved;
     if (stats.achieved && !goal.achievementShown && (options.showPending || newlyAchieved && options.showNewAchievement)) {
-      goal.achievementShown = true; goal.updatedAt = new Date().toISOString(); writeGoal(goal); showAchievement(goal,stats);
+      showAchievement(goal,stats);
     }
     return stats;
   }
@@ -81,7 +83,7 @@
       host.innerHTML = '<div class="goal-home-empty"><span aria-hidden="true">⭐</span><div><small>貯金目標</small><b>ほしいものを決めよう</b></div><button type="button" data-goal-create>目標を設定する</button></div>';
       return;
     }
-    const stats = updateStatus(goal,{showNewAchievement:true});
+    const stats = updateStatus(goal,{showNewAchievement:true,showPending:true});
     host.innerHTML = homeMarkup(goal,stats);
   }
 
@@ -140,15 +142,70 @@
     const settings=getSettings(); if (!settings.sound || !window.AudioContext) return;
     try { const context=new AudioContext(); [523,659,784,1047].forEach((frequency,index)=>{const oscillator=context.createOscillator(),gain=context.createGain();oscillator.connect(gain);gain.connect(context.destination);oscillator.frequency.value=frequency;gain.gain.setValueAtTime(.001,context.currentTime+index*.08);gain.gain.exponentialRampToValueAtTime(.1,context.currentTime+index*.08+.02);gain.gain.exponentialRampToValueAtTime(.001,context.currentTime+index*.08+.5);oscillator.start(context.currentTime+index*.08);oscillator.stop(context.currentTime+index*.08+.52);}); } catch {}
   }
+  function markAchievementShown() {
+    if (!activeAchievementGoal || activeAchievementGoal.achievementShown) return;
+    const stored = readGoal();
+    if (!stored || stored.createdAt !== activeAchievementGoal.createdAt || !progressFor(stored).achieved) return;
+    stored.achievementShown = true;
+    stored.updatedAt = new Date().toISOString();
+    writeGoal(stored);
+    activeAchievementGoal = stored;
+  }
+  function clearAchievementAnimation() {
+    if (achievementTimer) { clearTimeout(achievementTimer); achievementTimer = 0; }
+  }
+  function finishAchievementAnimation() {
+    const overlay=$('#goalAchievement'), particles=$('#goalAchievementParticles'), skip=$('#skipGoalAchievement');
+    if (!overlay || overlay.hidden) return;
+    clearAchievementAnimation();
+    overlay.classList.remove('animating');
+    overlay.classList.add('settled');
+    if (particles) particles.innerHTML='';
+    if (skip) skip.hidden=true;
+    const mascot=$('#goalDetailBody .goal-mascot');
+    if (mascot) mascot.style.setProperty('--goal-position','100%');
+    markAchievementShown();
+  }
   function showAchievement(goal,stats) {
-    const overlay=$('#goalAchievement'); if (!overlay) return;
+    const overlay=$('#goalAchievement'); if (!overlay || !overlay.hidden) return;
     $('#goalAchievementName').textContent=goal.itemName; $('#goalAchievementAmount').textContent=yen(stats.progress);
-    const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches, effects=getSettings().effects&&!reduced, particles=$('#goalAchievementParticles');
-    particles.innerHTML=effects?Array.from({length:22},(_,index)=>`<i style="--x:${(index*47)%100}%;--d:${(index%7)*.08}s;--r:${(index*31)%180}deg"></i>`).join(''):'';
-    overlay.hidden=false; overlay.classList.toggle('reduced',!effects); requestAnimationFrame(()=>overlay.classList.add('show'));
+    const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches, effects=getSettings().effects&&!reduced, particles=$('#goalAchievementParticles'), skip=$('#skipGoalAchievement');
+    const colors=['#ffd75a','#ffffff','#a983ff','#6fe6ff','#ff86c8','#ff9f43'];
+    particles.innerHTML=effects?Array.from({length:56},(_,index)=>{
+      const width=6+(index%4)*2, height=index%3===0?width:10+(index%4)*3, drift=(index%2?1:-1)*(12+(index%7)*7);
+      return `<i style="--x:${(index*47)%100}%;--d:${((index%14)*.06).toFixed(2)}s;--fall:${(2.35+(index%9)*.1).toFixed(2)}s;--drift:${drift}px;--spin:${360+(index%5)*180}deg;--c:${colors[index%colors.length]};--w:${width}px;--h:${height}px;--radius:${index%5===0?'50%':index%3===0?'2px':'1px'}"></i>`;
+    }).join(''):'';
+    activeAchievementGoal=goal;
+    clearAchievementAnimation();
+    overlay.classList.remove('show','animating','settled');
+    overlay.classList.toggle('reduced',!effects);
+    if (skip) skip.hidden=!effects;
+    overlay.hidden=false;
+    requestAnimationFrame(()=>{
+      overlay.classList.add('show');
+      overlay.classList.toggle('animating',effects);
+      requestAnimationFrame(markAchievementShown);
+    });
+    if (effects) achievementTimer=setTimeout(finishAchievementAnimation,3400);
+    else overlay.classList.add('settled');
     achievementSound(); if (getSettings().vibration && navigator.vibrate) navigator.vibrate([40,60,80,50,120]);
   }
-  function hideAchievement(){const overlay=$('#goalAchievement');if(!overlay)return;overlay.classList.remove('show');setTimeout(()=>{overlay.hidden=true;$('#goalAchievementParticles').innerHTML='';},200);}
+  function hideAchievement(){
+    const overlay=$('#goalAchievement');if(!overlay)return;
+    markAchievementShown(); clearAchievementAnimation(); overlay.classList.remove('show','animating');
+    setTimeout(()=>{overlay.hidden=true;overlay.classList.remove('settled','reduced');$('#goalAchievementParticles').innerHTML='';activeAchievementGoal=null;},200);
+  }
+  function openGoalReplacementDialog() {
+    const goal=readGoal(), dialog=$('#goalReplaceDialog'); if (!goal || !dialog) return;
+    const stats=progressFor(goal);
+    $('#goalReplaceName').textContent=goal.itemName;
+    $('#goalReplaceAmount').textContent=yen(stats.progress);
+    if (!dialog.open) dialog.showModal();
+  }
+  function confirmGoalReplacement() {
+    hideAchievement();
+    openForm('replace');
+  }
 
   function setup(options) {
     if (setupDone) return; setupDone=true;
@@ -158,11 +215,14 @@
       if (event.target.closest('[data-goal-create]')) openForm('create');
       if (event.target.closest('[data-goal-open]')) { navigate('goal'); renderDetail(); }
       if (event.target.closest('[data-goal-edit]')) openForm('edit');
-      if (event.target.closest('[data-goal-new]')) { const goal=readGoal(),stats=goal&&progressFor(goal);if(goal&&confirm(`現在の目標を終了して、新しい目標を作りますか？\n\n現在の目標：${goal.itemName}\n現在の進捗：${yen(stats.progress)}`))openForm('replace'); }
+      if (event.target.closest('[data-goal-new]')) openGoalReplacementDialog();
       if (event.target.closest('[data-goal-delete]')) { const goal=readGoal();if(goal&&confirm(`「${goal.itemName}」の目標を削除しますか？\n\n貯金記録そのものは削除されません。`)){localStorage.removeItem(KEY);navigate('home');renderHome();} }
       if (event.target.closest('[data-goal-cancel]')) { const goal=readGoal();navigate(goal?'goal':'home');if(goal)renderDetail(); }
     });
-    $('#closeGoalAchievement').onclick=hideAchievement; $('#skipGoalAchievement').onclick=hideAchievement;
+    $('#closeGoalAchievement').onclick=hideAchievement;
+    $('#skipGoalAchievement').onclick=finishAchievementAnimation;
+    $('#newGoalAfterAchievement').onclick=openGoalReplacementDialog;
+    $('#confirmGoalReplacement').onclick=confirmGoalReplacement;
     renderHome();
   }
 
