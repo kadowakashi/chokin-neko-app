@@ -2,7 +2,7 @@
   'use strict';
   const KEY = 'chokin-event-app.v0.1';
   const RECOVERY_KEY = `${KEY}.recovery`;
-  const APP_VERSION = '0.9.7';
+  const APP_VERSION = '0.9.7.1';
   const GUIDE_KEY = 'chokin-event-app.firstGuide.v0.8.1';
   const BACKUP_VERSION = 1;
   const DEFAULT_QUICK_AMOUNTS = [100, 500, 1000, 3000, 5000];
@@ -21,6 +21,13 @@
   const coinIcon = (kind='cat') => window.ChokinVisualAssets?.coinMarkup(kind) || '🪙';
   const saveRankFor = amount => SAVE_RANKS.find(rank=>amount>=rank.min&&amount<=rank.max)||SAVE_RANKS[0];
   const categoryNames = {regret:'後悔散財', necessary:'必要経費', best:'最高の散財'};
+  const CALENDAR_PAW_SVG = '<svg class="calendar-paw-svg" viewBox="0 0 32 30" aria-hidden="true" focusable="false"><g fill="currentColor" stroke="#111832" stroke-width="2.1"><ellipse cx="7" cy="9" rx="3.2" ry="4.1"/><ellipse cx="13" cy="5.8" rx="3.1" ry="4"/><ellipse cx="19" cy="5.8" rx="3.1" ry="4"/><ellipse cx="25" cy="9" rx="3.2" ry="4.1"/><path d="M8.2 20.2c0-4.7 3.4-8 7.8-8s7.8 3.3 7.8 8c0 4.3-3.4 7.1-7.8 7.1s-7.8-2.8-7.8-7.1Z"/></g></svg>';
+  const CALENDAR_DETAIL_ICONS = {
+    save: CALENDAR_PAW_SVG,
+    necessary:'<svg viewBox="0 0 28 28" aria-hidden="true" focusable="false"><path d="M7 3h14v22l-3-2-2 2-2-2-2 2-2-2-3 2V3Z" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 9h8M10 13h8M10 17h5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+    regret:'<svg viewBox="0 0 28 28" aria-hidden="true" focusable="false"><path d="M14 24 5.8 16C1 11.2 4.2 4 10.1 5.3c1.8.4 3 1.7 3.9 3 1-1.3 2.2-2.6 4-3C23.8 4 27 11.2 22.2 16L14 24Z" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 8-3 5 3 2-3 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>',
+    best:'<svg viewBox="0 0 28 28" aria-hidden="true" focusable="false"><path d="m14 3 3.1 6.6 7.2.9-5.2 5 1.4 7.1-6.5-3.5-6.5 3.5 1.4-7.1-5.2-5 7.2-.9L14 3Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>'
+  };
   const saveState = () => localStorage.setItem(KEY, JSON.stringify(state));
   const validEntry = entry => entry && typeof entry.id === 'string' && (entry.type === 'save' || entry.type === 'spend') && Number.isInteger(entry.amount) && entry.amount > 0 && typeof entry.createdAt === 'string' && (entry.type === 'save' ? entry.category === null : ['regret','necessary','best'].includes(entry.category)) && typeof entry.memo === 'string';
   const validQuickAmounts = values => Array.isArray(values) && values.length === 5 && values.every(value => Number.isInteger(value) && value > 0);
@@ -58,15 +65,21 @@
   const localDate = value => { const date = new Date(value); return Number.isNaN(date.getTime()) ? null : date; };
   const entriesInMonth = (year, month, type = null) => state.entries.filter(entry => { const date = localDate(entry.createdAt); return date && date.getFullYear() === year && date.getMonth() === month && (!type || entry.type === type); });
   const calendarSaves = (year, month) => entriesInMonth(year, month, 'save').filter(entry => Number.isInteger(entry.amount) && entry.amount > 0);
+  const calendarRecords = (year, month) => entriesInMonth(year, month).filter(entry => Number.isInteger(entry.amount) && entry.amount > 0 && (entry.type === 'save' || entry.type === 'spend' && ['necessary','regret','best'].includes(entry.category)));
   const calendarTier = amount => amount >= 1000 ? 5 : amount >= 300 ? 4 : amount >= 100 ? 3 : amount >= 50 ? 2 : 1;
   function calendarGroups(year, month) {
     const groups = new Map();
     calendarSaves(year, month).forEach(entry => { const day = localDate(entry.createdAt).getDate(); if (!groups.has(day)) groups.set(day, []); groups.get(day).push(entry); });
     return groups;
   }
+  function calendarRecordGroups(year, month) {
+    const groups = new Map();
+    calendarRecords(year, month).forEach(entry => { const day = localDate(entry.createdAt).getDate(); if (!groups.has(day)) groups.set(day, []); groups.get(day).push(entry); });
+    return groups;
+  }
   function renderCalendar() {
     const grid = $('#calendarGrid'); if (!grid) return;
-    const groups = calendarGroups(calendarYear, calendarMonth), entries = [...groups.values()].flat(), firstWeekday = new Date(calendarYear, calendarMonth, 1).getDay(), daysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate(), today = new Date();
+    const groups = calendarGroups(calendarYear, calendarMonth), recordGroups = calendarRecordGroups(calendarYear, calendarMonth), entries = [...groups.values()].flat(), firstWeekday = new Date(calendarYear, calendarMonth, 1).getDay(), daysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate(), today = new Date();
     $('#calendarMonthLabel').textContent = `${calendarYear}年${calendarMonth + 1}月`;
     const totals = [...groups.values()].map(dayEntries => dayEntries.reduce((sum, entry) => sum + entry.amount, 0));
     $('#calendarMonthTotal').textContent = yen(totals.reduce((sum, amount) => sum + amount, 0));
@@ -75,9 +88,10 @@
     $('#calendarEmpty').hidden = entries.length > 0;
     const cells = Array.from({length:firstWeekday}, () => '<span class="calendar-blank" role="gridcell" aria-hidden="true"></span>');
     for (let day = 1; day <= daysInMonth; day++) {
-      const dayEntries = groups.get(day) || [], total = dayEntries.reduce((sum, entry) => sum + entry.amount, 0), isToday = calendarYear === today.getFullYear() && calendarMonth === today.getMonth() && day === today.getDate();
-      if (dayEntries.length) {
-        cells.push(`<button class="calendar-day has-save tier-${calendarTier(total)}${isToday?' is-today':''}" type="button" role="gridcell" data-calendar-day="${day}" aria-label="${calendarYear}年${calendarMonth + 1}月${day}日、貯金 ${yen(total)}"><time datetime="${calendarYear}-${String(calendarMonth + 1).padStart(2,'0')}-${String(day).padStart(2,'0')}">${day}</time><span class="calendar-paw" aria-hidden="true">🐾</span><strong>${yen(total)}</strong></button>`);
+      const dayEntries = groups.get(day) || [], records = recordGroups.get(day) || [], total = dayEntries.reduce((sum, entry) => sum + entry.amount, 0), isToday = calendarYear === today.getFullYear() && calendarMonth === today.getMonth() && day === today.getDate();
+      if (records.length) {
+        const saveLabel = dayEntries.length ? `、貯金 ${yen(total)}` : '';
+        cells.push(`<button class="calendar-day has-record${dayEntries.length?` has-save tier-${calendarTier(total)}`:''}${isToday?' is-today':''}" type="button" role="gridcell" data-calendar-day="${day}" aria-label="${calendarYear}年${calendarMonth + 1}月${day}日${saveLabel}、記録${records.length}件、詳細を開く"><time datetime="${calendarYear}-${String(calendarMonth + 1).padStart(2,'0')}-${String(day).padStart(2,'0')}">${day}</time>${dayEntries.length?`<span class="calendar-paw" aria-hidden="true">${CALENDAR_PAW_SVG}</span><strong>${yen(total)}</strong>`:''}</button>`);
       } else {
         cells.push(`<span class="calendar-day${isToday?' is-today':''}" role="gridcell" aria-label="${calendarYear}年${calendarMonth + 1}月${day}日、貯金記録なし"><time datetime="${calendarYear}-${String(calendarMonth + 1).padStart(2,'0')}-${String(day).padStart(2,'0')}">${day}</time></span>`);
       }
@@ -87,10 +101,11 @@
   function shiftCalendarMonth(offset) { const target = new Date(calendarYear, calendarMonth + offset, 1); calendarYear = target.getFullYear(); calendarMonth = target.getMonth(); renderCalendar(); }
   function showCurrentCalendarMonth() { const now = new Date(); calendarYear = now.getFullYear(); calendarMonth = now.getMonth(); renderCalendar(); }
   function openCalendarDay(day) {
-    const entries = (calendarGroups(calendarYear, calendarMonth).get(day) || []).slice().sort((a,b) => localDate(a.createdAt) - localDate(b.createdAt)); if (!entries.length) return;
-    $('#calendarDetailTitle').textContent = `${calendarYear}年${calendarMonth + 1}月${day}日の貯金`;
-    $('#calendarDetailList').innerHTML = entries.map(entry => { const date = localDate(entry.createdAt), time = date.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'}); return `<article class="calendar-detail-entry"><b>貯金</b><time datetime="${escapeHtml(entry.createdAt)}">${time}</time><strong>${yen(entry.amount)}</strong>${entry.memo ? `<p>${escapeHtml(entry.memo)}</p>` : ''}</article>`; }).join('');
-    $('#calendarDetailTotal').textContent = yen(entries.reduce((sum, entry) => sum + entry.amount, 0));
+    const entries = (calendarRecordGroups(calendarYear, calendarMonth).get(day) || []).map((entry,index)=>({entry,index,date:localDate(entry.createdAt)})).sort((a,b)=>a.date-b.date||a.index-b.index).map(item=>item.entry); if (!entries.length) return;
+    $('#calendarDetailTitle').textContent = `${calendarYear}年${calendarMonth + 1}月${day}日の記録`;
+    $('#calendarDetailList').innerHTML = entries.map(entry => { const date = localDate(entry.createdAt), time = date.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'}), kind = entry.type === 'save' ? 'save' : entry.category, label = entry.type === 'save' ? '貯金' : categoryNames[entry.category], sign = entry.type === 'save' ? '＋' : '－'; return `<article class="calendar-detail-entry detail-${kind}"><div class="calendar-detail-main"><span class="calendar-detail-icon" aria-hidden="true">${CALENDAR_DETAIL_ICONS[kind]}</span><div><time datetime="${escapeHtml(entry.createdAt)}">${time}</time><b>${label}</b></div></div><strong>${sign}${yen(entry.amount)}</strong>${entry.memo ? `<p>${escapeHtml(entry.memo)}</p>` : ''}</article>`; }).join('');
+    $('#calendarDetailSaveTotal').textContent = yen(entries.filter(entry=>entry.type==='save').reduce((sum, entry) => sum + entry.amount, 0));
+    $('#calendarDetailSpendTotal').textContent = yen(entries.filter(entry=>entry.type==='spend').reduce((sum, entry) => sum + entry.amount, 0));
     $('#calendarDayDetail').showModal();
   }
   function render() {
