@@ -13,7 +13,7 @@
     temple: [{src:'assets/scenes/cat_temple_bg.png',mode:'background',className:'asset-temple-bg'},{src:'assets/scenes/cat_temple_foreground.png',mode:'main',className:'asset-temple-foreground'},{src:'assets/cats/cat_royal.png',mode:'main',className:'asset-royal-cat'}],
     gold: [{src:'assets/scenes/gold_sun.png',mode:'main',className:'asset-gold-sun'}],
     shock: [{src:'assets/scenes/energy_core.png',mode:'main',className:'asset-energy-core'}],
-    necessary: [{src:'assets/scenes/receipt_stamp.png',mode:'main',className:'asset-receipt-stamp'}],
+    necessary: [{src:'assets/scenes/necessary_expense_stamp_cat.png',mode:'main',className:'asset-necessary-expense'}],
     gachaNormal: [{src:'assets/cats/cat_celebrate.png',mode:'main',className:'asset-gacha-cat'}],
     gachaSuper: [{src:'assets/cats/cat_cosmic.png',mode:'main',className:'asset-gacha-cat'}],
     gachaLegend: [{src:'assets/cats/cat_royal.png',mode:'main',className:'asset-gacha-cat'}],

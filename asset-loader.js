@@ -16,9 +16,12 @@
         const response=await fetch(`./${asset.src}`,{cache:'no-cache'});if(!response.ok)continue;
         let url=URL.createObjectURL(await response.blob());if(token!==mountToken||!container.isConnected){URL.revokeObjectURL(url);continue;}
         objectUrls.add(url);const image=new Image();image.alt='';image.decoding='async';image.src=url;image.className=`${asset.mode==='main'?'generated-scene-main':'generated-scene-bg'} ${asset.className||''}`;await image.decode().catch(()=>{});
-        if(asset.mode==='main'&&window.ChokinCatImages?.isCatSource(asset.src)){
-          const cleaned=await window.ChokinCatImages.processElement(image,asset.src);
+        const imageProcessor=window.ChokinCatImages,requiresCleanBackground=asset.src==='assets/scenes/necessary_expense_stamp_cat.png',canProcess=imageProcessor?.isProcessableSource?.(asset.src)||imageProcessor?.isCatSource?.(asset.src);
+        if(asset.mode==='main'&&requiresCleanBackground&&!canProcess){URL.revokeObjectURL(url);objectUrls.delete(url);continue;}
+        if(asset.mode==='main'&&canProcess){
+          const cleaned=await imageProcessor.processElement(image,asset.src);
           if(cleaned){URL.revokeObjectURL(url);objectUrls.delete(url);url=null;}
+          else if(requiresCleanBackground){URL.revokeObjectURL(url);objectUrls.delete(url);continue;}
         }
         if(token!==mountToken){if(url){URL.revokeObjectURL(url);objectUrls.delete(url);}continue;}container.prepend(image);container.classList.add(asset.mode==='main'?'has-generated-main':'has-generated-bg');mounted.push(asset.src);
       }

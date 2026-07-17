@@ -1,4 +1,4 @@
-# 貯金アプリ v0.9.5
+# 貯金アプリ v0.9.6
 
 スマートフォン向け・静的Webアプリです。`index.html` をWebサーバー経由で開くか、GitHub Pagesで公開してください。
 
@@ -55,4 +55,4 @@
 
 コイン素材は `assets/coins/`、演出主役素材は `assets/scenes/` に配置し、`assets/manifest.json` の `available` へパスを追加します。未配置時は従来のSVG・CSS・Canvas表現へ戻ります。
 
-追加可能な主役素材：`gold_sun.png`、`energy_core.png`、`cat_temple_foreground.png`、`receipt_stamp.png`。既存の `space_bg.png`、`cat_temple_bg.png`、宝箱素材も同じ読込経路です。
+追加可能な主役素材：`gold_sun.png`、`energy_core.png`、`cat_temple_foreground.png`、`necessary_expense_stamp_cat.png`。既存の `space_bg.png`、`cat_temple_bg.png`、宝箱素材も同じ読込経路です。

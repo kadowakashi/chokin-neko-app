@@ -8,7 +8,7 @@
     ['猫スロット','cat-slot','SUPER'],
     ['猫ガチャ NORMAL','gacha-normal','NORMAL'],['猫ガチャ RARE','gacha-rare','RARE'],['猫ガチャ SUPER','gacha-super','SUPER'],
     ['猫ガチャ ULTRA','gacha-ultra','ULTRA'],['猫ガチャ LEGEND','gacha-legend','LEGEND'],
-    ['激熱カットイン','hot-cutin','ULTRA'],['猫神社','temple','LEGEND'],['宇宙猫','cosmic','SUPER'],['宝箱','treasure','RARE']
+    ['激熱カットイン','hot-cutin','ULTRA'],['猫神社','temple','LEGEND'],['宇宙猫','cosmic','SUPER'],['宝箱','treasure','RARE'],['必要経費','necessary','NORMAL',1000]
   ]);
   const pick = list => list[Math.floor(Math.random()*list.length)];
   const rarityRank = rarity => RARITIES.indexOf(rarity);
@@ -68,8 +68,7 @@
     return `<div class="slot-scene rarity-${rarity.toLowerCase()}${result.same?' same-cat-fever':''}"><div class="slot-title">CAT CHANCE</div><div class="slot-window">${result.cats.map(reel).join('')}</div><div class="slot-fever">${result.title}</div>${hero}</div>`;
   }
   function gachaVisual(rarity,cutIn,cat) {
-    const label={NORMAL:'NORMAL',RARE:'RARE',SUPER:'SUPER',ULTRA:'ULTRA',LEGEND:'LEGEND'}[rarity];
-    return `<div class="gacha-scene rarity-${rarity.toLowerCase()}" style="--cat-theme:${cat.themeColor};--cat-accent:${cat.accentColor}"><div class="gacha-aura"></div><div class="cat-capsule"><span class="capsule-top"></span><span class="capsule-core"></span><span class="capsule-bottom"></span></div><div class="gacha-reward"><span class="gacha-cat-fallback">CAT</span><img src="./${cat.imagePath}" alt="${cat.name}" onerror="this.hidden=true"></div><div class="gacha-result-copy"><strong class="rarity-label">${label}</strong><b class="gacha-cat-name">${cat.name}</b></div>${cutIn?`<div class="hot-cutin"><img src="./${cat.imagePath}" alt="" aria-hidden="true"><b>${rarity==='LEGEND'?'LEGEND':'激熱'}</b></div>`:''}</div>`;
+    return `<div class="gacha-scene rarity-${rarity.toLowerCase()}" style="--cat-theme:${cat.themeColor};--cat-accent:${cat.accentColor}"><div class="gacha-aura"></div><div class="cat-capsule"><span class="capsule-top"></span><span class="capsule-core"></span><span class="capsule-bottom"></span></div><div class="gacha-reward"><span class="gacha-cat-fallback">CAT</span><img src="./${cat.imagePath}" alt="${cat.name}" onerror="this.hidden=true"></div>${cutIn?`<div class="hot-cutin"><img src="./${cat.imagePath}" alt="" aria-hidden="true"><b>${rarity==='LEGEND'?'LEGEND':'激熱'}</b></div>`:''}</div>`;
   }
   function visual(plan) { return plan.show==='cat-slot'?slotVisual(plan.rarity,plan.slotResult):plan.show.startsWith('gacha-')?gachaVisual(plan.rarity,plan.cutIn,plan.cat):''; }
   window.ChokinGameFX={RARITY_RATES,PREVIEWS,plan,gachaPlan,visual};

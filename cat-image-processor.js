@@ -7,6 +7,9 @@
   const jobs = [];
   let activeJobs = 0;
   const catPath = source => /(?:^|\/)assets\/cats\/[^/?#]+\.(?:png|webp)(?:[?#].*)?$/i.test(String(source || ''));
+  const treasurePath = source => /(?:^|\/)assets\/scenes\/treasure_chest_(?:closed|open)\.(?:png|webp)(?:[?#].*)?$/i.test(String(source || ''));
+  const necessaryPath = source => /(?:^|\/)assets\/scenes\/necessary_expense_stamp_cat\.(?:png|webp)(?:[?#].*)?$/i.test(String(source || ''));
+  const processablePath = source => catPath(source) || treasurePath(source) || necessaryPath(source);
   const absolute = source => new URL(source, document.baseURI).href;
   const distance = (r, g, b, color) => Math.hypot(r - color[0], g - color[1], b - color[2]);
 
@@ -113,8 +116,8 @@
 
   async function processElement(image, sourceOverride = null) {
     const currentSource = image.getAttribute('src');
-    const source = sourceOverride || (catPath(currentSource) ? currentSource : image.dataset.catOriginal || currentSource);
-    if (!catPath(source)) return false;
+    const source = sourceOverride || (processablePath(currentSource) ? currentSource : image.dataset.catOriginal || currentSource);
+    if (!processablePath(source)) return false;
     const key = absolute(source);
     if (image.dataset.catImageState === 'processed' && image.dataset.catOriginal === key) return true;
     if (image.dataset.catImageState === 'pending' && image.dataset.catOriginal === key) return false;
@@ -150,5 +153,5 @@
   observer.observe(document.documentElement, {subtree: true, childList: true, attributes: true, attributeFilter: ['src']});
   scan(document);
   addEventListener('pagehide', () => objectUrls.forEach(url => URL.revokeObjectURL(url)), {once: true});
-  window.ChokinCatImages = {processElement, isCatSource: catPath, diagnostics};
+  window.ChokinCatImages = {processElement, isCatSource: catPath, isProcessableSource: processablePath, diagnostics};
 })();
