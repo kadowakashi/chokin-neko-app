@@ -2,7 +2,7 @@
   'use strict';
   const KEY = 'chokin-event-app.v0.1';
   const RECOVERY_KEY = `${KEY}.recovery`;
-  const APP_VERSION = '0.9.6';
+  const APP_VERSION = '0.9.7';
   const GUIDE_KEY = 'chokin-event-app.firstGuide.v0.8.1';
   const BACKUP_VERSION = 1;
   const DEFAULT_QUICK_AMOUNTS = [100, 500, 1000, 3000, 5000];
@@ -15,7 +15,7 @@
     {key:'fever',min:1000,max:Infinity,label:'FEVER SAVE!',level:5,minCats:3,maxCats:3}
   ]);
   const defaults = {version: 1, entries: [], settings: {sound: true, vibration: true, effects: true}, futureSettings: {}, quickAmounts: DEFAULT_QUICK_AMOUNTS};
-  let state; let formMode = 'save'; let deletingId = null; let revengeAmount = 0; let quickLocked = false; let gachaLocked = false; let pendingQuickId = null; let undoTimer = null; let amountAnimationToken = 0; let previewActive = false; let collectionFilter = 'all';
+  let state; let formMode = 'save'; let deletingId = null; let revengeAmount = 0; let quickLocked = false; let gachaLocked = false; let pendingQuickId = null; let undoTimer = null; let amountAnimationToken = 0; let previewActive = false; let collectionFilter = 'all'; const calendarNow = new Date(); let calendarYear = calendarNow.getFullYear(); let calendarMonth = calendarNow.getMonth();
   const $ = s => document.querySelector(s);
   const yen = n => `¥${Number(n || 0).toLocaleString('ja-JP')}`;
   const coinIcon = (kind='cat') => window.ChokinVisualAssets?.coinMarkup(kind) || '🪙';
@@ -55,9 +55,46 @@
       state = structuredClone(defaults);
     }
   };
-  const isThisMonth = iso => { const d = new Date(iso), n = new Date(); return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth(); };
+  const localDate = value => { const date = new Date(value); return Number.isNaN(date.getTime()) ? null : date; };
+  const entriesInMonth = (year, month, type = null) => state.entries.filter(entry => { const date = localDate(entry.createdAt); return date && date.getFullYear() === year && date.getMonth() === month && (!type || entry.type === type); });
+  const calendarSaves = (year, month) => entriesInMonth(year, month, 'save').filter(entry => Number.isInteger(entry.amount) && entry.amount > 0);
+  const calendarTier = amount => amount >= 1000 ? 5 : amount >= 300 ? 4 : amount >= 100 ? 3 : amount >= 50 ? 2 : 1;
+  function calendarGroups(year, month) {
+    const groups = new Map();
+    calendarSaves(year, month).forEach(entry => { const day = localDate(entry.createdAt).getDate(); if (!groups.has(day)) groups.set(day, []); groups.get(day).push(entry); });
+    return groups;
+  }
+  function renderCalendar() {
+    const grid = $('#calendarGrid'); if (!grid) return;
+    const groups = calendarGroups(calendarYear, calendarMonth), entries = [...groups.values()].flat(), firstWeekday = new Date(calendarYear, calendarMonth, 1).getDay(), daysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate(), today = new Date();
+    $('#calendarMonthLabel').textContent = `${calendarYear}年${calendarMonth + 1}月`;
+    const totals = [...groups.values()].map(dayEntries => dayEntries.reduce((sum, entry) => sum + entry.amount, 0));
+    $('#calendarMonthTotal').textContent = yen(totals.reduce((sum, amount) => sum + amount, 0));
+    $('#calendarSavingDays').textContent = `${groups.size}日`;
+    $('#calendarMaxDaily').textContent = yen(totals.length ? Math.max(...totals) : 0);
+    $('#calendarEmpty').hidden = entries.length > 0;
+    const cells = Array.from({length:firstWeekday}, () => '<span class="calendar-blank" role="gridcell" aria-hidden="true"></span>');
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dayEntries = groups.get(day) || [], total = dayEntries.reduce((sum, entry) => sum + entry.amount, 0), isToday = calendarYear === today.getFullYear() && calendarMonth === today.getMonth() && day === today.getDate();
+      if (dayEntries.length) {
+        cells.push(`<button class="calendar-day has-save tier-${calendarTier(total)}${isToday?' is-today':''}" type="button" role="gridcell" data-calendar-day="${day}" aria-label="${calendarYear}年${calendarMonth + 1}月${day}日、貯金 ${yen(total)}"><time datetime="${calendarYear}-${String(calendarMonth + 1).padStart(2,'0')}-${String(day).padStart(2,'0')}">${day}</time><span class="calendar-paw" aria-hidden="true">🐾</span><strong>${yen(total)}</strong></button>`);
+      } else {
+        cells.push(`<span class="calendar-day${isToday?' is-today':''}" role="gridcell" aria-label="${calendarYear}年${calendarMonth + 1}月${day}日、貯金記録なし"><time datetime="${calendarYear}-${String(calendarMonth + 1).padStart(2,'0')}-${String(day).padStart(2,'0')}">${day}</time></span>`);
+      }
+    }
+    grid.innerHTML = cells.join('');
+  }
+  function shiftCalendarMonth(offset) { const target = new Date(calendarYear, calendarMonth + offset, 1); calendarYear = target.getFullYear(); calendarMonth = target.getMonth(); renderCalendar(); }
+  function showCurrentCalendarMonth() { const now = new Date(); calendarYear = now.getFullYear(); calendarMonth = now.getMonth(); renderCalendar(); }
+  function openCalendarDay(day) {
+    const entries = (calendarGroups(calendarYear, calendarMonth).get(day) || []).slice().sort((a,b) => localDate(a.createdAt) - localDate(b.createdAt)); if (!entries.length) return;
+    $('#calendarDetailTitle').textContent = `${calendarYear}年${calendarMonth + 1}月${day}日の貯金`;
+    $('#calendarDetailList').innerHTML = entries.map(entry => { const date = localDate(entry.createdAt), time = date.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'}); return `<article class="calendar-detail-entry"><b>貯金</b><time datetime="${escapeHtml(entry.createdAt)}">${time}</time><strong>${yen(entry.amount)}</strong>${entry.memo ? `<p>${escapeHtml(entry.memo)}</p>` : ''}</article>`; }).join('');
+    $('#calendarDetailTotal').textContent = yen(entries.reduce((sum, entry) => sum + entry.amount, 0));
+    $('#calendarDayDetail').showModal();
+  }
   function render() {
-    const month = state.entries.filter(x => isThisMonth(x.createdAt));
+    const now = new Date(), month = entriesInMonth(now.getFullYear(), now.getMonth());
     const sum = (type, cat) => month.filter(x => x.type === type && (!cat || x.category === cat)).reduce((a,x)=>a+x.amount,0);
     const saving = sum('save'), regret = sum('spend','regret');
     $('#monthSave').textContent = yen(saving); $('#monthRegret').textContent = yen(regret); $('#monthNecessary').textContent = yen(sum('spend','necessary')); $('#monthBest').textContent = yen(sum('spend','best'));
@@ -66,7 +103,7 @@
     renderList($('#recentList'), state.entries.slice(0,4)); renderList($('#historyList'), state.entries); renderQuickButtons();
     Object.entries(state.settings).forEach(([k,v]) => { $(`#${k}`).checked = v; });
     document.querySelectorAll('[data-quick-input]').forEach((input, index) => { input.value = state.quickAmounts[index]; });
-    renderCollection(); renderCoins();
+    renderCollection(); renderCoins(); if ($('#calendar')?.classList.contains('active')) renderCalendar();
   }
   function renderQuickButtons() {
     const container = $('#quickButtons'); if (!container) return;
@@ -106,7 +143,7 @@
     const date=record.firstObtainedAt?new Date(record.firstObtainedAt).toLocaleString('ja-JP',{dateStyle:'medium',timeStyle:'short'}):'―';
     $('#collectionDetailBody').innerHTML=`<div style="--cat-accent:${cat.accentColor}"><img src="./${cat.imagePath}" alt="${escapeHtml(cat.name)}" onerror="this.hidden=true"><small>${cat.rarity}</small><h3>${escapeHtml(cat.name)}</h3><p>${escapeHtml(cat.message)}</p><dl><dt>初取得</dt><dd>${date}</dd><dt>初取得金額</dt><dd>${record.firstAmount?yen(record.firstAmount):'―'}</dd><dt>累計登場</dt><dd>${record.obtainedCount}回</dd><dt>重複</dt><dd>${record.duplicateCount}回</dd><dt>獲得メダル</dt><dd>${record.medalsEarned}枚</dd><dt>FEVER</dt><dd>${escapeHtml(cat.feverTitle)}</dd></dl></div>`;$('#collectionDetail').showModal();
   }
-  function navigate(id) { document.querySelectorAll('.screen').forEach(x=>x.classList.toggle('active',x.id===id)); window.scrollTo(0,0); if(id==='history'||id==='collection') render(); }
+  function navigate(id) { document.querySelectorAll('.screen').forEach(x=>x.classList.toggle('active',x.id===id)); window.scrollTo(0,0); if(id==='calendar') showCurrentCalendarMonth(); if(id==='history'||id==='collection') render(); }
   function openForm(mode, preset=0) { formMode=mode; $('#formTitle').textContent=mode==='save'?'貯金する':'お金を使った'; $('#categoryWrap').hidden=mode==='save'; $('#amount').value=preset||''; $('#memo').value=''; $('#entryForm .submit').textContent=mode==='save'?'記録して、イベントを起こす':'記録して、イベントを起こす'; navigate('form'); setTimeout(()=>$('#amount').focus(),50); }
   function sound(kind) { if(!state.settings.sound || !window.AudioContext) return; try { const c=new AudioContext(), o=c.createOscillator(), g=c.createGain(); o.connect(g);g.connect(c.destination);o.frequency.value=kind==='regret'?160:kind==='best'?520:760;g.gain.setValueAtTime(.001,c.currentTime);g.gain.exponentialRampToValueAtTime(.12,c.currentTime+.02);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+.45);o.start();o.stop(c.currentTime+.46); } catch {} }
   function haptic(kind) { if(state.settings.vibration && navigator.vibrate) navigator.vibrate(kind==='regret'?[80,60,80]:[35,35,70]); }
@@ -285,6 +322,9 @@
   $('#importBackup').onclick = () => $('#backupFile').click();
   $('#backupFile').addEventListener('change', e => { const file = e.target.files[0]; if (file) importBackup(file); e.target.value = ''; });
   $('#clearEntries').onclick = () => { if (!confirm('すべての貯金・出費記録を削除しますか？')) return; if (!confirm('この操作は元に戻せません。本当に削除しますか？')) return; state.entries = []; saveState(); render(); alert('すべての記録を削除しました。'); };
+  $('#calendarPrev').onclick=()=>shiftCalendarMonth(-1); $('#calendarNext').onclick=()=>shiftCalendarMonth(1); $('#calendarToday').onclick=showCurrentCalendarMonth;
+  $('#calendarGrid').addEventListener('click',event=>{const day=event.target.closest('[data-calendar-day]');if(day)openCalendarDay(Number(day.dataset.calendarDay));});
+  $('#calendarDayDetail .calendar-detail-close').onclick=()=>$('#calendarDayDetail').close(); $('#calendarDayDetail').addEventListener('click',event=>{if(event.target===$('#calendarDayDetail'))$('#calendarDayDetail').close();});
   $('#collectionDetail .cat-detail-close').onclick=()=>$('#collectionDetail').close();$('#collectionDetail').addEventListener('click',event=>{if(event.target===$('#collectionDetail'))$('#collectionDetail').close();});
   $('#closeFirstGuide').onclick=()=>{localStorage.setItem(GUIDE_KEY,'seen');$('#firstGuide').close();};
   window.addEventListener('load',setupPwaRegistration);
