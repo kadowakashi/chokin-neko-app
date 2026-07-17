@@ -78,7 +78,7 @@
 .goal-milestones .reached .milestone-100 .rainbow-b{fill:#72e4ff}
 
 .goal-achievement-sparkles{position:absolute;z-index:1;inset:0;overflow:hidden;pointer-events:none;opacity:0;transition:opacity .45s ease}
-.goal-achievement.settled .goal-achievement-sparkles{opacity:1}
+.goal-achievement.show .goal-achievement-sparkles{opacity:1}
 .goal-achievement-sparkles i{position:absolute;left:var(--sx);top:var(--sy);display:block;width:var(--size);height:var(--size);opacity:var(--spark-opacity);will-change:transform,opacity;animation-duration:var(--spark-duration);animation-delay:var(--spark-delay);animation-timing-function:ease-in-out;animation-iteration-count:infinite}
 .sparkle-tiny{background:linear-gradient(90deg,transparent 42%,#fff8bd 43% 57%,transparent 58%),linear-gradient(0deg,transparent 42%,#fff 43% 57%,transparent 58%);filter:drop-shadow(0 0 4px #fff4a0)}
 .sparkle-star{background:linear-gradient(135deg,#fff,#ffd75a);clip-path:polygon(50% 0,61% 37%,100% 50%,61% 63%,50% 100%,39% 63%,0 50%,39% 37%);filter:drop-shadow(0 0 6px #ffd75a)}
@@ -95,3 +95,9 @@
 .goal-achievement.reduced .goal-achievement-sparkles i{animation:none;opacity:.62;transform:none}
 @media(max-width:390px){.goal-home-journey{height:68px}.goal-home-journey::before{top:49px}.goal-home-route{height:45px}.goal-home-mascot{width:43px;height:43px}.goal-route{top:10px;height:56px}.goal-mascot{width:56px;height:56px}.goal-milestone-icon.milestone-100{width:37px;height:37px}}
 @media(prefers-reduced-motion:reduce){.goal-cat-sway,.goal-achievement-sparkles i{animation:none!important;transform:none!important}.goal-cat-position{transition:none!important}.goal-achievement-sparkles{opacity:1}}
+
+/* v0.9.8.3: progress cats stay decorative and below the fixed navigation. */
+.goal-cat-position,.goal-cat-position img,.goal-cat-fallback{pointer-events:none}
+.goal-achievement{z-index:var(--z-overlay,800)}
+.goal-achievement-sparkles{z-index:0}
+.goal-achievement-particles{z-index:1}

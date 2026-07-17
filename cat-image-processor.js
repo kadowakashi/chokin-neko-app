@@ -110,8 +110,27 @@
 
   function processedUrl(source) {
     const key = absolute(source);
-    if (!cache.has(key)) cache.set(key, enqueue(() => createProcessedUrl(key)).catch(() => null));
+    if (!cache.has(key)) {
+      const pending = enqueue(() => createProcessedUrl(key)).then(result => {
+        if (!result) cache.delete(key);
+        return result;
+      }, () => { cache.delete(key); return null; });
+      cache.set(key, pending);
+    }
     return cache.get(key);
+  }
+
+  const fallbackFor = image => {
+    const sibling = image.previousElementSibling;
+    return sibling && sibling.matches('[class*="fallback"],.cat-image-placeholder') ? sibling : null;
+  };
+  function setImageState(image, state) {
+    const fallback = fallbackFor(image), ready = state === 'processed' || state === 'source';
+    image.dataset.catImageState = state;
+    image.classList.toggle('cat-image-loading', state === 'pending');
+    image.classList.toggle('cat-image-ready', ready);
+    image.hidden = state === 'fallback';
+    if (fallback) fallback.hidden = ready;
   }
 
   async function processElement(image, sourceOverride = null) {
@@ -122,20 +141,22 @@
     if (image.dataset.catImageState === 'processed' && image.dataset.catOriginal === key) return true;
     if (image.dataset.catImageState === 'pending' && image.dataset.catOriginal === key) return false;
     image.dataset.catOriginal = key;
-    image.dataset.catImageState = 'pending';
+    setImageState(image, 'pending');
     try {
       const url = await processedUrl(key);
-      if (!url) { image.dataset.catImageState = 'fallback'; return false; }
-      const probe = new Image();
-      probe.src = url;
-      await probe.decode();
-      image.dataset.catImageState = 'processed';
-      if (diagnostics[key]) image.dataset.catRemovedRatio = String(diagnostics[key].removedRatio);
+      if (!url) {
+        await image.decode();
+        setImageState(image, 'source');
+        return true;
+      }
       image.src = url;
+      await image.decode();
+      if (diagnostics[key]) image.dataset.catRemovedRatio = String(diagnostics[key].removedRatio);
       image.classList.add('cat-image-processed');
+      setImageState(image, 'processed');
       return true;
     } catch {
-      image.dataset.catImageState = 'fallback';
+      setImageState(image, 'fallback');
       return false;
     }
   }

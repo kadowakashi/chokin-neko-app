@@ -31,8 +31,9 @@
     }));
   }).catch(()=>{});
   const coinMarkup=(kind='cat',label='🪙')=>`<span class="coin-visual coin-${kind}" aria-hidden="true"><span>${label}</span></span>`;
+  const pawMarkup=(className='cat-image-fallback')=>`<span class="${className}" aria-hidden="true"><svg class="cat-paw-placeholder" viewBox="0 0 64 64" focusable="false"><g fill="currentColor"><ellipse cx="16" cy="20" rx="7" ry="9"/><ellipse cx="29" cy="14" rx="7" ry="9"/><ellipse cx="43" cy="16" rx="7" ry="9"/><ellipse cx="52" cy="27" rx="6.5" ry="8.5"/><path d="M15 43c0-11 8-19 18-19s18 8 18 19c0 9-7 15-18 15s-18-6-18-15Z"/></g></svg></span>`;
   const scene=key=>SCENES[key]||null;
   const getCoinImage=kind=>images.get(kind)||null;
   const isAvailable=path=>available.has(path);
-  window.ChokinVisualAssets={COINS,SCENES,ready,coinMarkup,scene,getCoinImage,isAvailable};
+  window.ChokinVisualAssets={COINS,SCENES,ready,coinMarkup,pawMarkup,scene,getCoinImage,isAvailable};
 })();

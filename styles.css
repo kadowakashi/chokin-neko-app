@@ -3,3 +3,12 @@
 @keyframes welcomeCoin{0%{opacity:0;transform:translate(-50%,-30px) scale(.7)}15%,78%{opacity:1;transform:translate(-50%,0) scale(1)}100%{opacity:0;transform:translate(-50%,-16px) scale(.94)}}@keyframes dailyCoinAward{0%{opacity:0;transform:scale(.45) rotateY(180deg)}45%{opacity:1;transform:scale(1.18) rotateY(0)}100%{opacity:1;transform:scale(1)}}
 @media(max-width:390px){.cat-coin-card{grid-template-columns:1fr 132px;padding:12px}.cat-coin-card strong{font-size:24px}.gacha-result-mode .collection-reveal img{height:35vh}.daily-coin-award{top:68%}}
 @media(prefers-reduced-motion:reduce){.coin-welcome-toast,.daily-coin-award{animation:none!important;opacity:1!important;transform:none!important}}
+
+/* v0.9.8.3 layer order and shared cat image states */
+:root{--z-content:0;--z-decoration:20;--z-bottom-nav:100;--z-modal:500;--z-overlay:800}
+.bottom-nav{z-index:var(--z-bottom-nav);isolation:isolate;box-shadow:0 -8px 24px #02040b80}
+.celebration{z-index:var(--z-overlay)}
+img[data-cat-image-state="pending"],img.cat-image-loading{opacity:0}
+img[data-cat-image-state="source"],img[data-cat-image-state="processed"],img.cat-image-ready{opacity:1;transition:opacity .2s ease-out}
+.cat-paw-placeholder{display:block;width:58%;height:58%;margin:auto;color:inherit;filter:drop-shadow(0 0 8px currentColor)}
+@media(prefers-reduced-motion:reduce){img.cat-image-ready{transition:none}}

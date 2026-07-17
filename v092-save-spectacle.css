@@ -93,3 +93,7 @@
 .celebration.save-spectacle .save-cheer-layer{bottom:38%}
 .celebration.save-spectacle .save-cheer-layer.cheer-count-2 .save-cheer-cat{width:min(26vw,112px);height:min(18vh,146px)}
 .celebration.save-spectacle .save-cheer-layer.cheer-count-4 .save-cheer-cat{width:min(23vw,99px);height:min(16vh,130px)}
+
+/* v0.9.8.3: cheering cats are visual-only and fade in after processing. */
+.celebration.save-spectacle .save-cheer-cat,.celebration.save-spectacle .save-cheer-cat img,.celebration.save-spectacle .save-cheer-fallback{pointer-events:none}
+.celebration.save-spectacle .save-cheer-fallback .cat-paw-placeholder{width:55%;height:55%}
