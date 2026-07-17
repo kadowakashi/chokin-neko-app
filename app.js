@@ -2,7 +2,7 @@
   'use strict';
   const KEY = 'chokin-event-app.v0.1';
   const RECOVERY_KEY = `${KEY}.recovery`;
-  const APP_VERSION = '0.9.7.1';
+  const APP_VERSION = '0.9.8';
   const GUIDE_KEY = 'chokin-event-app.firstGuide.v0.8.1';
   const BACKUP_VERSION = 1;
   const DEFAULT_QUICK_AMOUNTS = [100, 500, 1000, 3000, 5000];
@@ -31,7 +31,7 @@
   const saveState = () => localStorage.setItem(KEY, JSON.stringify(state));
   const validEntry = entry => entry && typeof entry.id === 'string' && (entry.type === 'save' || entry.type === 'spend') && Number.isInteger(entry.amount) && entry.amount > 0 && typeof entry.createdAt === 'string' && (entry.type === 'save' ? entry.category === null : ['regret','necessary','best'].includes(entry.category)) && typeof entry.memo === 'string';
   const validQuickAmounts = values => Array.isArray(values) && values.length === 5 && values.every(value => Number.isInteger(value) && value > 0);
-  const backupPayload = () => ({backupVersion: BACKUP_VERSION, exportedAt: new Date().toISOString(), appVersion: APP_VERSION, data: {version: state.version, entries: state.entries, settings: state.settings, futureSettings: state.futureSettings || {}, quickAmounts: state.quickAmounts, catCollection: window.ChokinCollection.exportData(), catCoins: window.ChokinCoins.exportData()}});
+  const backupPayload = () => ({backupVersion: BACKUP_VERSION, exportedAt: new Date().toISOString(), appVersion: APP_VERSION, data: {version: state.version, entries: state.entries, settings: state.settings, futureSettings: state.futureSettings || {}, quickAmounts: state.quickAmounts, catCollection: window.ChokinCollection.exportData(), catCoins: window.ChokinCoins.exportData(), savingsGoal: window.ChokinSavingsGoal.exportData()}});
   function exportBackup() {
     const stamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '_').slice(0, 13);
     const blob = new Blob([JSON.stringify(backupPayload(), null, 2)], {type: 'application/json'});
@@ -46,7 +46,7 @@
         if (!backup || backup.backupVersion !== BACKUP_VERSION || !backup.data || !Array.isArray(backup.data.entries) || !backup.data.entries.every(validEntry) || !backup.data.settings || typeof backup.data.settings !== 'object') throw new Error('形式が異なります');
         if (!confirm('現在の記録は、読み込んだバックアップ内容で置き換えられます。続行しますか？')) return;
         state = {version: Number.isInteger(backup.data.version) ? backup.data.version : 1, entries: backup.data.entries, settings: {...defaults.settings, ...backup.data.settings}, futureSettings: backup.data.futureSettings && typeof backup.data.futureSettings === 'object' ? backup.data.futureSettings : {}, quickAmounts: validQuickAmounts(backup.data.quickAmounts) ? backup.data.quickAmounts : [...DEFAULT_QUICK_AMOUNTS]};
-        window.ChokinCollection.importData(backup.data.catCollection || null);if(backup.data.catCoins){window.ChokinCoins.importData(backup.data.catCoins);window.ChokinCoins.grantWelcome();}else window.ChokinCoins.importData({schemaVersion:1,welcomeCoinGranted:true}); saveState(); render(); alert('バックアップを読み込みました。');
+        window.ChokinCollection.importData(backup.data.catCollection || null);if(backup.data.catCoins){window.ChokinCoins.importData(backup.data.catCoins);window.ChokinCoins.grantWelcome();}else window.ChokinCoins.importData({schemaVersion:1,welcomeCoinGranted:true});if(Object.hasOwn(backup.data,'savingsGoal'))window.ChokinSavingsGoal.importData(backup.data.savingsGoal);else window.ChokinSavingsGoal.importData(null); saveState(); render(); alert('バックアップを読み込みました。');
       } catch { alert('バックアップを読み込めませんでした。正しい貯金アプリのJSONファイルを選択してください。'); }
     };
     reader.onerror = () => alert('ファイルを読み込めませんでした。'); reader.readAsText(file, 'utf-8');
@@ -118,7 +118,7 @@
     renderList($('#recentList'), state.entries.slice(0,4)); renderList($('#historyList'), state.entries); renderQuickButtons();
     Object.entries(state.settings).forEach(([k,v]) => { $(`#${k}`).checked = v; });
     document.querySelectorAll('[data-quick-input]').forEach((input, index) => { input.value = state.quickAmounts[index]; });
-    renderCollection(); renderCoins(); if ($('#calendar')?.classList.contains('active')) renderCalendar();
+    renderCollection(); renderCoins(); window.ChokinSavingsGoal.renderHome(); if ($('#calendar')?.classList.contains('active')) renderCalendar();
   }
   function renderQuickButtons() {
     const container = $('#quickButtons'); if (!container) return;
@@ -158,7 +158,7 @@
     const date=record.firstObtainedAt?new Date(record.firstObtainedAt).toLocaleString('ja-JP',{dateStyle:'medium',timeStyle:'short'}):'―';
     $('#collectionDetailBody').innerHTML=`<div style="--cat-accent:${cat.accentColor}"><img src="./${cat.imagePath}" alt="${escapeHtml(cat.name)}" onerror="this.hidden=true"><small>${cat.rarity}</small><h3>${escapeHtml(cat.name)}</h3><p>${escapeHtml(cat.message)}</p><dl><dt>初取得</dt><dd>${date}</dd><dt>初取得金額</dt><dd>${record.firstAmount?yen(record.firstAmount):'―'}</dd><dt>累計登場</dt><dd>${record.obtainedCount}回</dd><dt>重複</dt><dd>${record.duplicateCount}回</dd><dt>獲得メダル</dt><dd>${record.medalsEarned}枚</dd><dt>FEVER</dt><dd>${escapeHtml(cat.feverTitle)}</dd></dl></div>`;$('#collectionDetail').showModal();
   }
-  function navigate(id) { document.querySelectorAll('.screen').forEach(x=>x.classList.toggle('active',x.id===id)); window.scrollTo(0,0); if(id==='calendar') showCurrentCalendarMonth(); if(id==='history'||id==='collection') render(); }
+  function navigate(id) { document.querySelectorAll('.screen').forEach(x=>x.classList.toggle('active',x.id===id)); window.scrollTo(0,0); if(id==='calendar') showCurrentCalendarMonth(); if(id==='goal') window.ChokinSavingsGoal.renderDetail(); if(id==='history'||id==='collection') render(); }
   function openForm(mode, preset=0) { formMode=mode; $('#formTitle').textContent=mode==='save'?'貯金する':'お金を使った'; $('#categoryWrap').hidden=mode==='save'; $('#amount').value=preset||''; $('#memo').value=''; $('#entryForm .submit').textContent=mode==='save'?'記録して、イベントを起こす':'記録して、イベントを起こす'; navigate('form'); setTimeout(()=>$('#amount').focus(),50); }
   function sound(kind) { if(!state.settings.sound || !window.AudioContext) return; try { const c=new AudioContext(), o=c.createOscillator(), g=c.createGain(); o.connect(g);g.connect(c.destination);o.frequency.value=kind==='regret'?160:kind==='best'?520:760;g.gain.setValueAtTime(.001,c.currentTime);g.gain.exponentialRampToValueAtTime(.12,c.currentTime+.02);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+.45);o.start();o.stop(c.currentTime+.46); } catch {} }
   function haptic(kind) { if(state.settings.vibration && navigator.vibrate) navigator.vibrate(kind==='regret'?[80,60,80]:[35,35,70]); }
@@ -344,5 +344,5 @@
   $('#closeFirstGuide').onclick=()=>{localStorage.setItem(GUIDE_KEY,'seen');$('#firstGuide').close();};
   window.addEventListener('load',setupPwaRegistration);
   document.querySelector('.app-version').textContent = `v${APP_VERSION}`;
-  const firstUse=localStorage.getItem(KEY)===null,welcomeCoinGranted=window.ChokinCoins.grantWelcome();load(); setupQuickSettings(); setupEffectPreview(); setupCatGallery(); setupCollectionSettings(); setupCoinSettings(); setupPwaSupport(); render();scheduleCoinDayRefresh();if(firstUse&&localStorage.getItem(GUIDE_KEY)!=='seen')showFirstGuide();if(welcomeCoinGranted)setTimeout(showWelcomeCoin,500);
+  const firstUse=localStorage.getItem(KEY)===null,welcomeCoinGranted=window.ChokinCoins.grantWelcome();load(); window.ChokinSavingsGoal.setup({getEntries:()=>state.entries,getSettings:()=>state.settings,navigate}); setupQuickSettings(); setupEffectPreview(); setupCatGallery(); setupCollectionSettings(); setupCoinSettings(); setupPwaSupport(); render();scheduleCoinDayRefresh();if(firstUse&&localStorage.getItem(GUIDE_KEY)!=='seen')showFirstGuide();if(welcomeCoinGranted)setTimeout(showWelcomeCoin,500);
 })();
