@@ -1,8 +1,12 @@
 (() => {
   'use strict';
   const MAX_SIZE = 640;
+  const IMAGE_LOAD_TIMEOUT_MS = 8000;
   const cache = new Map();
   const objectUrls = new Set();
+  const processingTokens = new WeakMap();
+  const processedWarnings = new Set();
+  const sourceErrors = new Set();
   const diagnostics = {};
   const jobs = [];
   let activeJobs = 0;
@@ -12,6 +16,25 @@
   const processablePath = source => catPath(source) || treasurePath(source) || necessaryPath(source);
   const absolute = source => new URL(source, document.baseURI).href;
   const distance = (r, g, b, color) => Math.hypot(r - color[0], g - color[1], b - color[2]);
+  const renderable = image => image.complete && image.naturalWidth > 0 && image.naturalHeight > 0;
+  const safeLabel = source => {
+    try {
+      const parts = new URL(source, document.baseURI).pathname.split('/').filter(Boolean);
+      return parts.slice(-3).join('/');
+    } catch { return 'cat-image'; }
+  };
+
+  function warnProcessedOnce(source) {
+    if (processedWarnings.has(source)) return;
+    processedWarnings.add(source);
+    console.warn(`[CatImageProcessor] Processed image failed; using source image: ${safeLabel(source)}`);
+  }
+
+  function reportSourceFailureOnce(source) {
+    if (sourceErrors.has(source)) return;
+    sourceErrors.add(source);
+    console.error(`[CatImageProcessor] Source image failed; using fallback: ${safeLabel(source)}`);
+  }
 
   function estimateBackground(data, width, height) {
     const samples = [], step = Math.max(1, Math.floor(Math.min(width, height) / 160));
@@ -43,7 +66,7 @@
     const image = new Image();
     image.decoding = 'async';
     image.src = source;
-    await image.decode();
+    if (!await waitForImage(image, () => true)) throw new Error('Source image is not available for processing');
     const scale = Math.min(1, MAX_SIZE / Math.max(image.naturalWidth, image.naturalHeight));
     const width = Math.max(1, Math.round(image.naturalWidth * scale));
     const height = Math.max(1, Math.round(image.naturalHeight * scale));
@@ -133,32 +156,101 @@
     if (fallback) fallback.hidden = ready;
   }
 
+  function waitForImage(image, isCurrent) {
+    if (renderable(image)) return Promise.resolve(true);
+    if (image.complete) return Promise.resolve(false);
+    return new Promise(resolve => {
+      let settled = false;
+      const cleanup = () => {
+        image.removeEventListener('load', onLoad);
+        image.removeEventListener('error', onError);
+        clearTimeout(timer);
+      };
+      const settle = result => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        resolve(Boolean(result && isCurrent()));
+      };
+      const onLoad = () => settle(renderable(image));
+      const onError = () => settle(false);
+      const timer = setTimeout(() => settle(renderable(image)), IMAGE_LOAD_TIMEOUT_MS);
+      image.addEventListener('load', onLoad, {once: true});
+      image.addEventListener('error', onError, {once: true});
+      if (renderable(image) || image.complete) {
+        settle(renderable(image));
+      } else if (typeof image.decode === 'function') {
+        Promise.resolve().then(() => image.decode()).then(
+          () => { if (renderable(image) || image.complete) settle(renderable(image)); },
+          () => { if (renderable(image) || image.complete) settle(renderable(image)); }
+        );
+      }
+    });
+  }
+
+  async function imageIsAvailable(image, isCurrent) {
+    if (renderable(image)) return true;
+    if (!isCurrent()) return false;
+    return waitForImage(image, isCurrent);
+  }
+
+  async function useSourceImage(image, source, isCurrent) {
+    if (!isCurrent()) return false;
+    image.classList.remove('cat-image-processed');
+    if (image.getAttribute('src') !== source) image.src = source;
+    const available = await imageIsAvailable(image, isCurrent);
+    if (!isCurrent()) return false;
+    if (available) {
+      setImageState(image, 'source');
+      return true;
+    }
+    reportSourceFailureOnce(source);
+    setImageState(image, 'fallback');
+    return false;
+  }
+
   async function processElement(image, sourceOverride = null) {
     const currentSource = image.getAttribute('src');
     const source = sourceOverride || (processablePath(currentSource) ? currentSource : image.dataset.catOriginal || currentSource);
     if (!processablePath(source)) return false;
     const key = absolute(source);
-    if (image.dataset.catImageState === 'processed' && image.dataset.catOriginal === key) return true;
+    if (['processed', 'source'].includes(image.dataset.catImageState) && image.dataset.catOriginal === key) return true;
     if (image.dataset.catImageState === 'pending' && image.dataset.catOriginal === key) return false;
+    const token = (processingTokens.get(image) || 0) + 1;
+    const beganConnected = image.isConnected;
+    processingTokens.set(image, token);
+    const isCurrent = () => processingTokens.get(image) === token && (!beganConnected || image.isConnected);
     image.dataset.catOriginal = key;
-    setImageState(image, 'pending');
-    try {
-      const url = await processedUrl(key);
-      if (!url) {
-        await image.decode();
-        setImageState(image, 'source');
-        return true;
+    const currentIsSource = processablePath(currentSource) && absolute(currentSource) === key;
+    if (currentIsSource && renderable(image)) {
+      setImageState(image, 'source');
+    } else {
+      setImageState(image, 'pending');
+      if (currentIsSource) {
+        imageIsAvailable(image, isCurrent).then(available => {
+          if (!available || !isCurrent() || image.dataset.catImageState !== 'pending') return;
+          const displayedSource = image.getAttribute('src');
+          if (processablePath(displayedSource) && absolute(displayedSource) === key) setImageState(image, 'source');
+        });
       }
-      image.src = url;
-      await image.decode();
-      if (diagnostics[key]) image.dataset.catRemovedRatio = String(diagnostics[key].removedRatio);
-      image.classList.add('cat-image-processed');
-      setImageState(image, 'processed');
-      return true;
-    } catch {
-      setImageState(image, 'fallback');
-      return false;
     }
+    const url = await processedUrl(key);
+    if (!isCurrent()) return false;
+    if (!url) {
+      warnProcessedOnce(key);
+      return useSourceImage(image, key, isCurrent);
+    }
+    image.src = url;
+    const available = await imageIsAvailable(image, isCurrent);
+    if (!isCurrent()) return false;
+    if (!available) {
+      warnProcessedOnce(key);
+      return useSourceImage(image, key, isCurrent);
+    }
+    if (diagnostics[key]) image.dataset.catRemovedRatio = String(diagnostics[key].removedRatio);
+    image.classList.add('cat-image-processed');
+    setImageState(image, 'processed');
+    return true;
   }
 
   function scan(root) {
