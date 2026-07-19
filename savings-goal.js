@@ -24,7 +24,10 @@
   const $ = selector => document.querySelector(selector);
   const yen = amount => `¥${Number(amount || 0).toLocaleString('ja-JP')}`;
   const historyCount = () => window.ChokinGoalHistory?.getCount?.() || 0;
-  const historyLinkMarkup = className => `<button type="button" class="goal-history-link ${className}" data-goal-history-open>達成アルバム${historyCount()?`　${historyCount()}件`:''}</button>`;
+  const historyLinkMarkup = className => {
+    const count = historyCount();
+    return count ? `<button type="button" class="goal-history-link ${className}" data-goal-history-open aria-label="達成アルバムを開く、達成した目標${count}件">達成アルバムを見る　<span>${count}件</span></button>` : '';
+  };
   const escapeHtml = value => String(value).replace(/[&<>"']/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[character]));
   const validDate = value => typeof value === 'string' && value !== '' && !Number.isNaN(new Date(value).getTime());
   const validDeadline = value => {
@@ -98,13 +101,13 @@
   }
   function renderHome() {
     const host = $('#goalHomeCard'); if (!host) return;
-    const goal = readGoal(), albumLink = historyCount() ? historyLinkMarkup('goal-home-history-link') : '';
+    const goal = readGoal();
     if (!goal) {
-      host.innerHTML = `<div class="goal-home-empty"><span aria-hidden="true">⭐</span><div><small>貯金目標</small><b>ほしいものを決めよう</b></div><button type="button" data-goal-create>目標を設定する</button></div>${albumLink}`;
+      host.innerHTML = '<div class="goal-home-empty"><span aria-hidden="true">⭐</span><div><small>貯金目標</small><b>ほしいものを決めよう</b></div><button type="button" data-goal-create>目標を設定する</button></div>';
       return;
     }
     const stats = updateStatus(goal,{showNewAchievement:true,showPending:true});
-    host.innerHTML = `${homeMarkup(goal,stats)}${historyLinkMarkup('goal-home-history-link')}`;
+    host.innerHTML = homeMarkup(goal,stats);
     setMascotPositions(host,stats.barPercent);
   }
 
@@ -125,8 +128,17 @@
     if (!goal) { host.innerHTML = `<section class="goal-missing"><h3>目標はまだありません</h3><p>ほしいものを決めて、最初の一歩を始めましょう。</p><button type="button" class="submit" data-goal-create>目標を設定する</button>${historyCount()?historyLinkMarkup('goal-detail-history-link'):''}</section>`; return; }
     const stats = updateStatus(goal,{showPending:options.showPending===true}), icon = ICONS[goal.icon] || ICONS.piggy, milestones=[25,50,75,100];
     const archiveAction = stats.achieved ? '<button type="button" class="goal-archive-end" data-goal-archive-end>アルバムに残して目標を終了</button>' : '';
-    host.innerHTML = `<section class="goal-hero${stats.achieved?' achieved':''}"><div class="goal-title-row"><span class="goal-detail-icon" aria-hidden="true">${icon.symbol}</span><div><small>ほしいもの</small><h3>${escapeHtml(goal.itemName)}</h3><p>${yen(stats.progress)} / ${yen(goal.targetAmount)}</p></div></div><div class="goal-journey" aria-label="猫が目標へ進む表示"><div class="goal-route">${catMarkup('goal-mascot')}</div><span class="goal-target-icon" aria-label="目標 ${escapeHtml(icon.label)}">${icon.symbol}</span></div><div class="goal-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${stats.barPercent}" aria-valuetext="達成率 ${stats.percent}％、${yen(stats.progress)}、目標 ${yen(goal.targetAmount)}"><i style="width:${stats.barPercent}%"></i></div><div class="goal-progress-copy"><strong>達成率 ${stats.percent}％</strong><b>${milestoneMessage(stats.percent)}</b></div><div class="goal-milestones">${milestones.map(value=>`<span class="milestone-${value} ${stats.percent>=value?'reached':''}">${milestoneIcon(value)}<b>${value}％</b></span>`).join('')}</div></section><section class="goal-numbers"><div><span>現在の進捗</span><b>${yen(stats.progress)}</b></div><div><span>${stats.achieved?'達成額':'あと'}</span><b>${stats.achieved?'目標達成！':yen(stats.remaining)}</b></div></section>${goal.deadline?`<p class="goal-deadline">${deadlineText(goal.deadline)}</p>`:''}${goal.memo?`<section class="goal-memo"><h3>メモ</h3><p>${escapeHtml(goal.memo)}</p></section>`:''}<section class="goal-recent"><h3>最近の貯金</h3>${recentMarkup(goal)}</section><div class="goal-actions"><button type="button" data-goal-edit>目標を編集</button><button type="button" data-goal-new>新しい目標に変更</button>${historyLinkMarkup('goal-detail-history-link')}${archiveAction}<button type="button" class="danger-outline" data-goal-delete>目標を削除</button></div>`;
+    host.innerHTML = `<section class="goal-hero${stats.achieved?' achieved':''}"><div class="goal-title-row"><span class="goal-detail-icon" aria-hidden="true">${icon.symbol}</span><div><small>ほしいもの</small><h3>${escapeHtml(goal.itemName)}</h3><p>${yen(stats.progress)} / ${yen(goal.targetAmount)}</p></div></div><div class="goal-journey" aria-label="猫が目標へ進む表示"><div class="goal-route">${catMarkup('goal-mascot')}</div><span class="goal-target-icon" aria-label="目標 ${escapeHtml(icon.label)}">${icon.symbol}</span></div><div class="goal-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${stats.barPercent}" aria-valuetext="達成率 ${stats.percent}％、${yen(stats.progress)}、目標 ${yen(goal.targetAmount)}"><i style="width:${stats.barPercent}%"></i></div><div class="goal-progress-copy"><strong>達成率 ${stats.percent}％</strong><b>${milestoneMessage(stats.percent)}</b></div><div class="goal-milestones">${milestones.map(value=>`<span class="milestone-${value} ${stats.percent>=value?'reached':''}">${milestoneIcon(value)}<b>${value}％</b></span>`).join('')}</div></section><section class="goal-numbers"><div><span>現在の進捗</span><b>${yen(stats.progress)}</b></div><div><span>${stats.achieved?'達成額':'あと'}</span><b>${stats.achieved?'目標達成！':yen(stats.remaining)}</b></div></section>${goal.deadline?`<p class="goal-deadline">${deadlineText(goal.deadline)}</p>`:''}${goal.memo?`<section class="goal-memo"><h3>メモ</h3><p>${escapeHtml(goal.memo)}</p></section>`:''}<section class="goal-recent"><h3>最近の貯金</h3>${recentMarkup(goal)}</section><div class="goal-actions">${historyLinkMarkup('goal-detail-history-link')}<button type="button" data-goal-edit>目標を編集</button><button type="button" data-goal-new>新しい目標に変更</button>${archiveAction}<button type="button" class="danger-outline" data-goal-delete>目標を削除</button></div>`;
     setMascotPositions(host,stats.barPercent);
+  }
+
+  function renderFormHistoryLink() {
+    const form = $('#savingsGoalForm'); if (!form) return;
+    const markup = historyLinkMarkup('goal-form-history-link');
+    let slot = form.querySelector('.goal-form-history-slot');
+    if (!markup) { slot?.remove(); return; }
+    if (!slot) { slot=document.createElement('div'); slot.className='goal-form-history-slot'; form.append(slot); }
+    slot.innerHTML = markup;
   }
 
   function openForm(mode) {
@@ -138,7 +150,7 @@
     $('#goalIcon').value = mode === 'edit' ? goal.icon : 'piggy';
     $('#goalDeadline').value = mode === 'edit' ? goal.deadline || '' : '';
     $('#goalMemo').value = mode === 'edit' ? goal.memo : '';
-    $('#goalFormError').textContent = ''; navigate('goal-form'); setTimeout(()=>$('#goalItemName').focus(),50);
+    $('#goalFormError').textContent = ''; renderFormHistoryLink(); navigate('goal-form'); setTimeout(()=>$('#goalItemName').focus(),50);
   }
   function formValues() {
     const itemName=$('#goalItemName').value.trim(), targetAmount=Number($('#goalTargetAmount').value), startingRaw=$('#goalStartingAmount').value.trim(), startingAmount=startingRaw===''?0:Number(startingRaw), icon=$('#goalIcon').value, deadline=$('#goalDeadline').value||null, memo=$('#goalMemo').value.trim();
@@ -315,5 +327,5 @@
   function importData(value){if(value===null){localStorage.removeItem(KEY);renderHome();return true;}const goal=validateGoal(value);if(!goal)return false;writeGoal(goal);renderHome();return true;}
 
   const onNavigate=()=>{const overlay=$('#goalAchievement');if(overlay&&!overlay.hidden)hideAchievement(true);else stopAchievementDecorations();};
-  window.ChokinSavingsGoal=Object.freeze({setup,renderHome,renderDetail,exportData,importData,onNavigate,getStorageKey:()=>KEY});
+  window.ChokinSavingsGoal=Object.freeze({setup,renderHome,renderDetail,renderFormHistoryLink,exportData,importData,onNavigate,getStorageKey:()=>KEY});
 })();

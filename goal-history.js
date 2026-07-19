@@ -13,6 +13,7 @@
   let navigate = () => {};
   let setupDone = false;
   let selectedId = null;
+  let returnScreen = 'goal';
   const $ = selector => document.querySelector(selector);
   const yen = amount => `¥${Number(amount || 0).toLocaleString('ja-JP')}`;
   const validDateTime = value => typeof value === 'string' && value !== '' && !Number.isNaN(new Date(value).getTime());
@@ -207,13 +208,24 @@
 
   function refreshLinks() {
     window.ChokinSavingsGoal?.renderHome?.();
+    window.ChokinSavingsGoal?.renderFormHistoryLink?.();
     if ($('#goal')?.classList.contains('active')) window.ChokinSavingsGoal?.renderDetail?.();
   }
 
   function setup(options={}) {
     if (setupDone) return; setupDone=true; navigate=options.navigate || navigate;
     document.addEventListener('click',event=>{
-      if (event.target.closest('[data-goal-history-open]')) { renderAlbum(); navigate('goal-album'); }
+      const opener=event.target.closest('[data-goal-history-open]');
+      if (opener) {
+        const active=document.querySelector('.screen.active')?.id;
+        if (active==='goal'||active==='goal-form') returnScreen=active;
+        renderAlbum(); navigate('goal-album');
+      }
+      if (event.target.closest('[data-goal-history-back]')) {
+        const destination=returnScreen==='goal-form'?'goal-form':'goal';
+        navigate(destination);
+        setTimeout(()=>document.querySelector(`#${destination} [data-goal-history-open]`)?.focus(),0);
+      }
       const card=event.target.closest('[data-goal-history-item]'); if(card)openDetail(card.dataset.goalHistoryItem);
     });
     $('#closeGoalHistoryDetail').onclick=()=>$('#goalHistoryDetail').close();
