@@ -183,7 +183,7 @@
       try { history?.restoreRaw?.(historyRaw); } catch {}
       error.textContent='保存できませんでした。現在の目標は変更されていません。'; return;
     }
-    navigate('goal'); renderDetail({showPending:true}); renderHome();
+    navigate('goal'); renderDetail({showPending:true}); renderHome(); window.ChokinBadges?.evaluate?.();
   }
 
   function achievementSound() {
@@ -259,7 +259,7 @@
   function hideAchievement(immediate=false){
     const overlay=$('#goalAchievement');if(!overlay)return;
     markAchievementShown(); stopAchievementDecorations(); overlay.classList.remove('show');
-    const finish=()=>{overlay.hidden=true;overlay.classList.remove('settled','reduced','paused');activeAchievementGoal=null;};
+    const finish=()=>{overlay.hidden=true;overlay.classList.remove('settled','reduced','paused');activeAchievementGoal=null;window.ChokinBadges?.tryShowQueued?.();};
     if (immediate) finish(); else setTimeout(finish,200);
   }
   function openGoalReplacementDialog() {
@@ -298,7 +298,7 @@
       try { history?.restoreRaw?.(historyRaw); } catch {}
       dialog?.close(); alert('保存できませんでした。現在の目標は変更されていません。'); return;
     }
-    dialog?.close(); navigate('home'); renderHome();
+    dialog?.close(); navigate('home'); renderHome(); window.ChokinBadges?.evaluate?.();
   }
 
   function setup(options) {
@@ -311,7 +311,7 @@
       if (event.target.closest('[data-goal-edit]')) openForm('edit');
       if (event.target.closest('[data-goal-new]')) openGoalReplacementDialog();
       if (event.target.closest('[data-goal-archive-end]')) openArchiveEndDialog();
-      if (event.target.closest('[data-goal-delete]')) { const goal=readGoal();if(goal){const achieved=progressFor(goal).achieved, note=achieved?'\n\nこの操作では達成アルバムに保存されません。\n履歴へ残したい場合は、「アルバムに残して目標を終了」を使用してください。':'';if(confirm(`「${goal.itemName}」の目標を削除しますか？\n\n貯金記録そのものは削除されません。${note}`)){localStorage.removeItem(KEY);navigate('home');renderHome();}} }
+      if (event.target.closest('[data-goal-delete]')) { const goal=readGoal();if(goal){const achieved=progressFor(goal).achieved, note=achieved?'\n\nこの操作では達成アルバムに保存されません。\n履歴へ残したい場合は、「アルバムに残して目標を終了」を使用してください。':'';if(confirm(`「${goal.itemName}」の目標を削除しますか？\n\n貯金記録そのものは削除されません。${note}`)){localStorage.removeItem(KEY);navigate('home');renderHome();window.ChokinBadges?.evaluate?.();}} }
       if (event.target.closest('[data-goal-cancel]')) { const goal=readGoal();navigate(goal?'goal':'home');if(goal)renderDetail(); }
     });
     $('#closeGoalAchievement').onclick=()=>hideAchievement();

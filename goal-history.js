@@ -203,7 +203,7 @@
     localStorage.setItem(KEY,JSON.stringify({schemaVersion:SCHEMA_VERSION,items:writable.items.filter(item=>item?.id!==selectedId)}));
     selectedId=null;
     $('#goalHistoryDeleteDialog')?.close(); $('#goalHistoryDetail')?.close();
-    renderAlbum(); refreshLinks();
+    renderAlbum(); refreshLinks(); window.ChokinBadges?.evaluate?.();
   }
 
   function refreshLinks() {

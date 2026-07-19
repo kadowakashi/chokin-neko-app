@@ -1,4 +1,4 @@
-# 貯金アプリ v0.9.9.1
+# 貯金アプリ v0.9.10
 
 スマートフォン向け・静的Webアプリです。`index.html` をWebサーバー経由で開くか、GitHub Pagesで公開してください。
 
@@ -82,3 +82,9 @@ v0.9.8.3では、通常画面の猫を固定タブより背面に整理し、達
 コイン素材は `assets/coins/`、演出主役素材は `assets/scenes/` に配置し、`assets/manifest.json` の `available` へパスを追加します。未配置時は従来のSVG・CSS・Canvas表現へ戻ります。
 
 追加可能な主役素材：`gold_sun.png`、`energy_core.png`、`cat_temple_foreground.png`、`necessary_expense_stamp_cat.png`。既存の `space_bg.png`、`cat_temple_bg.png`、宝箱素材も同じ読込経路です。
+
+## v0.9.10 実績・バッジ
+
+- 設定画面の「実績・バッジ」から、貯金回数・貯金日数・累計貯金額・目標達成の10バッジを確認できます。
+- 既存記録からの初回判定はまとめて案内し、獲得済みバッジは記録削除後も保持します。
+- バッジ状態は `chokin-event-app.badgeState.v1` に独立保存され、JSONバックアップの書き出し・復元に対応します。
