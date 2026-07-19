@@ -18,6 +18,7 @@
   function reset(){data=empty();data.welcomeCoinGranted=true;save();}
   function exportData(){return snapshot();}
   function importData(value){data=normalize(value);save();}
+  function inspectData(value){const object=!!value&&typeof value==='object'&&!Array.isArray(value),balanceReadable=object&&Number.isInteger(value.balance)&&value.balance>=0;return {valid:true,data:normalize(value),readable:object,balanceReadable,balance:balanceReadable?value.balance:null,state:value==null?'none':!object?'invalid':balanceReadable?'ok':'partial'};}
   load();
-  window.ChokinCoins={key:KEY,localDate,getState:snapshot,grantWelcome,awardDaily,hasDailyAward,canSpend,spend,reset,exportData,importData};
+  window.ChokinCoins={key:KEY,localDate,getState:snapshot,grantWelcome,awardDaily,hasDailyAward,canSpend,spend,reset,exportData,importData,inspectData};
 })();

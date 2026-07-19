@@ -485,6 +485,20 @@
     return clone(state);
   }
 
+  function inspectData(value) {
+    if (value === null) return { valid: true, data: null, earnedCount: null, total: DEFINITIONS.length, anomalies: 0, state: "none" };
+    const normalized = normalizeState(value);
+    if (!normalized) return { valid: false, data: null, earnedCount: null, total: DEFINITIONS.length, anomalies: null, state: "invalid" };
+    return {
+      valid: true,
+      data: clone(normalized.data),
+      earnedCount: Object.keys(normalized.data.earned).length,
+      total: DEFINITIONS.length,
+      anomalies: normalized.anomalies,
+      state: normalized.anomalies ? "partial" : "ok",
+    };
+  }
+
   function importData(value) {
     pendingIds.clear();
     displaying = null;
@@ -538,6 +552,7 @@
     tryShowQueued,
     exportData,
     importData,
+    inspectData,
     getStorageKey: () => STORAGE_KEY,
     getDefinitions: () => clone(DEFINITIONS),
     getSnapshot,

@@ -2,7 +2,7 @@
   'use strict';
   const KEY = 'chokin-event-app.v0.1';
   const RECOVERY_KEY = `${KEY}.recovery`;
-  const APP_VERSION = '0.9.10';
+  const APP_VERSION = '0.9.11';
   const GUIDE_KEY = 'chokin-event-app.firstGuide.v0.8.1';
   const BACKUP_VERSION = 1;
   const DEFAULT_QUICK_AMOUNTS = [100, 500, 1000, 3000, 5000];
@@ -39,21 +39,53 @@
     const url = URL.createObjectURL(blob), link = document.createElement('a');
     link.href = url; link.download = `chokin-backup_${stamp}.json`; link.click(); URL.revokeObjectURL(url);
   }
-  function importBackup(file) {
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        const backup = JSON.parse(String(reader.result));
-        if (!backup || backup.backupVersion !== BACKUP_VERSION || !backup.data || !Array.isArray(backup.data.entries) || !backup.data.entries.every(validEntry) || !backup.data.settings || typeof backup.data.settings !== 'object') throw new Error('形式が異なります');
-        if (!confirm('現在の記録は、読み込んだバックアップ内容で置き換えられます。続行しますか？')) return;
-        state = {version: Number.isInteger(backup.data.version) ? backup.data.version : 1, entries: backup.data.entries, settings: {...defaults.settings, ...backup.data.settings}, futureSettings: backup.data.futureSettings && typeof backup.data.futureSettings === 'object' ? backup.data.futureSettings : {}, quickAmounts: validQuickAmounts(backup.data.quickAmounts) ? backup.data.quickAmounts : [...DEFAULT_QUICK_AMOUNTS]};
-        window.ChokinCollection.importData(backup.data.catCollection || null);if(backup.data.catCoins){window.ChokinCoins.importData(backup.data.catCoins);window.ChokinCoins.grantWelcome();}else window.ChokinCoins.importData({schemaVersion:1,welcomeCoinGranted:true});if(Object.hasOwn(backup.data,'savingsGoal'))window.ChokinSavingsGoal.importData(backup.data.savingsGoal);else window.ChokinSavingsGoal.importData(null);
-        let historyImported=true;try{historyImported=Object.hasOwn(backup.data,'goalHistory')?window.ChokinGoalHistory.importData(backup.data.goalHistory):window.ChokinGoalHistory.importData(null);}catch{historyImported=false;}
-        let badgesImported=true;try{badgesImported=Object.hasOwn(backup.data,'badgeState')?window.ChokinBadges.importData(backup.data.badgeState):window.ChokinBadges.importData(null);}catch{badgesImported=false;}
-        saveState(); render(); window.ChokinBadges.evaluate(); alert(historyImported&&badgesImported?'バックアップを読み込みました。':'記録を復元しました。一部の追加データは形式が異なるため復元していません。');
-      } catch { alert('バックアップを読み込めませんでした。正しい貯金アプリのJSONファイルを選択してください。'); }
-    };
-    reader.onerror = () => alert('ファイルを読み込めませんでした。'); reader.readAsText(file, 'utf-8');
+  function normalizeMainBackupData(data) {
+    if (!data || typeof data !== 'object' || Array.isArray(data) || !Array.isArray(data.entries) || !data.entries.every(validEntry) || !data.settings || typeof data.settings !== 'object' || Array.isArray(data.settings)) return null;
+    return {version:Number.isInteger(data.version)?data.version:1,entries:structuredClone(data.entries),settings:{...defaults.settings,...data.settings},futureSettings:data.futureSettings&&typeof data.futureSettings==='object'&&!Array.isArray(data.futureSettings)?structuredClone(data.futureSettings):{},quickAmounts:validQuickAmounts(data.quickAmounts)?[...data.quickAmounts]:[...DEFAULT_QUICK_AMOUNTS]};
+  }
+  function restoreStorageKeys() {
+    return [KEY,window.ChokinCollection.key,window.ChokinCoins.key,window.ChokinSavingsGoal.getStorageKey(),window.ChokinGoalHistory.getStorageKey(),window.ChokinBadges.getStorageKey()];
+  }
+  function captureRestoreSnapshot() {
+    return {state:structuredClone(state),collection:window.ChokinCollection.exportData(),coins:window.ChokinCoins.exportData(),goal:window.ChokinSavingsGoal.exportData(),history:window.ChokinGoalHistory.exportData(),badges:window.ChokinBadges.exportData(),raw:new Map(restoreStorageKeys().map(key=>[key,localStorage.getItem(key)]))};
+  }
+  function restoreRawSnapshot(snapshot) {
+    let restored=true;
+    state=structuredClone(snapshot.state);
+    const attempts=[()=>window.ChokinCollection.importData(snapshot.collection),()=>window.ChokinCoins.importData(snapshot.coins),()=>window.ChokinSavingsGoal.importData(snapshot.goal),()=>window.ChokinGoalHistory.importData(snapshot.history),()=>window.ChokinBadges.importData(snapshot.badges)];
+    attempts.forEach(attempt=>{try{attempt();}catch{restored=false;}});
+    snapshot.raw.forEach((raw,key)=>{try{if(raw===null)localStorage.removeItem(key);else localStorage.setItem(key,raw);}catch{restored=false;}});
+    try{render();}catch{restored=false;}
+    return restored;
+  }
+  function verifyRestoredStorage() {
+    const main=JSON.parse(localStorage.getItem(KEY)||'null');
+    if (!main || JSON.stringify(main.entries)!==JSON.stringify(state.entries) || JSON.stringify(main.settings)!==JSON.stringify(state.settings)) throw new Error('記録または設定を保存できませんでした。');
+    const collectionRaw=JSON.parse(localStorage.getItem(window.ChokinCollection.key)||'null'),collection=window.ChokinCollection.exportData();
+    if (!collectionRaw || JSON.stringify(collectionRaw.cats)!==JSON.stringify(collection.cats) || collectionRaw.totalCatMedals!==collection.totalCatMedals) throw new Error('猫図鑑を保存できませんでした。');
+    const coinsRaw=JSON.parse(localStorage.getItem(window.ChokinCoins.key)||'null'),coins=window.ChokinCoins.exportData();
+    if (!coinsRaw || coinsRaw.balance!==coins.balance || coinsRaw.totalEarned!==coins.totalEarned || coinsRaw.totalSpent!==coins.totalSpent) throw new Error('ねこコインを保存できませんでした。');
+  }
+  function applyRestoreCandidate(candidate) {
+    const before=captureRestoreSnapshot(),data=candidate.backup.data;
+    try {
+      state=structuredClone(candidate.mainState);
+      window.ChokinCollection.importData(candidate.has.collection?data.catCollection:null);
+      if(candidate.has.coins){window.ChokinCoins.importData(data.catCoins);window.ChokinCoins.grantWelcome();}else window.ChokinCoins.importData({schemaVersion:1,welcomeCoinGranted:true});
+      if(!candidate.has.goal){if(!window.ChokinSavingsGoal.importData(null))throw new Error('現在の目標を復元できませんでした。');}else if(candidate.inspections.goal.valid&&!window.ChokinSavingsGoal.importData(data.savingsGoal))throw new Error('現在の目標を復元できませんでした。');
+      if(!candidate.has.history){if(!window.ChokinGoalHistory.importData(null))throw new Error('達成アルバムを復元できませんでした。');}else if(candidate.inspections.history.valid&&!window.ChokinGoalHistory.importData(data.goalHistory))throw new Error('達成アルバムを復元できませんでした。');
+      if(!candidate.has.badges){if(!window.ChokinBadges.importData(null))throw new Error('バッジを再判定できませんでした。');}else if(candidate.inspections.badges.valid&&!window.ChokinBadges.importData(data.badgeState))throw new Error('バッジを復元できませんでした。');
+      saveState();verifyRestoredStorage();
+      return {ok:true,partial:!candidate.inspections.goal.valid||!candidate.inspections.history.valid||!candidate.inspections.badges.valid||candidate.inspections.collection.state==='partial'||candidate.inspections.coins.state==='partial'};
+    } catch(error) {
+      const rollbackOk=restoreRawSnapshot(before);
+      return {ok:false,rollbackOk,message:error instanceof Error?error.message:'復元処理に失敗しました。'};
+    }
+  }
+  function finishRestore(result) {
+    render();
+    alert(result.partial?'バックアップを復元しました。読み取れない任意項目は復元していません。':'バックアップを復元しました。');
+    window.setTimeout(()=>window.ChokinBadges.evaluate(),0);
   }
   const load = () => {
     const raw = localStorage.getItem(KEY);
@@ -338,8 +370,6 @@
   $('#undoQuick').onclick=()=>{ if (!pendingQuickId) return; state.entries = state.entries.filter(entry => entry.id !== pendingQuickId); pendingQuickId = null; clearTimeout(undoTimer); $('#quickUndo').hidden = true; saveState(); render(); window.ChokinBadges.evaluate(); };
   ['sound','vibration','effects'].forEach(k=> $(`#${k}`).addEventListener('change',e=>{state.settings[k]=e.target.checked;saveState();if(k==='effects'){window.ChokinSavingsGoal.renderHome();if($('#goal')?.classList.contains('active'))window.ChokinSavingsGoal.renderDetail();}}));
   $('#exportBackup').onclick = exportBackup;
-  $('#importBackup').onclick = () => $('#backupFile').click();
-  $('#backupFile').addEventListener('change', e => { const file = e.target.files[0]; if (file) importBackup(file); e.target.value = ''; });
   $('#clearEntries').onclick = () => { if (!confirm('すべての貯金・出費記録を削除しますか？')) return; if (!confirm('この操作は元に戻せません。本当に削除しますか？')) return; state.entries = []; saveState(); render(); window.ChokinBadges.evaluate(); alert('すべての記録を削除しました。'); };
   $('#calendarPrev').onclick=()=>shiftCalendarMonth(-1); $('#calendarNext').onclick=()=>shiftCalendarMonth(1); $('#calendarToday').onclick=showCurrentCalendarMonth;
   $('#calendarGrid').addEventListener('click',event=>{const day=event.target.closest('[data-calendar-day]');if(day)openCalendarDay(Number(day.dataset.calendarDay));});
@@ -348,5 +378,5 @@
   $('#closeFirstGuide').onclick=()=>{localStorage.setItem(GUIDE_KEY,'seen');$('#firstGuide').close();window.ChokinBadges.tryShowQueued();};
   window.addEventListener('load',setupPwaRegistration);
   document.querySelector('.app-version').textContent = `v${APP_VERSION}`;
-  const firstUse=localStorage.getItem(KEY)===null,welcomeCoinGranted=window.ChokinCoins.grantWelcome();load(); window.ChokinGoalHistory.setup({navigate}); window.ChokinSavingsGoal.setup({getEntries:()=>state.entries,getSettings:()=>state.settings,navigate}); window.ChokinBadges.setup({getEntries:()=>state.entries,getSettings:()=>state.settings,navigate}); setupQuickSettings(); setupEffectPreview(); setupCatGallery(); setupCollectionSettings(); setupCoinSettings(); setupPwaSupport(); render();scheduleCoinDayRefresh();if(firstUse&&localStorage.getItem(GUIDE_KEY)!=='seen')showFirstGuide();if(welcomeCoinGranted)setTimeout(showWelcomeCoin,500);window.ChokinBadges.evaluate();
+  const firstUse=localStorage.getItem(KEY)===null,welcomeCoinGranted=window.ChokinCoins.grantWelcome();load(); window.ChokinGoalHistory.setup({navigate}); window.ChokinSavingsGoal.setup({getEntries:()=>state.entries,getSettings:()=>state.settings,navigate}); window.ChokinBadges.setup({getEntries:()=>state.entries,getSettings:()=>state.settings,navigate}); window.ChokinRestorePreview.setup({normalizeMainData:normalizeMainBackupData,applyCandidate:applyRestoreCandidate,onRestored:finishRestore}); setupQuickSettings(); setupEffectPreview(); setupCatGallery(); setupCollectionSettings(); setupCoinSettings(); setupPwaSupport(); render();scheduleCoinDayRefresh();if(firstUse&&localStorage.getItem(GUIDE_KEY)!=='seen')showFirstGuide();if(welcomeCoinGranted)setTimeout(showWelcomeCoin,500);window.ChokinBadges.evaluate();
 })();

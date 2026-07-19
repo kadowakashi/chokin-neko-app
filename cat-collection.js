@@ -15,7 +15,8 @@
   function reset(){data=empty();loadStatus={state:'empty',repaired:0,unknownCats:0,backupKey:null};save();}
   function exportData(){return JSON.parse(JSON.stringify(data));}
   function importData(value){const result=normalize(value);data=result.data;loadStatus={state:value==null?'empty':result.repaired?'repaired':'ok',repaired:result.repaired,unknownCats:0,backupKey:null};save();}
+  function inspectData(value){const result=normalize(value),catalog=(window.ChokinCats?.all||[]).filter(cat=>cat.enabled!==false),ids=new Set(catalog.map(cat=>cat.id)),catsObject=!!value&&typeof value==='object'&&!Array.isArray(value)&&!!value.cats&&typeof value.cats==='object'&&!Array.isArray(value.cats),obtained=Object.entries(result.data.cats).filter(([id,record])=>ids.has(id)&&record.obtained===true).length;return {valid:true,data:JSON.parse(JSON.stringify(result.data)),readable:catsObject,obtained,total:catalog.length,repaired:result.repaired,state:value==null?'none':!catsObject?'invalid':result.repaired?'partial':'ok'};}
   function getDiagnostics(){const catalogIds=new Set((window.ChokinCats?.all||[]).filter(cat=>cat.enabled!==false).map(cat=>cat.id)),unknownCats=Object.keys(data.cats).filter(id=>!catalogIds.has(id)).length,stats=getStats();loadStatus.unknownCats=unknownCats;return {...stats,unobtained:Math.max(0,stats.total-stats.obtained),loadState:loadStatus.state,unknownCats,anomalies:loadStatus.repaired,backupKey:loadStatus.backupKey};}
   load();
-  window.ChokinCollection={key:KEY,medals:MEDALS,record,getRecord,isObtained,getStats,getDiagnostics,reset,exportData,importData};
+  window.ChokinCollection={key:KEY,medals:MEDALS,record,getRecord,isObtained,getStats,getDiagnostics,reset,exportData,importData,inspectData};
 })();

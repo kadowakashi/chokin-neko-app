@@ -325,7 +325,8 @@
 
   function exportData(){const goal=readGoal();return goal?structuredClone(goal):null;}
   function importData(value){if(value===null){localStorage.removeItem(KEY);renderHome();return true;}const goal=validateGoal(value);if(!goal)return false;writeGoal(goal);renderHome();return true;}
+  function inspectData(value){if(value===null)return {valid:true,data:null,state:'none'};const goal=validateGoal(value);return goal?{valid:true,data:structuredClone(goal),state:'ok'}:{valid:false,data:null,state:'invalid'};}
 
   const onNavigate=()=>{const overlay=$('#goalAchievement');if(overlay&&!overlay.hidden)hideAchievement(true);else stopAchievementDecorations();};
-  window.ChokinSavingsGoal=Object.freeze({setup,renderHome,renderDetail,renderFormHistoryLink,exportData,importData,onNavigate,getStorageKey:()=>KEY});
+  window.ChokinSavingsGoal=Object.freeze({setup,renderHome,renderDetail,renderFormHistoryLink,exportData,importData,inspectData,onNavigate,getStorageKey:()=>KEY});
 })();

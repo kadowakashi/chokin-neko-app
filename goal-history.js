@@ -244,12 +244,17 @@
     const valid = validateData(value); if (!valid) return false;
     localStorage.setItem(KEY,JSON.stringify(valid)); refreshLinks(); return true;
   }
+  function inspectData(value) {
+    if (value === null) return {valid:true,data:null,count:0,invalidItems:0,state:'none'};
+    const valid = validateData(value); if (!valid) return {valid:false,data:null,count:null,invalidItems:null,state:'invalid'};
+    return {valid:true,data:structuredClone(valid),count:valid.items.length,invalidItems:Math.max(0,value.items.length-valid.items.length),state:value.items.length===valid.items.length?'ok':'partial'};
+  }
   const exportData = () => structuredClone(readData());
   const restoreRaw = raw => { if (raw === null) localStorage.removeItem(KEY); else localStorage.setItem(KEY,raw); };
   const onNavigate = id => { if (id !== 'goal-album') { $('#goalHistoryDetail')?.close(); $('#goalHistoryDeleteDialog')?.close(); } };
 
   window.ChokinGoalHistory = Object.freeze({
-    setup,renderAlbum,archiveGoal,exportData,importData,onNavigate,refreshLinks,
+    setup,renderAlbum,archiveGoal,exportData,importData,inspectData,onNavigate,refreshLinks,
     getCount:()=>readData().items.length,
     getStorageKey:()=>KEY,
     getRaw:()=>localStorage.getItem(KEY),
