@@ -7,18 +7,18 @@
     premium: 'assets/coins/premium_coin.png'
   });
   const SCENES = Object.freeze({
-    cosmic: [{src:'assets/scenes/space_bg.png',mode:'background',className:'asset-space-bg'},{src:'assets/cats/cat_cosmic.png',mode:'main',className:'asset-cosmic-cat'}],
+    cosmic: [{src:'assets/scenes/space_bg.png',mode:'background',className:'asset-space-bg'},{src:'assets/cats-transparent/cat_cosmic.png',mode:'main',className:'asset-cosmic-cat'}],
     treasure: [{src:'assets/scenes/treasure_chest_closed.png',mode:'main',className:'asset-chest-closed'},{src:'assets/scenes/treasure_chest_open.png',mode:'main',className:'asset-chest-open'}],
-    cat: [{src:'assets/cats/cat_celebrate.png',mode:'main',className:'asset-celebrate-cat'}],
-    temple: [{src:'assets/scenes/cat_temple_bg.png',mode:'background',className:'asset-temple-bg'},{src:'assets/scenes/cat_temple_foreground.png',mode:'main',className:'asset-temple-foreground'},{src:'assets/cats/cat_royal.png',mode:'main',className:'asset-royal-cat'}],
+    cat: [{src:'assets/cats-transparent/cat_celebrate.png',mode:'main',className:'asset-celebrate-cat'}],
+    temple: [{src:'assets/scenes/cat_temple_bg.png',mode:'background',className:'asset-temple-bg'},{src:'assets/scenes/cat_temple_foreground.png',mode:'main',className:'asset-temple-foreground'},{src:'assets/cats-transparent/cat_royal.png',mode:'main',className:'asset-royal-cat'}],
     gold: [{src:'assets/scenes/gold_sun.png',mode:'main',className:'asset-gold-sun'}],
     shock: [{src:'assets/scenes/energy_core.png',mode:'main',className:'asset-energy-core'}],
     necessary: [{src:'assets/scenes/necessary_expense_stamp_cat.png',mode:'main',className:'asset-necessary-expense'}],
-    gachaNormal: [{src:'assets/cats/cat_celebrate.png',mode:'main',className:'asset-gacha-cat'}],
-    gachaSuper: [{src:'assets/cats/cat_cosmic.png',mode:'main',className:'asset-gacha-cat'}],
-    gachaLegend: [{src:'assets/cats/cat_royal.png',mode:'main',className:'asset-gacha-cat'}],
-    regret: [{src:'assets/cats/cat_surprised.png',mode:'main',className:'asset-surprised-cat'}],
-    best: [{src:'assets/cats/cat_royal.png',mode:'main',className:'asset-royal-cat'}]
+    gachaNormal: [{src:'assets/cats-transparent/cat_celebrate.png',mode:'main',className:'asset-gacha-cat'}],
+    gachaSuper: [{src:'assets/cats-transparent/cat_cosmic.png',mode:'main',className:'asset-gacha-cat'}],
+    gachaLegend: [{src:'assets/cats-transparent/cat_royal.png',mode:'main',className:'asset-gacha-cat'}],
+    regret: [{src:'assets/cats-transparent/cat_surprised.png',mode:'main',className:'asset-surprised-cat'}],
+    best: [{src:'assets/cats-transparent/cat_royal.png',mode:'main',className:'asset-royal-cat'}]
   });
   const images = new Map();
   let available = new Set();

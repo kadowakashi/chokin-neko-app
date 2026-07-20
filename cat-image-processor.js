@@ -10,10 +10,24 @@
   const diagnostics = {};
   const jobs = [];
   let activeJobs = 0;
+  const CAT_FILE_NAMES = new Set([
+    'cat_celebrate.png','cat_cosmic.png','cat_surprised.png','cat_royal.png','cat_black.png',
+    'cat_calico.png','cat_orange_tabby.png','cat_hachiware.png','cat_ninja.png','cat_wizard.png',
+    'cat_samurai.png','cat_angel.png','cat_deity.png','cat_gray.png','cat_pirate.png',
+    'cat_knight.png','cat_detective.png','cat_chef.png','cat_dragon.png'
+  ]);
+  const knownCatPath = (source, folder) => {
+    try {
+      const path = new URL(source, document.baseURI).pathname;
+      const match = path.match(new RegExp(`/assets/${folder}/([^/]+)$`, 'i'));
+      return Boolean(match && CAT_FILE_NAMES.has(decodeURIComponent(match[1]).toLowerCase()));
+    } catch { return false; }
+  };
   const catPath = source => /(?:^|\/)assets\/cats\/[^/?#]+\.(?:png|webp)(?:[?#].*)?$/i.test(String(source || ''));
+  const transparentCatPath = source => knownCatPath(source, 'cats-transparent');
   const treasurePath = source => /(?:^|\/)assets\/scenes\/treasure_chest_(?:closed|open)\.(?:png|webp)(?:[?#].*)?$/i.test(String(source || ''));
   const necessaryPath = source => /(?:^|\/)assets\/scenes\/necessary_expense_stamp_cat\.(?:png|webp)(?:[?#].*)?$/i.test(String(source || ''));
-  const processablePath = source => catPath(source) || treasurePath(source) || necessaryPath(source);
+  const processablePath = source => transparentCatPath(source) || catPath(source) || treasurePath(source) || necessaryPath(source);
   const absolute = source => new URL(source, document.baseURI).href;
   const distance = (r, g, b, color) => Math.hypot(r - color[0], g - color[1], b - color[2]);
   const renderable = image => image.complete && image.naturalWidth > 0 && image.naturalHeight > 0;
@@ -209,10 +223,57 @@
     return false;
   }
 
+  function originalForTransparent(source) {
+    if (!transparentCatPath(source)) return null;
+    try {
+      const url = new URL(source, document.baseURI);
+      url.pathname = url.pathname.replace(/\/assets\/cats-transparent\/([^/]+)$/i, '/assets/cats/$1');
+      return url.href;
+    } catch { return null; }
+  }
+
+  async function useTransparentImage(image, source) {
+    const key = absolute(source);
+    if (['processed', 'source'].includes(image.dataset.catImageState) && image.dataset.catOriginal === key) return true;
+    if (image.dataset.catImageState === 'pending' && image.dataset.catOriginal === key) return false;
+    const token = (processingTokens.get(image) || 0) + 1;
+    const beganConnected = image.isConnected;
+    processingTokens.set(image, token);
+    const isCurrent = () => processingTokens.get(image) === token && (!beganConnected || image.isConnected);
+    image.dataset.catOriginal = key;
+    delete image.dataset.catFallbackSource;
+    image.classList.remove('cat-image-processed');
+    if (absolute(image.getAttribute('src')) !== key) image.src = source;
+    setImageState(image, renderable(image) ? 'source' : 'pending');
+    if (await imageIsAvailable(image, isCurrent)) {
+      if (!isCurrent()) return false;
+      setImageState(image, 'source');
+      return true;
+    }
+    if (!isCurrent()) return false;
+    warnProcessedOnce(key);
+    const fallbackSource = originalForTransparent(key);
+    if (!fallbackSource) {
+      reportSourceFailureOnce(key);
+      setImageState(image, 'fallback');
+      return false;
+    }
+    image.dataset.catFallbackSource = absolute(fallbackSource);
+    return useSourceImage(image, fallbackSource, isCurrent);
+  }
+
   async function processElement(image, sourceOverride = null) {
     const currentSource = image.getAttribute('src');
+    const markedFallback = image.dataset.catFallbackSource;
+    if (markedFallback && catPath(currentSource) && absolute(currentSource) === markedFallback) {
+      const available = await imageIsAvailable(image, () => image.dataset.catFallbackSource === markedFallback);
+      setImageState(image, available ? 'source' : 'fallback');
+      return available;
+    }
+    if (markedFallback && (!currentSource || absolute(currentSource) !== markedFallback)) delete image.dataset.catFallbackSource;
     const source = sourceOverride || (processablePath(currentSource) ? currentSource : image.dataset.catOriginal || currentSource);
     if (!processablePath(source)) return false;
+    if (transparentCatPath(source)) return useTransparentImage(image, source);
     const key = absolute(source);
     if (['processed', 'source'].includes(image.dataset.catImageState) && image.dataset.catOriginal === key) return true;
     if (image.dataset.catImageState === 'pending' && image.dataset.catOriginal === key) return false;
@@ -266,5 +327,5 @@
   observer.observe(document.documentElement, {subtree: true, childList: true, attributes: true, attributeFilter: ['src']});
   scan(document);
   addEventListener('pagehide', () => objectUrls.forEach(url => URL.revokeObjectURL(url)), {once: true});
-  window.ChokinCatImages = {processElement, isCatSource: catPath, isProcessableSource: processablePath, diagnostics};
+  window.ChokinCatImages = {processElement, isCatSource: source => transparentCatPath(source) || catPath(source), isProcessableSource: processablePath, diagnostics};
 })();

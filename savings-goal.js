@@ -4,7 +4,7 @@
   const KEY = 'chokin-event-app.savingsGoal.v1';
   const SCHEMA_VERSION = 1;
   const MAX_TARGET = 99999999;
-  const CAT_IMAGE = 'assets/cats/cat_hachiware.png';
+  const CAT_IMAGE = 'assets/cats-transparent/cat_hachiware.png';
   const ACHIEVEMENT_SPARKLES = 52;
   const pawFallback = () => window.ChokinVisualAssets?.pawMarkup?.('goal-cat-fallback') || '<span class="goal-cat-fallback" aria-hidden="true">🐾</span>';
   const ICONS = Object.freeze({
