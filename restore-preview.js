@@ -3,7 +3,7 @@
 
   const SUPPORTED_BACKUP_VERSION = 1;
   const ROOT_FIELDS = new Set(["backupVersion", "exportedAt", "appVersion", "data"]);
-  const DATA_FIELDS = new Set(["version", "entries", "settings", "futureSettings", "quickAmounts", "catCollection", "catCoins", "savingsGoal", "goalHistory", "badgeState"]);
+  const DATA_FIELDS = new Set(["version", "entries", "settings", "futureSettings", "quickAmounts", "catCollection", "catCoins", "savingsGoal", "goalHistory", "badgeState", "dailyNotes"]);
   let options = {};
   let candidate = null;
   let restoring = false;
@@ -41,6 +41,7 @@
       goal: owns(data, "savingsGoal"),
       history: owns(data, "goalHistory"),
       badges: owns(data, "badgeState"),
+      dailyNotes: owns(data, "dailyNotes"),
     };
     const inspections = {
       collection: window.ChokinCollection.inspectData(has.collection ? data.catCollection : null),
@@ -48,6 +49,7 @@
       goal: window.ChokinSavingsGoal.inspectData(has.goal ? data.savingsGoal : null),
       history: window.ChokinGoalHistory.inspectData(has.history ? data.goalHistory : null),
       badges: window.ChokinBadges.inspectData(has.badges ? data.badgeState : null),
+      dailyNotes: window.ChokinDailyNotes.inspectData(has.dailyNotes ? data.dailyNotes : null),
     };
     const saves = mainState.entries.filter((entry) => entry.type === "save");
     const spends = mainState.entries.filter((entry) => entry.type === "spend");
@@ -68,6 +70,8 @@
     else if (inspections.collection.repaired) notices.push(warning("notice", "猫図鑑の一部を読み取れません。読み取れた内容を安全な値へ補正して復元します。"));
     if (!has.coins) notices.push(warning("notice", "ねこコインは含まれていません。データなしとして復元します。"));
     else if (!inspections.coins.balanceReadable) notices.push(warning("notice", "ねこコイン残高を読み取れません。安全な初期値へ補正して復元します。"));
+    if (!has.dailyNotes) notices.push(warning("info", "ひとこと日記は含まれていません。データなしとして復元します。"));
+    else if (inspections.dailyNotes.invalidItems) notices.push(warning("notice", `ひとこと日記の${inspections.dailyNotes.invalidItems}件を読み取れません。検証済みの日記だけを復元します。`));
 
     const unknownRoot = Object.keys(backup).filter((key) => !ROOT_FIELDS.has(key));
     const unknownData = Object.keys(data).filter((key) => !DATA_FIELDS.has(key));
@@ -148,6 +152,11 @@
     return [`${item.balance}枚`, "復元できます"];
   }
 
+  function dailyNoteValue(item) {
+    if (!candidate.has.dailyNotes) return ["データなし", "日記なしとして復元"];
+    return [`${item.noteCount}件`, item.invalidItems ? "一部を読み取れません" : "復元できます"];
+  }
+
   function renderCandidate() {
     const meta = $("#restorePreviewMeta");
     const items = $("#restorePreviewItems");
@@ -167,6 +176,7 @@
     addRow(items, "実績・バッジ", ...badgeValue(candidate.inspections.badges));
     addRow(items, "猫図鑑", ...collectionValue(candidate.inspections.collection));
     addRow(items, "ねこコイン", ...coinValue(candidate.inspections.coins));
+    addRow(items, "ひとこと日記", ...dailyNoteValue(candidate.inspections.dailyNotes));
     candidate.notices.forEach((notice) => {
       const item = document.createElement("p");
       item.className = `restore-preview-notice is-${notice.level}`;
