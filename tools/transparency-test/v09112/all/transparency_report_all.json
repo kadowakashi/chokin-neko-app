@@ -1,0 +1,1395 @@
+{
+  "testVersion": "v09112-all",
+  "method": "adaptive two-color perimeter clustering and border-connected background removal",
+  "settings": {
+    "strictThresholdRange": [
+      10.0,
+      16.0
+    ],
+    "featherDistance": 24.0,
+    "contourProtectionFilter": 5,
+    "outerNoiseBandRatio": 0.04,
+    "resize": false,
+    "trim": false
+  },
+  "images": {
+    "cat_celebrate.png": {
+      "backgroundCentersRgb": [
+        [
+          241.381,
+          241.261,
+          240.987
+        ],
+        [
+          253.396,
+          253.31,
+          253.379
+        ]
+      ],
+      "backgroundEstimation": {
+        "edgeSampleCount": 5016,
+        "edgeDistanceP995": 9.463,
+        "strictThreshold": 11.963,
+        "softThreshold": 35.963
+      },
+      "fullyTransparentPixels": 902700,
+      "semiTransparentPixels": 1107,
+      "fullyOpaquePixels": 668709,
+      "transparentRatio": 0.574048,
+      "opaqueBoundingBox": [
+        139,
+        35,
+        1097,
+        1200
+      ],
+      "centralTransparentRatio": 0.116125,
+      "opaqueRgbUnchanged": true,
+      "isolatedNoisePixelsRemoved": 77,
+      "warnings": [],
+      "edgeOpaqueRatio": 0.0,
+      "sourcePath": "assets/cats/cat_celebrate.png",
+      "outputPath": "assets/cats-transparent/cat_celebrate.png",
+      "sourceFormat": "PNG",
+      "sourceMode": "RGB",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "sourceOpaqueBoundingBox": [
+        0,
+        0,
+        1254,
+        1254
+      ],
+      "detectedSourceContentBoundingBox": [
+        139,
+        35,
+        1097,
+        1200
+      ],
+      "outputSize": [
+        1254,
+        1254
+      ],
+      "outputMode": "RGBA",
+      "outputBoundingBoxDifference": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "sourceSha256Before": "fdc48dccfe5a6986088439447ce239fb734b24e4a945af1694d6bfb1b3ab11fc",
+      "outputSha256": "a1caec458c984bf621e0e9477897e08589575fac1f6c893b1c350ec0bb039e4e",
+      "outputFileBytes": 1309603,
+      "pngDecodeOk": true,
+      "hasAlphaChannel": true
+    },
+    "cat_cosmic.png": {
+      "backgroundCentersRgb": [
+        [
+          243.918,
+          243.771,
+          243.82
+        ],
+        [
+          252.612,
+          252.636,
+          252.542
+        ]
+      ],
+      "backgroundEstimation": {
+        "edgeSampleCount": 5016,
+        "edgeDistanceP995": 7.424,
+        "strictThreshold": 10.0,
+        "softThreshold": 34.0
+      },
+      "fullyTransparentPixels": 764312,
+      "semiTransparentPixels": 8033,
+      "fullyOpaquePixels": 800171,
+      "transparentRatio": 0.486044,
+      "opaqueBoundingBox": [
+        75,
+        59,
+        1190,
+        1199
+      ],
+      "centralTransparentRatio": 0.020896,
+      "opaqueRgbUnchanged": true,
+      "isolatedNoisePixelsRemoved": 0,
+      "warnings": [],
+      "edgeOpaqueRatio": 0.0,
+      "sourcePath": "assets/cats/cat_cosmic.png",
+      "outputPath": "assets/cats-transparent/cat_cosmic.png",
+      "sourceFormat": "PNG",
+      "sourceMode": "RGB",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "sourceOpaqueBoundingBox": [
+        0,
+        0,
+        1254,
+        1254
+      ],
+      "detectedSourceContentBoundingBox": [
+        75,
+        59,
+        1190,
+        1199
+      ],
+      "outputSize": [
+        1254,
+        1254
+      ],
+      "outputMode": "RGBA",
+      "outputBoundingBoxDifference": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "sourceSha256Before": "be3cc56bc72d10f17cc01cf90ec711e1f6548a351f2c9cffd4dcbd01db20c571",
+      "outputSha256": "a84b659e47225da2d0c833f6f65c799062d8e7e90accf1a7dcfe6c95da2c2b16",
+      "outputFileBytes": 1950939,
+      "pngDecodeOk": true,
+      "hasAlphaChannel": true
+    },
+    "cat_surprised.png": {
+      "backgroundCentersRgb": [
+        [
+          244.927,
+          244.855,
+          244.639
+        ],
+        [
+          253.693,
+          253.581,
+          253.694
+        ]
+      ],
+      "backgroundEstimation": {
+        "edgeSampleCount": 5016,
+        "edgeDistanceP995": 7.266,
+        "strictThreshold": 10.0,
+        "softThreshold": 34.0
+      },
+      "fullyTransparentPixels": 891630,
+      "semiTransparentPixels": 2112,
+      "fullyOpaquePixels": 678774,
+      "transparentRatio": 0.567009,
+      "opaqueBoundingBox": [
+        117,
+        26,
+        1130,
+        1213
+      ],
+      "centralTransparentRatio": 0.145532,
+      "opaqueRgbUnchanged": true,
+      "isolatedNoisePixelsRemoved": 719,
+      "warnings": [],
+      "edgeOpaqueRatio": 0.0,
+      "sourcePath": "assets/cats/cat_surprised.png",
+      "outputPath": "assets/cats-transparent/cat_surprised.png",
+      "sourceFormat": "PNG",
+      "sourceMode": "RGB",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "sourceOpaqueBoundingBox": [
+        0,
+        0,
+        1254,
+        1254
+      ],
+      "detectedSourceContentBoundingBox": [
+        117,
+        26,
+        1130,
+        1213
+      ],
+      "outputSize": [
+        1254,
+        1254
+      ],
+      "outputMode": "RGBA",
+      "outputBoundingBoxDifference": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "sourceSha256Before": "d85d834a98a1d1afed781c2c9a820b4000bb476c6f751110905e819731d6b333",
+      "outputSha256": "7930b213af166f9ccad5a58b3b0a3baa0d3e0f4964fb677ef93349eddc69ac3b",
+      "outputFileBytes": 1379516,
+      "pngDecodeOk": true,
+      "hasAlphaChannel": true
+    },
+    "cat_royal.png": {
+      "backgroundCentersRgb": [
+        [
+          245.181,
+          245.038,
+          244.826
+        ],
+        [
+          253.746,
+          253.69,
+          253.705
+        ]
+      ],
+      "backgroundEstimation": {
+        "edgeSampleCount": 5016,
+        "edgeDistanceP995": 7.057,
+        "strictThreshold": 10.0,
+        "softThreshold": 34.0
+      },
+      "fullyTransparentPixels": 838127,
+      "semiTransparentPixels": 1087,
+      "fullyOpaquePixels": 733302,
+      "transparentRatio": 0.532985,
+      "opaqueBoundingBox": [
+        194,
+        29,
+        1037,
+        1217
+      ],
+      "centralTransparentRatio": 0.056371,
+      "opaqueRgbUnchanged": true,
+      "isolatedNoisePixelsRemoved": 0,
+      "warnings": [],
+      "edgeOpaqueRatio": 0.0,
+      "sourcePath": "assets/cats/cat_royal.png",
+      "outputPath": "assets/cats-transparent/cat_royal.png",
+      "sourceFormat": "PNG",
+      "sourceMode": "RGB",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "sourceOpaqueBoundingBox": [
+        0,
+        0,
+        1254,
+        1254
+      ],
+      "detectedSourceContentBoundingBox": [
+        194,
+        29,
+        1037,
+        1217
+      ],
+      "outputSize": [
+        1254,
+        1254
+      ],
+      "outputMode": "RGBA",
+      "outputBoundingBoxDifference": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "sourceSha256Before": "0909162ac6747a0ff9d394361e7d2111324f7d0b4397759c0fa2df167b57257c",
+      "outputSha256": "71e5c1f68c52c9763c3ae903c313578e868475dc8dd3f42eec877cb47f64e135",
+      "outputFileBytes": 1538268,
+      "pngDecodeOk": true,
+      "hasAlphaChannel": true
+    },
+    "cat_black.png": {
+      "backgroundCentersRgb": [
+        [
+          242.574,
+          242.424,
+          242.239
+        ],
+        [
+          253.707,
+          253.65,
+          253.694
+        ]
+      ],
+      "backgroundEstimation": {
+        "edgeSampleCount": 5016,
+        "edgeDistanceP995": 9.157,
+        "strictThreshold": 11.657,
+        "softThreshold": 35.657
+      },
+      "fullyTransparentPixels": 1048193,
+      "semiTransparentPixels": 1171,
+      "fullyOpaquePixels": 523152,
+      "transparentRatio": 0.666571,
+      "opaqueBoundingBox": [
+        197,
+        51,
+        1079,
+        1204
+      ],
+      "centralTransparentRatio": 0.235658,
+      "opaqueRgbUnchanged": true,
+      "isolatedNoisePixelsRemoved": 1382,
+      "warnings": [],
+      "edgeOpaqueRatio": 0.0,
+      "sourcePath": "assets/cats/cat_black.png",
+      "outputPath": "assets/cats-transparent/cat_black.png",
+      "sourceFormat": "PNG",
+      "sourceMode": "RGB",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "sourceOpaqueBoundingBox": [
+        0,
+        0,
+        1254,
+        1254
+      ],
+      "detectedSourceContentBoundingBox": [
+        197,
+        51,
+        1079,
+        1204
+      ],
+      "outputSize": [
+        1254,
+        1254
+      ],
+      "outputMode": "RGBA",
+      "outputBoundingBoxDifference": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "sourceSha256Before": "17aafe6afe97a2b50316bfbd45fe452e9313f8a9f11f202dc23cdc453e6ed9e6",
+      "outputSha256": "a3ffd948d25d8bcf508a54178bf9afa3d3262bb372778ac899320ac2c50c5b3c",
+      "outputFileBytes": 1268570,
+      "pngDecodeOk": true,
+      "hasAlphaChannel": true
+    },
+    "cat_calico.png": {
+      "backgroundCentersRgb": [
+        [
+          245.365,
+          245.205,
+          245.041
+        ],
+        [
+          253.671,
+          253.621,
+          253.608
+        ]
+      ],
+      "backgroundEstimation": {
+        "edgeSampleCount": 5016,
+        "edgeDistanceP995": 6.558,
+        "strictThreshold": 10.0,
+        "softThreshold": 34.0
+      },
+      "fullyTransparentPixels": 1046273,
+      "semiTransparentPixels": 1397,
+      "fullyOpaquePixels": 524846,
+      "transparentRatio": 0.66535,
+      "opaqueBoundingBox": [
+        230,
+        23,
+        1019,
+        1218
+      ],
+      "centralTransparentRatio": 0.215728,
+      "opaqueRgbUnchanged": true,
+      "isolatedNoisePixelsRemoved": 0,
+      "warnings": [],
+      "edgeOpaqueRatio": 0.0,
+      "sourcePath": "assets/cats/cat_calico.png",
+      "outputPath": "assets/cats-transparent/cat_calico.png",
+      "sourceFormat": "PNG",
+      "sourceMode": "RGB",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "sourceOpaqueBoundingBox": [
+        0,
+        0,
+        1254,
+        1254
+      ],
+      "detectedSourceContentBoundingBox": [
+        230,
+        23,
+        1019,
+        1218
+      ],
+      "outputSize": [
+        1254,
+        1254
+      ],
+      "outputMode": "RGBA",
+      "outputBoundingBoxDifference": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "sourceSha256Before": "be85b370c5d7dc8601e1e4613737f799c8656ae153fbea4424bda0773b8fb6af",
+      "outputSha256": "27d063d2450c0a18a2f3c4522290b59121fc737e9ddb96ee262c23bccb524e10",
+      "outputFileBytes": 1411568,
+      "pngDecodeOk": true,
+      "hasAlphaChannel": true
+    },
+    "cat_orange_tabby.png": {
+      "backgroundCentersRgb": [
+        [
+          245.312,
+          244.863,
+          244.938
+        ],
+        [
+          253.633,
+          253.507,
+          253.528
+        ]
+      ],
+      "backgroundEstimation": {
+        "edgeSampleCount": 5016,
+        "edgeDistanceP995": 6.779,
+        "strictThreshold": 10.0,
+        "softThreshold": 34.0
+      },
+      "fullyTransparentPixels": 987041,
+      "semiTransparentPixels": 1177,
+      "fullyOpaquePixels": 584298,
+      "transparentRatio": 0.627683,
+      "opaqueBoundingBox": [
+        198,
+        23,
+        1060,
+        1166
+      ],
+      "centralTransparentRatio": 0.171208,
+      "opaqueRgbUnchanged": true,
+      "isolatedNoisePixelsRemoved": 6,
+      "warnings": [],
+      "edgeOpaqueRatio": 0.0,
+      "sourcePath": "assets/cats/cat_orange_tabby.png",
+      "outputPath": "assets/cats-transparent/cat_orange_tabby.png",
+      "sourceFormat": "PNG",
+      "sourceMode": "RGB",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "sourceOpaqueBoundingBox": [
+        0,
+        0,
+        1254,
+        1254
+      ],
+      "detectedSourceContentBoundingBox": [
+        198,
+        23,
+        1060,
+        1166
+      ],
+      "outputSize": [
+        1254,
+        1254
+      ],
+      "outputMode": "RGBA",
+      "outputBoundingBoxDifference": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "sourceSha256Before": "ff995da9cf3e871f9f203566e85b8e3734398351971348081554a3238c848b87",
+      "outputSha256": "b81af092424ec83abed6c3a7fdfc18a942f1a924b3cffff144566bcff861bb19",
+      "outputFileBytes": 1539084,
+      "pngDecodeOk": true,
+      "hasAlphaChannel": true
+    },
+    "cat_hachiware.png": {
+      "backgroundCentersRgb": [
+        [
+          245.274,
+          245.261,
+          245.051
+        ],
+        [
+          253.675,
+          253.56,
+          253.668
+        ]
+      ],
+      "backgroundEstimation": {
+        "edgeSampleCount": 5016,
+        "edgeDistanceP995": 6.296,
+        "strictThreshold": 10.0,
+        "softThreshold": 34.0
+      },
+      "fullyTransparentPixels": 1040196,
+      "semiTransparentPixels": 1355,
+      "fullyOpaquePixels": 530965,
+      "transparentRatio": 0.661485,
+      "opaqueBoundingBox": [
+        211,
+        51,
+        1015,
+        1195
+      ],
+      "centralTransparentRatio": 0.099194,
+      "opaqueRgbUnchanged": true,
+      "isolatedNoisePixelsRemoved": 23,
+      "warnings": [],
+      "edgeOpaqueRatio": 0.0,
+      "sourcePath": "assets/cats/cat_hachiware.png",
+      "outputPath": "assets/cats-transparent/cat_hachiware.png",
+      "sourceFormat": "PNG",
+      "sourceMode": "RGB",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "sourceOpaqueBoundingBox": [
+        0,
+        0,
+        1254,
+        1254
+      ],
+      "detectedSourceContentBoundingBox": [
+        211,
+        51,
+        1015,
+        1195
+      ],
+      "outputSize": [
+        1254,
+        1254
+      ],
+      "outputMode": "RGBA",
+      "outputBoundingBoxDifference": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "sourceSha256Before": "d528253f529ab6071c2f29cc346093441baf40bae9ab8696dd98332e53450134",
+      "outputSha256": "606b7b99a29cad2bb2b917c7e5a21e1e067b330b50d82e88ed7910b09d8e7a4e",
+      "outputFileBytes": 1416388,
+      "pngDecodeOk": true,
+      "hasAlphaChannel": true
+    },
+    "cat_ninja.png": {
+      "backgroundCentersRgb": [
+        [
+          245.459,
+          245.45,
+          245.105
+        ],
+        [
+          253.203,
+          253.101,
+          253.104
+        ]
+      ],
+      "backgroundEstimation": {
+        "edgeSampleCount": 5016,
+        "edgeDistanceP995": 6.349,
+        "strictThreshold": 10.0,
+        "softThreshold": 34.0
+      },
+      "fullyTransparentPixels": 932705,
+      "semiTransparentPixels": 1704,
+      "fullyOpaquePixels": 638107,
+      "transparentRatio": 0.593129,
+      "opaqueBoundingBox": [
+        130,
+        98,
+        1165,
+        1155
+      ],
+      "centralTransparentRatio": 0.061804,
+      "opaqueRgbUnchanged": true,
+      "isolatedNoisePixelsRemoved": 15,
+      "warnings": [],
+      "edgeOpaqueRatio": 0.0,
+      "sourcePath": "assets/cats/cat_ninja.png",
+      "outputPath": "assets/cats-transparent/cat_ninja.png",
+      "sourceFormat": "PNG",
+      "sourceMode": "RGB",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "sourceOpaqueBoundingBox": [
+        0,
+        0,
+        1254,
+        1254
+      ],
+      "detectedSourceContentBoundingBox": [
+        130,
+        98,
+        1165,
+        1155
+      ],
+      "outputSize": [
+        1254,
+        1254
+      ],
+      "outputMode": "RGBA",
+      "outputBoundingBoxDifference": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "sourceSha256Before": "d9ea6f1a03cb5d4039123440202ce60670d908c356a7ec1e2fbaa9a3596165cd",
+      "outputSha256": "1ace38240e6e8cba1ef58e63c8d6a54eb35caea1715490c36cb566e490e54343",
+      "outputFileBytes": 1390955,
+      "pngDecodeOk": true,
+      "hasAlphaChannel": true
+    },
+    "cat_wizard.png": {
+      "backgroundCentersRgb": [
+        [
+          246.697,
+          246.674,
+          246.391
+        ],
+        [
+          253.742,
+          253.655,
+          253.7
+        ]
+      ],
+      "backgroundEstimation": {
+        "edgeSampleCount": 5016,
+        "edgeDistanceP995": 5.417,
+        "strictThreshold": 10.0,
+        "softThreshold": 34.0
+      },
+      "fullyTransparentPixels": 903731,
+      "semiTransparentPixels": 16824,
+      "fullyOpaquePixels": 651961,
+      "transparentRatio": 0.574704,
+      "opaqueBoundingBox": [
+        136,
+        83,
+        1112,
+        1144
+      ],
+      "centralTransparentRatio": 0.055689,
+      "opaqueRgbUnchanged": true,
+      "isolatedNoisePixelsRemoved": 0,
+      "warnings": [],
+      "edgeOpaqueRatio": 0.0,
+      "sourcePath": "assets/cats/cat_wizard.png",
+      "outputPath": "assets/cats-transparent/cat_wizard.png",
+      "sourceFormat": "PNG",
+      "sourceMode": "RGB",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "sourceOpaqueBoundingBox": [
+        0,
+        0,
+        1254,
+        1254
+      ],
+      "detectedSourceContentBoundingBox": [
+        136,
+        83,
+        1112,
+        1144
+      ],
+      "outputSize": [
+        1254,
+        1254
+      ],
+      "outputMode": "RGBA",
+      "outputBoundingBoxDifference": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "sourceSha256Before": "b27c90fd44f0462aee79f8aac96a5f30d60fa6a99adec9c9395ace34490d0f83",
+      "outputSha256": "e5a9a2893243c814daa1e1a50b6784daf8dae3bed2d07fee1999affb124ce6f0",
+      "outputFileBytes": 1539603,
+      "pngDecodeOk": true,
+      "hasAlphaChannel": true
+    },
+    "cat_samurai.png": {
+      "backgroundCentersRgb": [
+        [
+          247.875,
+          247.795,
+          247.55
+        ],
+        [
+          253.748,
+          253.611,
+          253.685
+        ]
+      ],
+      "backgroundEstimation": {
+        "edgeSampleCount": 5016,
+        "edgeDistanceP995": 4.645,
+        "strictThreshold": 10.0,
+        "softThreshold": 34.0
+      },
+      "fullyTransparentPixels": 961158,
+      "semiTransparentPixels": 1737,
+      "fullyOpaquePixels": 609621,
+      "transparentRatio": 0.611223,
+      "opaqueBoundingBox": [
+        176,
+        45,
+        1030,
+        1204
+      ],
+      "centralTransparentRatio": 0.141793,
+      "opaqueRgbUnchanged": true,
+      "isolatedNoisePixelsRemoved": 2158,
+      "warnings": [],
+      "edgeOpaqueRatio": 0.0,
+      "sourcePath": "assets/cats/cat_samurai.png",
+      "outputPath": "assets/cats-transparent/cat_samurai.png",
+      "sourceFormat": "PNG",
+      "sourceMode": "RGB",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "sourceOpaqueBoundingBox": [
+        0,
+        0,
+        1254,
+        1254
+      ],
+      "detectedSourceContentBoundingBox": [
+        176,
+        45,
+        1030,
+        1204
+      ],
+      "outputSize": [
+        1254,
+        1254
+      ],
+      "outputMode": "RGBA",
+      "outputBoundingBoxDifference": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "sourceSha256Before": "2e3c6f14507ef3c9ae095dbfaf3ebf866113ad17d95817bd42bfa69711cc6d7f",
+      "outputSha256": "ee46bcf784107ac0698c9b67f5319049db13c47e038a978b66aebf802a14bd20",
+      "outputFileBytes": 1558864,
+      "pngDecodeOk": true,
+      "hasAlphaChannel": true
+    },
+    "cat_angel.png": {
+      "backgroundCentersRgb": [
+        [
+          245.534,
+          245.206,
+          245.07
+        ],
+        [
+          253.792,
+          253.714,
+          253.735
+        ]
+      ],
+      "backgroundEstimation": {
+        "edgeSampleCount": 5016,
+        "edgeDistanceP995": 6.49,
+        "strictThreshold": 10.0,
+        "softThreshold": 34.0
+      },
+      "fullyTransparentPixels": 953308,
+      "semiTransparentPixels": 9696,
+      "fullyOpaquePixels": 609512,
+      "transparentRatio": 0.606231,
+      "opaqueBoundingBox": [
+        166,
+        39,
+        1098,
+        1200
+      ],
+      "centralTransparentRatio": 0.118846,
+      "opaqueRgbUnchanged": true,
+      "isolatedNoisePixelsRemoved": 10,
+      "warnings": [],
+      "edgeOpaqueRatio": 0.0,
+      "sourcePath": "assets/cats/cat_angel.png",
+      "outputPath": "assets/cats-transparent/cat_angel.png",
+      "sourceFormat": "PNG",
+      "sourceMode": "RGB",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "sourceOpaqueBoundingBox": [
+        0,
+        0,
+        1254,
+        1254
+      ],
+      "detectedSourceContentBoundingBox": [
+        166,
+        39,
+        1098,
+        1200
+      ],
+      "outputSize": [
+        1254,
+        1254
+      ],
+      "outputMode": "RGBA",
+      "outputBoundingBoxDifference": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "sourceSha256Before": "4bc59f6d99df6a2f33d4418a4f7a2a10f7898dc195e539e6e4d0ebe6ddb21087",
+      "outputSha256": "e77e7e5eddb9eccb71606d46759afab88c59bc5f76086df56ce9f69c6a41ec28",
+      "outputFileBytes": 1407919,
+      "pngDecodeOk": true,
+      "hasAlphaChannel": true
+    },
+    "cat_deity.png": {
+      "backgroundCentersRgb": [
+        [
+          245.508,
+          245.335,
+          245.088
+        ],
+        [
+          253.273,
+          253.144,
+          253.139
+        ]
+      ],
+      "backgroundEstimation": {
+        "edgeSampleCount": 5013,
+        "edgeDistanceP995": 6.397,
+        "strictThreshold": 10.0,
+        "softThreshold": 34.0
+      },
+      "fullyTransparentPixels": 718217,
+      "semiTransparentPixels": 14966,
+      "fullyOpaquePixels": 839333,
+      "transparentRatio": 0.456731,
+      "opaqueBoundingBox": [
+        150,
+        0,
+        1103,
+        1196
+      ],
+      "centralTransparentRatio": 0.013403,
+      "opaqueRgbUnchanged": true,
+      "isolatedNoisePixelsRemoved": 36,
+      "warnings": [],
+      "edgeOpaqueRatio": 0.001595,
+      "sourcePath": "assets/cats/cat_deity.png",
+      "outputPath": "assets/cats-transparent/cat_deity.png",
+      "sourceFormat": "PNG",
+      "sourceMode": "RGB",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "sourceOpaqueBoundingBox": [
+        0,
+        0,
+        1254,
+        1254
+      ],
+      "detectedSourceContentBoundingBox": [
+        150,
+        0,
+        1103,
+        1196
+      ],
+      "outputSize": [
+        1254,
+        1254
+      ],
+      "outputMode": "RGBA",
+      "outputBoundingBoxDifference": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "sourceSha256Before": "94be9805c8c9ba2a8a07476daf5b5520e9d70bc5e4a6ca1c10c0e7eecf102894",
+      "outputSha256": "f2f4dd846b42d24839ad10d0113337b9e11719477eba7f1ed6222053a0c814ed",
+      "outputFileBytes": 1973180,
+      "pngDecodeOk": true,
+      "hasAlphaChannel": true
+    },
+    "cat_gray.png": {
+      "backgroundCentersRgb": [
+        [
+          247.65,
+          247.524,
+          247.388
+        ],
+        [
+          253.758,
+          253.681,
+          253.737
+        ]
+      ],
+      "backgroundEstimation": {
+        "edgeSampleCount": 5016,
+        "edgeDistanceP995": 7.832,
+        "strictThreshold": 10.332,
+        "softThreshold": 34.332
+      },
+      "fullyTransparentPixels": 1067606,
+      "semiTransparentPixels": 1055,
+      "fullyOpaquePixels": 503855,
+      "transparentRatio": 0.678916,
+      "opaqueBoundingBox": [
+        139,
+        121,
+        1065,
+        1126
+      ],
+      "centralTransparentRatio": 0.096182,
+      "opaqueRgbUnchanged": true,
+      "isolatedNoisePixelsRemoved": 1,
+      "warnings": [],
+      "edgeOpaqueRatio": 0.0,
+      "sourcePath": "assets/cats/cat_gray.png",
+      "outputPath": "assets/cats-transparent/cat_gray.png",
+      "sourceFormat": "PNG",
+      "sourceMode": "RGB",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "sourceOpaqueBoundingBox": [
+        0,
+        0,
+        1254,
+        1254
+      ],
+      "detectedSourceContentBoundingBox": [
+        139,
+        121,
+        1065,
+        1126
+      ],
+      "outputSize": [
+        1254,
+        1254
+      ],
+      "outputMode": "RGBA",
+      "outputBoundingBoxDifference": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "sourceSha256Before": "8051ee4059f84ed43cfa72ba51dcc9fba7846d5d8353cc5b26c570d80f0e769d",
+      "outputSha256": "0038bde3ebb9cf1ea6c0cef9d83e6850d5c50a86664d68cba6a04015640ffa87",
+      "outputFileBytes": 1289741,
+      "pngDecodeOk": true,
+      "hasAlphaChannel": true
+    },
+    "cat_pirate.png": {
+      "backgroundCentersRgb": [
+        [
+          247.025,
+          246.819,
+          246.693
+        ],
+        [
+          253.092,
+          253.095,
+          253.07
+        ]
+      ],
+      "backgroundEstimation": {
+        "edgeSampleCount": 5016,
+        "edgeDistanceP995": 5.345,
+        "strictThreshold": 10.0,
+        "softThreshold": 34.0
+      },
+      "fullyTransparentPixels": 953257,
+      "semiTransparentPixels": 1276,
+      "fullyOpaquePixels": 617983,
+      "transparentRatio": 0.606199,
+      "opaqueBoundingBox": [
+        201,
+        59,
+        1072,
+        1183
+      ],
+      "centralTransparentRatio": 0.059818,
+      "opaqueRgbUnchanged": true,
+      "isolatedNoisePixelsRemoved": 0,
+      "warnings": [],
+      "edgeOpaqueRatio": 0.0,
+      "sourcePath": "assets/cats/cat_pirate.png",
+      "outputPath": "assets/cats-transparent/cat_pirate.png",
+      "sourceFormat": "PNG",
+      "sourceMode": "RGB",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "sourceOpaqueBoundingBox": [
+        0,
+        0,
+        1254,
+        1254
+      ],
+      "detectedSourceContentBoundingBox": [
+        201,
+        59,
+        1072,
+        1183
+      ],
+      "outputSize": [
+        1254,
+        1254
+      ],
+      "outputMode": "RGBA",
+      "outputBoundingBoxDifference": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "sourceSha256Before": "73e37a3a91035e4de358686be67fd237634db238e659d35fd5ddf52070bc9d45",
+      "outputSha256": "87da9e2042ec07f7f640644abc03e0a231b39c2e1f610e3e9502a81c1cb208f7",
+      "outputFileBytes": 1509018,
+      "pngDecodeOk": true,
+      "hasAlphaChannel": true
+    },
+    "cat_knight.png": {
+      "backgroundCentersRgb": [
+        [
+          247.458,
+          247.413,
+          247.212
+        ],
+        [
+          253.256,
+          253.183,
+          253.186
+        ]
+      ],
+      "backgroundEstimation": {
+        "edgeSampleCount": 5016,
+        "edgeDistanceP995": 5.037,
+        "strictThreshold": 10.0,
+        "softThreshold": 34.0
+      },
+      "fullyTransparentPixels": 934058,
+      "semiTransparentPixels": 1320,
+      "fullyOpaquePixels": 637138,
+      "transparentRatio": 0.59399,
+      "opaqueBoundingBox": [
+        174,
+        27,
+        1122,
+        1205
+      ],
+      "centralTransparentRatio": 0.08104,
+      "opaqueRgbUnchanged": true,
+      "isolatedNoisePixelsRemoved": 0,
+      "warnings": [],
+      "edgeOpaqueRatio": 0.0,
+      "sourcePath": "assets/cats/cat_knight.png",
+      "outputPath": "assets/cats-transparent/cat_knight.png",
+      "sourceFormat": "PNG",
+      "sourceMode": "RGB",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "sourceOpaqueBoundingBox": [
+        0,
+        0,
+        1254,
+        1254
+      ],
+      "detectedSourceContentBoundingBox": [
+        174,
+        27,
+        1122,
+        1205
+      ],
+      "outputSize": [
+        1254,
+        1254
+      ],
+      "outputMode": "RGBA",
+      "outputBoundingBoxDifference": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "sourceSha256Before": "fe914190fed84a75d8d02862363df8176961f45396fbb75bc8f2118e563872f3",
+      "outputSha256": "1fc00b7bb14160c18df47cbf4b157a90aaaaf63ab39f718dfe7f2b6a6e125a02",
+      "outputFileBytes": 1700659,
+      "pngDecodeOk": true,
+      "hasAlphaChannel": true
+    },
+    "cat_detective.png": {
+      "backgroundCentersRgb": [
+        [
+          240.797,
+          240.472,
+          240.35
+        ],
+        [
+          252.175,
+          251.996,
+          251.976
+        ]
+      ],
+      "backgroundEstimation": {
+        "edgeSampleCount": 5016,
+        "edgeDistanceP995": 9.328,
+        "strictThreshold": 11.828,
+        "softThreshold": 35.828
+      },
+      "fullyTransparentPixels": 892903,
+      "semiTransparentPixels": 1162,
+      "fullyOpaquePixels": 678451,
+      "transparentRatio": 0.567818,
+      "opaqueBoundingBox": [
+        117,
+        88,
+        1174,
+        1158
+      ],
+      "centralTransparentRatio": 0.083331,
+      "opaqueRgbUnchanged": true,
+      "isolatedNoisePixelsRemoved": 0,
+      "warnings": [],
+      "edgeOpaqueRatio": 0.0,
+      "sourcePath": "assets/cats/cat_detective.png",
+      "outputPath": "assets/cats-transparent/cat_detective.png",
+      "sourceFormat": "PNG",
+      "sourceMode": "RGB",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "sourceOpaqueBoundingBox": [
+        0,
+        0,
+        1254,
+        1254
+      ],
+      "detectedSourceContentBoundingBox": [
+        117,
+        88,
+        1174,
+        1158
+      ],
+      "outputSize": [
+        1254,
+        1254
+      ],
+      "outputMode": "RGBA",
+      "outputBoundingBoxDifference": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "sourceSha256Before": "de3db6af63003713231232a0b977b4611a1ebe1497ef35a9b90306fac2f5eb3e",
+      "outputSha256": "896105e5d21a57f5a14ca52a62122373909d2dfc02a578aa2da5c2cefdb7d489",
+      "outputFileBytes": 1727649,
+      "pngDecodeOk": true,
+      "hasAlphaChannel": true
+    },
+    "cat_chef.png": {
+      "backgroundCentersRgb": [
+        [
+          242.968,
+          242.913,
+          242.665
+        ],
+        [
+          253.791,
+          253.711,
+          253.765
+        ]
+      ],
+      "backgroundEstimation": {
+        "edgeSampleCount": 5016,
+        "edgeDistanceP995": 8.237,
+        "strictThreshold": 10.737,
+        "softThreshold": 34.737
+      },
+      "fullyTransparentPixels": 970308,
+      "semiTransparentPixels": 1656,
+      "fullyOpaquePixels": 600552,
+      "transparentRatio": 0.617042,
+      "opaqueBoundingBox": [
+        112,
+        43,
+        1125,
+        1202
+      ],
+      "centralTransparentRatio": 0.192448,
+      "opaqueRgbUnchanged": true,
+      "isolatedNoisePixelsRemoved": 0,
+      "warnings": [],
+      "edgeOpaqueRatio": 0.0,
+      "sourcePath": "assets/cats/cat_chef.png",
+      "outputPath": "assets/cats-transparent/cat_chef.png",
+      "sourceFormat": "PNG",
+      "sourceMode": "RGB",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "sourceOpaqueBoundingBox": [
+        0,
+        0,
+        1254,
+        1254
+      ],
+      "detectedSourceContentBoundingBox": [
+        112,
+        43,
+        1125,
+        1202
+      ],
+      "outputSize": [
+        1254,
+        1254
+      ],
+      "outputMode": "RGBA",
+      "outputBoundingBoxDifference": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "sourceSha256Before": "6960408f97b1e2cfa04d1754b24586964d101004c2b0c946ebf0085ec1f45b6b",
+      "outputSha256": "bcf23b470a90f5b64b81292c938f9531215eb2f04aabb2fc9f3a87a6f4619261",
+      "outputFileBytes": 1494863,
+      "pngDecodeOk": true,
+      "hasAlphaChannel": true
+    },
+    "cat_dragon.png": {
+      "backgroundCentersRgb": [
+        [
+          220.35,
+          219.65,
+          219.8
+        ],
+        [
+          247.027,
+          246.865,
+          246.705
+        ]
+      ],
+      "backgroundEstimation": {
+        "edgeSampleCount": 5016,
+        "edgeDistanceP995": 15.946,
+        "strictThreshold": 16.0,
+        "softThreshold": 40.0
+      },
+      "fullyTransparentPixels": 833930,
+      "semiTransparentPixels": 6568,
+      "fullyOpaquePixels": 732018,
+      "transparentRatio": 0.530316,
+      "opaqueBoundingBox": [
+        20,
+        51,
+        1236,
+        1185
+      ],
+      "centralTransparentRatio": 0.038776,
+      "opaqueRgbUnchanged": true,
+      "isolatedNoisePixelsRemoved": 280,
+      "warnings": [],
+      "edgeOpaqueRatio": 0.0,
+      "sourcePath": "assets/cats/cat_dragon.png",
+      "outputPath": "assets/cats-transparent/cat_dragon.png",
+      "sourceFormat": "PNG",
+      "sourceMode": "RGB",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "sourceOpaqueBoundingBox": [
+        0,
+        0,
+        1254,
+        1254
+      ],
+      "detectedSourceContentBoundingBox": [
+        20,
+        51,
+        1236,
+        1185
+      ],
+      "outputSize": [
+        1254,
+        1254
+      ],
+      "outputMode": "RGBA",
+      "outputBoundingBoxDifference": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "sourceSha256Before": "64a82f96982e44dc00b233ce938cdb5bf83b95b3d5a54ec2e972ddef90ca6b09",
+      "outputSha256": "23497559f6cf1a6f84f7d9f948c4af7bfab33b8854d55f41586c18a0b88cfaac",
+      "outputFileBytes": 1947334,
+      "pngDecodeOk": true,
+      "hasAlphaChannel": true
+    }
+  },
+  "sourceHashesUnchanged": true,
+  "sourceSha256After": {
+    "cat_celebrate.png": "fdc48dccfe5a6986088439447ce239fb734b24e4a945af1694d6bfb1b3ab11fc",
+    "cat_cosmic.png": "be3cc56bc72d10f17cc01cf90ec711e1f6548a351f2c9cffd4dcbd01db20c571",
+    "cat_surprised.png": "d85d834a98a1d1afed781c2c9a820b4000bb476c6f751110905e819731d6b333",
+    "cat_royal.png": "0909162ac6747a0ff9d394361e7d2111324f7d0b4397759c0fa2df167b57257c",
+    "cat_black.png": "17aafe6afe97a2b50316bfbd45fe452e9313f8a9f11f202dc23cdc453e6ed9e6",
+    "cat_calico.png": "be85b370c5d7dc8601e1e4613737f799c8656ae153fbea4424bda0773b8fb6af",
+    "cat_orange_tabby.png": "ff995da9cf3e871f9f203566e85b8e3734398351971348081554a3238c848b87",
+    "cat_hachiware.png": "d528253f529ab6071c2f29cc346093441baf40bae9ab8696dd98332e53450134",
+    "cat_ninja.png": "d9ea6f1a03cb5d4039123440202ce60670d908c356a7ec1e2fbaa9a3596165cd",
+    "cat_wizard.png": "b27c90fd44f0462aee79f8aac96a5f30d60fa6a99adec9c9395ace34490d0f83",
+    "cat_samurai.png": "2e3c6f14507ef3c9ae095dbfaf3ebf866113ad17d95817bd42bfa69711cc6d7f",
+    "cat_angel.png": "4bc59f6d99df6a2f33d4418a4f7a2a10f7898dc195e539e6e4d0ebe6ddb21087",
+    "cat_deity.png": "94be9805c8c9ba2a8a07476daf5b5520e9d70bc5e4a6ca1c10c0e7eecf102894",
+    "cat_gray.png": "8051ee4059f84ed43cfa72ba51dcc9fba7846d5d8353cc5b26c570d80f0e769d",
+    "cat_pirate.png": "73e37a3a91035e4de358686be67fd237634db238e659d35fd5ddf52070bc9d45",
+    "cat_knight.png": "fe914190fed84a75d8d02862363df8176961f45396fbb75bc8f2118e563872f3",
+    "cat_detective.png": "de3db6af63003713231232a0b977b4611a1ebe1497ef35a9b90306fac2f5eb3e",
+    "cat_chef.png": "6960408f97b1e2cfa04d1754b24586964d101004c2b0c946ebf0085ec1f45b6b",
+    "cat_dragon.png": "64a82f96982e44dc00b233ce938cdb5bf83b95b3d5a54ec2e972ddef90ca6b09"
+  },
+  "comparisonSheets": [
+    "tools/transparency-test/v09112/all/comparison_sheet_01.png",
+    "tools/transparency-test/v09112/all/comparison_sheet_02.png",
+    "tools/transparency-test/v09112/all/comparison_sheet_03.png",
+    "tools/transparency-test/v09112/all/comparison_sheet_04.png"
+  ],
+  "majorWarningCount": 0
+}

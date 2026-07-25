@@ -1,4 +1,4 @@
-# 貯金アプリ v0.9.14
+# 貯金アプリ v0.9.15
 
 スマートフォン向け・静的Webアプリです。`index.html` をWebサーバー経由で開くか、GitHub Pagesで公開してください。
 
@@ -81,7 +81,7 @@ v0.9.8.3では、通常画面の猫を固定タブより背面に整理し、達
 
 コイン素材は `assets/coins/`、演出主役素材は `assets/scenes/` に配置し、`assets/manifest.json` の `available` へパスを追加します。未配置時は従来のSVG・CSS・Canvas表現へ戻ります。
 
-追加可能な主役素材：`gold_sun.png`、`energy_core.png`、`cat_temple_foreground.png`、`necessary_expense_stamp_cat.png`。既存の `space_bg.png`、`cat_temple_bg.png`、宝箱素材も同じ読込経路です。
+演出主役素材：`golden_blessing_core.png`、`shockwave_core.png`、`solar_core.png`、`cat_temple_foreground.png`、`necessary_expense_stamp_cat.png`。既存の `space_bg.png`、`cat_temple_bg.png`、宝箱素材も同じ読込経路です。
 
 ## v0.9.10 実績・バッジ
 
@@ -120,6 +120,13 @@ v0.9.8.3では、通常画面の猫を固定タブより背面に整理し、達
 - 猫図鑑は既存の取得状態を維持したまま22匹へ拡張され、新しい3匹は未取得から始まります。
 - 新しい猫画像は `assets/cats-transparent/` の事前透過済みPNGを直接表示します。
 - レアリティ抽選率と既存猫の重み、ねこコイン、猫メダルの仕様は変更していません。
+
+## v0.9.15 演出主役画像
+
+- 衝撃波・黄金祝福・太陽風の主役を、事前透過済みPNG画像へ変更しました。
+- 主役画像は直接表示し、背景には光粒、紙吹雪、星、発光リング、オーロラ、走査光、レンズフレア、流れ星、背景の脈動を併用します。
+- 保存データのキー・形式・抽選条件は変更していません。
+- 新しい主役画像3枚はService Workerの事前キャッシュへ追加し、オフライン表示に対応しています。
 
 ## v0.9.13 ひとこと日記
 

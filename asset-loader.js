@@ -4,7 +4,7 @@
   let mountToken = 0;
   let availabilityPromise = null;
   const objectUrls = new Set();
-  const keyFor = (showName, type) => showName.includes('legendary') ? 'temple' : showName.includes('treasure') ? 'treasure' : showName === 'cosmic' ? 'cosmic' : showName === 'gold' ? 'gold' : showName === 'shock' ? 'shock' : showName.includes('cat-blessing') ? 'cat' : showName.includes('gacha-legend') ? 'gachaLegend' : showName.includes('gacha-super') || showName.includes('gacha-ultra') ? 'gachaSuper' : showName.includes('gacha-') ? 'gachaNormal' : type === 'regret' ? 'regret' : type === 'necessary' ? 'necessary' : type === 'best' ? 'best' : null;
+  const keyFor = (showName, type) => showName.includes('legendary') ? 'temple' : showName.includes('treasure') ? 'treasure' : showName === 'cosmic' ? 'cosmic' : showName === 'gold' ? 'gold' : showName === 'shock' ? 'shock' : showName === 'solar' ? 'solar' : showName.includes('cat-blessing') ? 'cat' : showName.includes('gacha-legend') ? 'gachaLegend' : showName.includes('gacha-super') || showName.includes('gacha-ultra') ? 'gachaSuper' : showName.includes('gacha-') ? 'gachaNormal' : type === 'regret' ? 'regret' : type === 'necessary' ? 'necessary' : type === 'best' ? 'best' : null;
   const availableAssets = () => availabilityPromise || (availabilityPromise = fetch('./assets/manifest.json').then(response => response.ok ? response.json() : {available:[]}).then(data => Array.isArray(data.available) ? data.available : []).catch(() => []));
   async function mount(container, showName, type) {
     const token = ++mountToken, entries = assets[keyFor(showName, type)];
@@ -13,9 +13,22 @@
       const available=await availableAssets(), mounted=[];
       for(const asset of entries){
         if(!available.includes(asset.src))continue;
-        const response=await fetch(`./${asset.src}`,{cache:'no-cache'});if(!response.ok)continue;
-        let url=URL.createObjectURL(await response.blob());if(token!==mountToken||!container.isConnected){URL.revokeObjectURL(url);continue;}
-        objectUrls.add(url);const image=new Image();image.alt='';image.decoding='async';image.src=url;image.className=`${asset.mode==='main'?'generated-scene-main':'generated-scene-bg'} ${asset.className||''}`;await image.decode().catch(()=>{});
+        let url=null;const image=new Image();image.alt='';image.setAttribute('aria-hidden','true');image.decoding='async';image.className=`${asset.mode==='main'?'generated-scene-main':'generated-scene-bg'} ${asset.className||''}`;
+        if(asset.direct){
+          image.src=`./${asset.src}`;
+          await new Promise(resolve=>{
+            let settled=false,timer=0;
+            const finish=()=>{if(settled)return;settled=true;clearTimeout(timer);image.onload=null;image.onerror=null;resolve();};
+            image.onload=finish;image.onerror=finish;timer=setTimeout(finish,5000);
+            if(image.complete)finish();
+          });
+          await image.decode().catch(()=>{});
+          if(!image.complete||!image.naturalWidth)continue;
+        }else{
+          const response=await fetch(`./${asset.src}`,{cache:'no-cache'});if(!response.ok)continue;
+          url=URL.createObjectURL(await response.blob());if(token!==mountToken||!container.isConnected){URL.revokeObjectURL(url);continue;}
+          objectUrls.add(url);image.src=url;await image.decode().catch(()=>{});
+        }
         const imageProcessor=window.ChokinCatImages,requiresCleanBackground=asset.src==='assets/scenes/necessary_expense_stamp_cat.png',canProcess=imageProcessor?.isProcessableSource?.(asset.src)||imageProcessor?.isCatSource?.(asset.src);
         if(asset.mode==='main'&&requiresCleanBackground&&!canProcess){URL.revokeObjectURL(url);objectUrls.delete(url);continue;}
         if(asset.mode==='main'&&canProcess){

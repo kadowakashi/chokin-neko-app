@@ -109,13 +109,15 @@ def main() -> int:
     try:
         catalog = json.loads((ROOT / "assets/cats/cat-catalog.json").read_text(encoding="utf-8-sig"))
         cats = [cat for cat in catalog.get("cats", []) if cat.get("enabled", True)]
-        image_paths = [f"assets/cats/{cat['image']}" for cat in cats]
+        source_image_paths = [f"assets/cats/{cat['image']}" for cat in cats]
+        available_source_image_paths = [path for path in source_image_paths if exact_file(path)]
+        image_paths = [f"assets/cats-transparent/{cat['image']}" for cat in cats]
         missing = [path for path in image_paths if not exact_file(path)]
         if missing:
-            error("猫画像不足: " + ", ".join(missing))
+            error("透過済み猫画像不足: " + ", ".join(missing))
         asset_manifest = json.loads((ROOT / "assets/manifest.json").read_text(encoding="utf-8-sig"))
         available = set(asset_manifest.get("available", []))
-        absent = [path for path in image_paths if path not in available]
+        absent = [path for path in image_paths + available_source_image_paths if path not in available]
         if absent:
             error("assets/manifest.json欠落: " + ", ".join(absent))
         broken_available = [path for path in sorted(available) if not exact_file(path)]

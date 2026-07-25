@@ -1,0 +1,236 @@
+{
+  "testVersion": "v0.9.14-new-cats",
+  "method": "adaptive two-color perimeter clustering and border-connected background removal",
+  "settings": {
+    "strictThresholdRange": [
+      10.0,
+      16.0
+    ],
+    "featherDistance": 24.0,
+    "contourProtectionFilter": 5,
+    "resize": false,
+    "trim": false
+  },
+  "images": {
+    "gardener": {
+      "backgroundCentersRgb": [
+        [
+          246.557,
+          246.415,
+          246.257
+        ],
+        [
+          253.707,
+          253.632,
+          253.698
+        ]
+      ],
+      "backgroundEstimation": {
+        "edgeSampleCount": 5016,
+        "edgeDistanceP995": 5.86,
+        "strictThreshold": 10.0,
+        "softThreshold": 34.0
+      },
+      "fullyTransparentPixels": 995586,
+      "semiTransparentPixels": 1458,
+      "fullyOpaquePixels": 575472,
+      "transparentRatio": 0.633117,
+      "opaqueBoundingBox": [
+        198,
+        21,
+        1067,
+        1211
+      ],
+      "centralTransparentRatio": 0.110295,
+      "opaqueRgbUnchanged": true,
+      "isolatedNoisePixelsRemoved": 0,
+      "warnings": [],
+      "edgeOpaqueRatio": 0.0,
+      "id": "gardener",
+      "sourcePath": "tools/new-cat-test/input/cat_gardener_source.png",
+      "outputPath": "assets/cats-transparent/cat_gardener.png",
+      "sourceFormat": "PNG",
+      "sourceMode": "RGB",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "outputFormat": "PNG",
+      "outputMode": "RGBA",
+      "outputSize": [
+        1254,
+        1254
+      ],
+      "resize": false,
+      "trim": false,
+      "hasAlphaChannel": true,
+      "pngDecodeOk": true,
+      "detectedSourceContentBoundingBox": [
+        198,
+        21,
+        1067,
+        1211
+      ],
+      "outputBoundingBoxDifference": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "sourceSha256": "1a65f2a1e7d4caeb483aa050b8f7f313228b7869fb88637617c124e5ff85d050",
+      "outputSha256": "05c7c832f6c90badfc4bb9b5787535a81e2d89d50175a6a12c721c66148301c3",
+      "outputFileBytes": 1583448
+    },
+    "ranger": {
+      "backgroundCentersRgb": [
+        [
+          253.685,
+          253.564,
+          253.621
+        ],
+        [
+          254.742,
+          254.532,
+          254.74
+        ]
+      ],
+      "backgroundEstimation": {
+        "edgeSampleCount": 5016,
+        "edgeDistanceP995": 1.523,
+        "strictThreshold": 10.0,
+        "softThreshold": 34.0
+      },
+      "fullyTransparentPixels": 917050,
+      "semiTransparentPixels": 4017,
+      "fullyOpaquePixels": 651449,
+      "transparentRatio": 0.583174,
+      "opaqueBoundingBox": [
+        109,
+        47,
+        1127,
+        1146
+      ],
+      "centralTransparentRatio": 0.017325,
+      "opaqueRgbUnchanged": true,
+      "isolatedNoisePixelsRemoved": 0,
+      "warnings": [],
+      "edgeOpaqueRatio": 0.0,
+      "id": "ranger",
+      "sourcePath": "tools/new-cat-test/input/cat_ranger_source.png",
+      "outputPath": "assets/cats-transparent/cat_ranger.png",
+      "sourceFormat": "PNG",
+      "sourceMode": "RGB",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "outputFormat": "PNG",
+      "outputMode": "RGBA",
+      "outputSize": [
+        1254,
+        1254
+      ],
+      "resize": false,
+      "trim": false,
+      "hasAlphaChannel": true,
+      "pngDecodeOk": true,
+      "detectedSourceContentBoundingBox": [
+        109,
+        47,
+        1127,
+        1146
+      ],
+      "outputBoundingBoxDifference": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "sourceSha256": "0ded28b7f47da946b8b7b0941d75e96a4c2ca32dfccd4530ce3ddc6df940e52e",
+      "outputSha256": "88ddba8a2fb100e895ae8ec368fcd7164bae4cefcdfeed9f3e2d68ea2843efd9",
+      "outputFileBytes": 1654922
+    },
+    "idol": {
+      "backgroundCentersRgb": [
+        [
+          253.765,
+          253.683,
+          253.749
+        ],
+        [
+          254.785,
+          254.739,
+          254.646
+        ]
+      ],
+      "backgroundEstimation": {
+        "edgeSampleCount": 5016,
+        "edgeDistanceP995": 1.54,
+        "strictThreshold": 10.0,
+        "softThreshold": 34.0
+      },
+      "fullyTransparentPixels": 995130,
+      "semiTransparentPixels": 3309,
+      "fullyOpaquePixels": 574077,
+      "transparentRatio": 0.632827,
+      "opaqueBoundingBox": [
+        144,
+        55,
+        1101,
+        1200
+      ],
+      "centralTransparentRatio": 0.077196,
+      "opaqueRgbUnchanged": true,
+      "isolatedNoisePixelsRemoved": 0,
+      "warnings": [],
+      "edgeOpaqueRatio": 0.0,
+      "id": "idol",
+      "sourcePath": "tools/new-cat-test/input/cat_idol_source.png",
+      "outputPath": "assets/cats-transparent/cat_idol.png",
+      "sourceFormat": "PNG",
+      "sourceMode": "RGB",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "outputFormat": "PNG",
+      "outputMode": "RGBA",
+      "outputSize": [
+        1254,
+        1254
+      ],
+      "resize": false,
+      "trim": false,
+      "hasAlphaChannel": true,
+      "pngDecodeOk": true,
+      "detectedSourceContentBoundingBox": [
+        144,
+        55,
+        1101,
+        1200
+      ],
+      "outputBoundingBoxDifference": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "sourceSha256": "6aa7dcc0d06392531e49a3475222947de2bacd3d10ec3aaeedb9351a9c7dad8a",
+      "outputSha256": "b01632490f2290b8880567be5a20e6b24aa3cf3071c0f156e8699e631c9e4b97",
+      "outputFileBytes": 1524092
+    }
+  },
+  "sourceSha256Before": {
+    "cat_gardener_source.png": "1a65f2a1e7d4caeb483aa050b8f7f313228b7869fb88637617c124e5ff85d050",
+    "cat_ranger_source.png": "0ded28b7f47da946b8b7b0941d75e96a4c2ca32dfccd4530ce3ddc6df940e52e",
+    "cat_idol_source.png": "6aa7dcc0d06392531e49a3475222947de2bacd3d10ec3aaeedb9351a9c7dad8a"
+  },
+  "sourceSha256After": {
+    "cat_gardener_source.png": "1a65f2a1e7d4caeb483aa050b8f7f313228b7869fb88637617c124e5ff85d050",
+    "cat_ranger_source.png": "0ded28b7f47da946b8b7b0941d75e96a4c2ca32dfccd4530ce3ddc6df940e52e",
+    "cat_idol_source.png": "6aa7dcc0d06392531e49a3475222947de2bacd3d10ec3aaeedb9351a9c7dad8a"
+  },
+  "sourceHashesUnchanged": true,
+  "majorWarningCount": 0,
+  "comparisonSheet": "tools/new-cat-test/output/new_cats_comparison_sheet.png"
+}

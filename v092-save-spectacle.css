@@ -97,3 +97,19 @@
 /* v0.9.8.3: cheering cats are visual-only and fade in after processing. */
 .celebration.save-spectacle .save-cheer-cat,.celebration.save-spectacle .save-cheer-cat img,.celebration.save-spectacle .save-cheer-fallback{pointer-events:none}
 .celebration.save-spectacle .save-cheer-fallback .cat-paw-placeholder{width:55%;height:55%}
+
+/* v0.9.15: preprocessed image heroes for the three original abstract effects. */
+.celebration.solar{--scene-glow:#ff9d35aa;--amount-glow:#ffc64d;background:#090300}
+.celebration.solar .cinema-stage{background:radial-gradient(circle at 50% 36%,#5c210f 0,#1a0804 42%,#020205 76%)}
+.celebration:is(.gold,.shock,.solar).save-spectacle .asset-effect-core{z-index:3;top:35%;width:min(68vw,350px);height:min(35vh,340px);object-fit:contain;contain:layout paint;filter:drop-shadow(0 14px 26px #0009) drop-shadow(0 0 22px var(--scene-glow));animation:effectCoreIn .72s 1.92s cubic-bezier(.15,.86,.18,1.12) both,effectCoreBreath 3.4s 2.66s ease-in-out infinite}
+.celebration.shock.save-spectacle .asset-shockwave-core{width:min(72vw,370px);height:min(37vh,360px)}
+.celebration.gold.save-spectacle .asset-golden-blessing-core{width:min(66vw,340px)}
+.celebration.solar.save-spectacle .asset-solar-core{width:min(69vw,355px);height:min(36vh,350px)}
+.celebration:is(.gold,.shock,.solar).save-spectacle .scene-visual.has-generated-main .scene-svg{display:none}
+.celebration:is(.gold,.shock,.solar).save-spectacle .scene-atmosphere::before,.celebration:is(.gold,.shock,.solar).save-spectacle .scene-atmosphere::after,.celebration:is(.gold,.shock,.solar).four-stage .cinema-stage::before,.celebration:is(.gold,.shock,.solar).four-stage .cinema-stage::after,.celebration:is(.gold,.shock,.solar) .scene-curtain::before{display:none}
+@keyframes effectCoreIn{0%{opacity:0;transform:translate(-50%,-50%) scale(.76);filter:brightness(.7) blur(5px)}72%{opacity:1;transform:translate(-50%,-50%) scale(1.025);filter:brightness(1.12) blur(0) drop-shadow(0 0 28px var(--scene-glow))}100%{opacity:1;transform:translate(-50%,-50%) scale(1);filter:drop-shadow(0 14px 26px #0009) drop-shadow(0 0 22px var(--scene-glow))}}
+@keyframes effectCoreBreath{0%,100%{opacity:1;transform:translate(-50%,-50%) scale(1)}50%{opacity:.98;transform:translate(-50%,calc(-50% - 3px)) scale(1.02)}}
+@media(max-width:430px){.celebration:is(.gold,.shock,.solar).save-spectacle .asset-effect-core{top:35%;width:68vw;height:34vh}.celebration.shock.save-spectacle .asset-shockwave-core{width:72vw;height:36vh}.celebration.solar.save-spectacle .asset-solar-core{width:69vw;height:35vh}}
+@media(max-width:390px){.celebration:is(.gold,.shock,.solar).save-spectacle .asset-effect-core{top:34%;width:66vw;height:33vh}.celebration.shock.save-spectacle .asset-shockwave-core{width:70vw;height:35vh}}
+@media(prefers-reduced-motion:reduce){.celebration:is(.gold,.shock,.solar).save-spectacle .asset-effect-core{opacity:1;transform:translate(-50%,-50%);animation:none!important;filter:drop-shadow(0 12px 22px #0008) drop-shadow(0 0 16px var(--scene-glow))}}
+.celebration:is(.gold,.shock,.solar).save-spectacle.reduced .asset-effect-core{opacity:1;transform:translate(-50%,-50%);animation:none!important;filter:drop-shadow(0 12px 22px #0008) drop-shadow(0 0 16px var(--scene-glow))}

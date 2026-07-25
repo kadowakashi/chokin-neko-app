@@ -1,0 +1,133 @@
+{
+  "testVersion": "v0.9.15-effect-assets",
+  "method": "preserve supplied graded alpha with perimeter and central-integrity validation",
+  "images": {
+    "shockwave_core": {
+      "fullyTransparentPixels": 499596,
+      "semiTransparentPixels": 333658,
+      "fullyOpaquePixels": 215322,
+      "transparentRatio": 0.476452,
+      "opaqueBoundingBox": [
+        44,
+        0,
+        992,
+        994
+      ],
+      "edgeNonTransparentRatio": 0.000244,
+      "centralTransparentRatio": 0.0,
+      "id": "shockwave_core",
+      "method": "preserve supplied graded alpha; validate perimeter connectivity and central integrity",
+      "sourcePath": "tools/effects-image-test/input/shockwave_core_source.png",
+      "outputPath": "assets/scenes/shockwave_core.png",
+      "sourceFormat": "PNG",
+      "sourceMode": "RGBA",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "outputFormat": "PNG",
+      "outputMode": "RGBA",
+      "outputSize": [
+        1024,
+        1024
+      ],
+      "resize": false,
+      "trim": false,
+      "rotation": false,
+      "pngDecodeOk": true,
+      "hasAlphaChannel": true,
+      "outputFileBytes": 2117666,
+      "outputSha256": "8ec3fcfae2f440dbb3c748d7af0f9790702040f91140137b402fd12e7c023a4c",
+      "warnings": []
+    },
+    "golden_blessing_core": {
+      "fullyTransparentPixels": 438455,
+      "semiTransparentPixels": 394600,
+      "fullyOpaquePixels": 215521,
+      "transparentRatio": 0.418143,
+      "opaqueBoundingBox": [
+        15,
+        2,
+        1024,
+        1020
+      ],
+      "edgeNonTransparentRatio": 0.000244,
+      "centralTransparentRatio": 0.0,
+      "id": "golden_blessing_core",
+      "method": "preserve supplied graded alpha; validate perimeter connectivity and central integrity",
+      "sourcePath": "tools/effects-image-test/input/golden_blessing_core_source.png",
+      "outputPath": "assets/scenes/golden_blessing_core.png",
+      "sourceFormat": "PNG",
+      "sourceMode": "RGBA",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "outputFormat": "PNG",
+      "outputMode": "RGBA",
+      "outputSize": [
+        1024,
+        1024
+      ],
+      "resize": false,
+      "trim": false,
+      "rotation": false,
+      "pngDecodeOk": true,
+      "hasAlphaChannel": true,
+      "outputFileBytes": 1802537,
+      "outputSha256": "bb26395c1f867248d80e2faedc22b68aa95ecdb3b608d4a665057bdac18ada0c",
+      "warnings": []
+    },
+    "solar_core": {
+      "fullyTransparentPixels": 507103,
+      "semiTransparentPixels": 388093,
+      "fullyOpaquePixels": 153380,
+      "transparentRatio": 0.483611,
+      "opaqueBoundingBox": [
+        11,
+        11,
+        1024,
+        1020
+      ],
+      "edgeNonTransparentRatio": 0.000488,
+      "centralTransparentRatio": 0.0,
+      "id": "solar_core",
+      "method": "preserve supplied graded alpha; validate perimeter connectivity and central integrity",
+      "sourcePath": "tools/effects-image-test/input/solar_core_source.png",
+      "outputPath": "assets/scenes/solar_core.png",
+      "sourceFormat": "PNG",
+      "sourceMode": "RGBA",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "outputFormat": "PNG",
+      "outputMode": "RGBA",
+      "outputSize": [
+        1024,
+        1024
+      ],
+      "resize": false,
+      "trim": false,
+      "rotation": false,
+      "pngDecodeOk": true,
+      "hasAlphaChannel": true,
+      "outputFileBytes": 1669972,
+      "outputSha256": "905a06f28aa25cf750061a5e7f6947a9c170d0301039ac61e6b365ed37b63cbc",
+      "warnings": []
+    }
+  },
+  "sourceSha256Before": {
+    "shockwave_core_source.png": "8ec3fcfae2f440dbb3c748d7af0f9790702040f91140137b402fd12e7c023a4c",
+    "golden_blessing_core_source.png": "bb26395c1f867248d80e2faedc22b68aa95ecdb3b608d4a665057bdac18ada0c",
+    "solar_core_source.png": "905a06f28aa25cf750061a5e7f6947a9c170d0301039ac61e6b365ed37b63cbc"
+  },
+  "sourceSha256After": {
+    "shockwave_core_source.png": "8ec3fcfae2f440dbb3c748d7af0f9790702040f91140137b402fd12e7c023a4c",
+    "golden_blessing_core_source.png": "bb26395c1f867248d80e2faedc22b68aa95ecdb3b608d4a665057bdac18ada0c",
+    "solar_core_source.png": "905a06f28aa25cf750061a5e7f6947a9c170d0301039ac61e6b365ed37b63cbc"
+  },
+  "sourceHashesUnchanged": true,
+  "majorWarningCount": 0,
+  "comparisonSheet": "tools/effects-image-test/output/effects_comparison_sheet.png"
+}

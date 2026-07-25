@@ -1,0 +1,161 @@
+{
+  "testVersion": "v09112",
+  "method": "adaptive two-color perimeter clustering and border-connected background removal",
+  "featherDistance": 24.0,
+  "images": {
+    "cat_angel.png": {
+      "backgroundCentersRgb": [
+        [
+          245.534,
+          245.206,
+          245.07
+        ],
+        [
+          253.792,
+          253.714,
+          253.735
+        ]
+      ],
+      "backgroundEstimation": {
+        "edgeSampleCount": 5016,
+        "edgeDistanceP995": 6.49,
+        "strictThreshold": 10.0,
+        "softThreshold": 34.0
+      },
+      "fullyTransparentPixels": 953308,
+      "semiTransparentPixels": 9696,
+      "fullyOpaquePixels": 609512,
+      "transparentRatio": 0.606231,
+      "opaqueBoundingBox": [
+        166,
+        39,
+        1098,
+        1200
+      ],
+      "centralTransparentRatio": 0.118846,
+      "opaqueRgbUnchanged": true,
+      "isolatedNoisePixelsRemoved": 10,
+      "warnings": [],
+      "sourcePath": "assets/cats/cat_angel.png",
+      "outputPath": "tools/transparency-test/v09112/cat_angel_transparent.png",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "outputSize": [
+        1254,
+        1254
+      ],
+      "sourceSha256Before": "4bc59f6d99df6a2f33d4418a4f7a2a10f7898dc195e539e6e4d0ebe6ddb21087",
+      "outputSha256": "e77e7e5eddb9eccb71606d46759afab88c59bc5f76086df56ce9f69c6a41ec28",
+      "outputFileBytes": 1407919,
+      "pngDecodeOk": true,
+      "hasAlphaChannel": true
+    },
+    "cat_black.png": {
+      "backgroundCentersRgb": [
+        [
+          242.574,
+          242.424,
+          242.239
+        ],
+        [
+          253.707,
+          253.65,
+          253.694
+        ]
+      ],
+      "backgroundEstimation": {
+        "edgeSampleCount": 5016,
+        "edgeDistanceP995": 9.157,
+        "strictThreshold": 11.657,
+        "softThreshold": 35.657
+      },
+      "fullyTransparentPixels": 1048193,
+      "semiTransparentPixels": 1171,
+      "fullyOpaquePixels": 523152,
+      "transparentRatio": 0.666571,
+      "opaqueBoundingBox": [
+        197,
+        51,
+        1079,
+        1204
+      ],
+      "centralTransparentRatio": 0.235658,
+      "opaqueRgbUnchanged": true,
+      "isolatedNoisePixelsRemoved": 1382,
+      "warnings": [],
+      "sourcePath": "assets/cats/cat_black.png",
+      "outputPath": "tools/transparency-test/v09112/cat_black_transparent.png",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "outputSize": [
+        1254,
+        1254
+      ],
+      "sourceSha256Before": "17aafe6afe97a2b50316bfbd45fe452e9313f8a9f11f202dc23cdc453e6ed9e6",
+      "outputSha256": "a3ffd948d25d8bcf508a54178bf9afa3d3262bb372778ac899320ac2c50c5b3c",
+      "outputFileBytes": 1268570,
+      "pngDecodeOk": true,
+      "hasAlphaChannel": true
+    },
+    "cat_royal.png": {
+      "backgroundCentersRgb": [
+        [
+          245.181,
+          245.038,
+          244.826
+        ],
+        [
+          253.746,
+          253.69,
+          253.705
+        ]
+      ],
+      "backgroundEstimation": {
+        "edgeSampleCount": 5016,
+        "edgeDistanceP995": 7.057,
+        "strictThreshold": 10.0,
+        "softThreshold": 34.0
+      },
+      "fullyTransparentPixels": 838127,
+      "semiTransparentPixels": 1087,
+      "fullyOpaquePixels": 733302,
+      "transparentRatio": 0.532985,
+      "opaqueBoundingBox": [
+        194,
+        29,
+        1037,
+        1217
+      ],
+      "centralTransparentRatio": 0.056371,
+      "opaqueRgbUnchanged": true,
+      "isolatedNoisePixelsRemoved": 0,
+      "warnings": [],
+      "sourcePath": "assets/cats/cat_royal.png",
+      "outputPath": "tools/transparency-test/v09112/cat_royal_transparent.png",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "outputSize": [
+        1254,
+        1254
+      ],
+      "sourceSha256Before": "0909162ac6747a0ff9d394361e7d2111324f7d0b4397759c0fa2df167b57257c",
+      "outputSha256": "71e5c1f68c52c9763c3ae903c313578e868475dc8dd3f42eec877cb47f64e135",
+      "outputFileBytes": 1538268,
+      "pngDecodeOk": true,
+      "hasAlphaChannel": true
+    }
+  },
+  "sourceHashesUnchanged": true,
+  "sourceSha256After": {
+    "cat_angel.png": "4bc59f6d99df6a2f33d4418a4f7a2a10f7898dc195e539e6e4d0ebe6ddb21087",
+    "cat_black.png": "17aafe6afe97a2b50316bfbd45fe452e9313f8a9f11f202dc23cdc453e6ed9e6",
+    "cat_royal.png": "0909162ac6747a0ff9d394361e7d2111324f7d0b4397759c0fa2df167b57257c"
+  },
+  "comparisonSheet": "tools/transparency-test/v09112/comparison_sheet.png"
+}

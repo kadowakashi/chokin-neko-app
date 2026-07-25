@@ -5,6 +5,7 @@
   const PREVIEWS = Object.freeze([
     ['10円・ちょこっと','normal','NORMAL',10],['50円・NICE','normal','NORMAL',50],['100円・GREAT','normal','RARE',100],
     ['300円・SUPER','normal','SUPER',300],['500円・ULTRA','normal','ULTRA',500],['1,000円・FEVER','normal','LEGEND',1000],
+    ['黄金祝福','gold','SUPER',500],['衝撃波・エネルギー核','shock','SUPER',500],['太陽風','solar','ULTRA',1000],
     ['猫スロット','cat-slot','SUPER'],
     ['猫ガチャ NORMAL','gacha-normal','NORMAL'],['猫ガチャ RARE','gacha-rare','RARE'],['猫ガチャ SUPER','gacha-super','SUPER'],
     ['猫ガチャ ULTRA','gacha-ultra','ULTRA'],['猫ガチャ LEGEND','gacha-legend','LEGEND'],
@@ -42,13 +43,14 @@
     if(forcedShow){
       const map={normal:'gold','hot-cutin':'gacha-ultra',temple:'legendary cat-blessing'};
       const rarity=forcedRarity||(forcedShow.startsWith('gacha-')?forcedShow.replace('gacha-','').toUpperCase():forcedShow==='temple'?'LEGEND':forcedShow==='cosmic'?'SUPER':forcedShow==='treasure'?'RARE':'NORMAL');
-      return enrich({show:map[forcedShow]||forcedShow,rarity:RARITIES.includes(rarity)?rarity:'NORMAL',confirmed:forcedShow==='hot-cutin',cutIn:forcedShow==='hot-cutin',omen:forcedShow==='hot-cutin'?'gold':pick(['eyes','paw','gold']),preview:true},false);
+      const show=map[forcedShow]||forcedShow;
+      return enrich({show,visualShow:show,rarity:RARITIES.includes(rarity)?rarity:'NORMAL',confirmed:forcedShow==='hot-cutin',cutIn:forcedShow==='hot-cutin',omen:forcedShow==='hot-cutin'?'gold':pick(['eyes','paw','gold']),preview:true},false);
     }
     let rarity=rollRarity(amount),confirmed=Math.random()<.055;
     if(confirmed&&RARITIES.indexOf(rarity)<2)rarity=pick(['SUPER','ULTRA','LEGEND']);
     const pools={NORMAL:['gold','shock','cat-blessing'],RARE:['treasure','gold','shock'],SUPER:['cosmic','shock','treasure'],ULTRA:['cosmic','shock','cat-blessing'],LEGEND:['legendary cat-blessing','cosmic']};
-    const show=pick(pools[rarity]);
-    return enrich({show,rarity,confirmed,cutIn:confirmed&&Math.random()<.72,omen:confirmed?'gold':pick(['eyes','paw','gold']),preview:false},persistCats);
+    const show=pick(pools[rarity]),visualShow=show==='gold'?pick(['gold','solar']):show;
+    return enrich({show,visualShow,rarity,confirmed,cutIn:confirmed&&Math.random()<.72,omen:confirmed?'gold':pick(['eyes','paw','gold']),preview:false},persistCats);
   }
   function gachaPlan() {
     let rarity=rollRarity(100),confirmed=Math.random()<.055;

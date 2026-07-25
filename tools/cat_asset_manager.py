@@ -35,6 +35,7 @@ class Paths:
         self.root = root.resolve()
         self.catalog = self.root / "assets" / "cats" / "cat-catalog.json"
         self.cats = self.root / "assets" / "cats"
+        self.transparent_cats = self.root / "assets" / "cats-transparent"
         self.generated = self.root / "cat-characters.js"
         self.manifest = self.root / "assets" / "manifest.json"
         self.backups = self.root / "tools" / "backups"
@@ -49,13 +50,19 @@ def json_text(value) -> str:
     return json.dumps(value, ensure_ascii=False, indent=2) + "\n"
 
 
-def generated_js(catalog: dict) -> str:
+def cat_image_path(paths: Paths, cat: dict) -> str:
+    transparent = paths.transparent_cats / cat["image"]
+    folder = "cats-transparent" if transparent.is_file() else "cats"
+    return f"assets/{folder}/{cat['image']}"
+
+
+def generated_js(catalog: dict, paths: Paths) -> str:
     cats = []
     for source in sorted(catalog["cats"], key=lambda cat: (cat["sortOrder"], cat["id"])):
         if not source.get("enabled", True):
             continue
         cat = dict(source)
-        cat["imagePath"] = f"assets/cats/{cat['image']}"
+        cat["imagePath"] = cat_image_path(paths, cat)
         cats.append(cat)
     data = json.dumps(cats, ensure_ascii=False, separators=(",", ":"))
     return f"""// このファイルはcat-catalog.jsonから自動生成されています。直接編集しないでください。
@@ -100,7 +107,7 @@ def validate_data(paths: Paths, catalog: dict, manifest: dict | None = None, che
             errors.append(f"不正な色コード: {cat['id']}")
         if not isinstance(cat["weight"], (int, float)) or isinstance(cat["weight"], bool) or cat["weight"] <= 0:
             errors.append(f"抽選重みは0より大きくしてください: {cat['id']}")
-        if not (paths.cats / str(cat["image"])).is_file():
+        if not (paths.cats / str(cat["image"])).is_file() and not (paths.transparent_cats / str(cat["image"])).is_file():
             errors.append(f"登録画像がありません: {cat['image']}")
     for key, label in (("id", "ID"), ("name", "名前"), ("image", "画像名"), ("imageKey", "imageキー")):
         values = [cat.get(key) for cat in cats if isinstance(cat, dict)]
@@ -115,10 +122,10 @@ def validate_data(paths: Paths, catalog: dict, manifest: dict | None = None, che
         manifest = read_json(paths.manifest)
     available = set(manifest.get("available", []))
     for cat in cats:
-        expected = f"assets/cats/{cat.get('image')}"
+        expected = cat_image_path(paths, cat)
         if expected not in available:
             errors.append(f"manifest登録漏れ: {expected}")
-    if check_generated and paths.generated.is_file() and paths.generated.read_text(encoding="utf-8") != generated_js(catalog):
+    if check_generated and paths.generated.is_file() and paths.generated.read_text(encoding="utf-8") != generated_js(catalog, paths):
         errors.append("cat-characters.jsがカタログと一致しません")
     counts = Counter(cat.get("rarity") for cat in cats if isinstance(cat, dict) and cat.get("enabled", True))
     return errors, warnings, counts
@@ -146,9 +153,11 @@ def temp_text(path: Path, content: str) -> Path:
 
 def updated_manifest(paths: Paths, catalog: dict, manifest: dict):
     result = dict(manifest)
-    non_cats = [item for item in manifest.get("available", []) if not item.startswith("assets/cats/")]
-    cat_assets = [f"assets/cats/{cat['image']}" for cat in sorted(catalog["cats"], key=lambda cat: (cat["sortOrder"], cat["id"])) if cat.get("enabled", True)]
-    result["available"] = cat_assets + non_cats
+    non_cats = [item for item in manifest.get("available", []) if not item.startswith("assets/cats/") and not item.startswith("assets/cats-transparent/")]
+    enabled = [cat for cat in sorted(catalog["cats"], key=lambda cat: (cat["sortOrder"], cat["id"])) if cat.get("enabled", True)]
+    source_assets = [f"assets/cats/{cat['image']}" for cat in enabled if (paths.cats / cat["image"]).is_file()]
+    transparent_assets = [f"assets/cats-transparent/{cat['image']}" for cat in enabled if (paths.transparent_cats / cat["image"]).is_file()]
+    result["available"] = transparent_assets + source_assets + non_cats
     return result
 
 
@@ -179,7 +188,7 @@ def sync(paths: Paths, catalog: dict | None = None, write_catalog=False, image_c
         raise ValueError("\n".join(errors))
     backups = backup_files(paths)
     replacements = {
-        paths.generated: generated_js(catalog),
+        paths.generated: generated_js(catalog, paths),
         paths.manifest: json_text(candidate_manifest),
     }
     if write_catalog:
