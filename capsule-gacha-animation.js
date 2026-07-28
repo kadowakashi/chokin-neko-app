@@ -36,21 +36,21 @@
     const cleanup=()=>{if(ended)return;ended=true;clear();stage.remove();};
     const reveal=reason=>{if(revealed)return;revealed=true;clear();stage.classList.add('is-revealing');schedule(90,()=>{});const callback=options.onReveal;cleanup();callback?.(reason);};
     const open=()=>{
-      stage.classList.add('is-open');capsuleSlot.replaceChildren();
+      capsuleState='open';stage.classList.remove('is-tap1','is-tap2','is-pushing');stage.classList.add('is-open');capsuleSlot.replaceChildren();
       ['bottom','glow','top'].forEach(key=>{const image=document.createElement('img');image.className=`capsule-gacha-open capsule-${key}`;image.alt='';capsuleSlot.append(image);setImage(image,capsuleSlot,key,'capsule');});
       options.onPop?.();
     };
     host.replaceChildren(stage);setCat('idle');setCapsule('closed');
     const stars=stage.querySelector('.capsule-gacha-stars');stars.innerHTML=Array.from({length:reduced?8:24},(_,i)=>`<i style="--i:${i};--x:${7+(i*37)%87}%;--y:${9+(i*53)%76}%;--d:${(i%8)*.09}s"></i>`).join('');
     preload().catch(()=>false);
-    if(reduced){schedule(260,()=>{setCat('push');setCapsule('squash');stage.classList.add('is-pushing');});schedule(650,open);schedule(860,()=>{capsuleSlot.replaceChildren();setCat('react');stage.classList.add('is-reacting');});schedule(duration,()=>reveal('complete'));}
+    if(reduced){schedule(220,()=>{setCat('push');setCapsule('squash');stage.classList.add('is-pushing');});schedule(520,open);schedule(780,()=>{setCat('react');stage.classList.add('is-reacting');});schedule(duration,()=>reveal('complete'));}
     else{
       schedule(200,()=>stage.classList.add('is-looking'));
-      schedule(1000,()=>{setCat('tap1');stage.classList.add('is-tap1');options.onTap?.(1);});
-      schedule(1600,()=>{setCat('tap2');setCapsule('squash');stage.classList.remove('is-tap1');stage.classList.add('is-tap2');options.onTap?.(2);});
+      schedule(800,()=>{setCat('tap1');stage.classList.add('is-tap1');options.onTap?.(1);});
+      schedule(1500,()=>{setCat('tap2');stage.classList.remove('is-tap1');stage.classList.add('is-tap2');options.onTap?.(2);});
       schedule(2200,()=>{setCat('push');setCapsule('squash');stage.classList.remove('is-tap2');stage.classList.add('is-pushing');});
-      schedule(3500,open);
-      schedule(4200,()=>{capsuleSlot.replaceChildren();setCat('react');stage.classList.add('is-reacting');});
+      schedule(2900,open);
+      schedule(3700,()=>{setCat('react');stage.classList.add('is-reacting');});
       schedule(duration,()=>reveal('complete'));
     }
     return {skip:()=>reveal('skip'),cleanup,get duration(){return duration;},state:()=>({ended,revealed,catState,capsuleState})};
