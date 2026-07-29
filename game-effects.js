@@ -6,7 +6,7 @@
     ['10円・ちょこっと','normal','NORMAL',10],['50円・NICE','normal','NORMAL',50],['100円・GREAT','normal','RARE',100],
     ['300円・SUPER','normal','SUPER',300],['500円・ULTRA','normal','ULTRA',500],['1,000円・FEVER','normal','LEGEND',1000],
     ['黄金祝福','gold','SUPER',500],['衝撃波・エネルギー核','shock','SUPER',500],['太陽風','solar','ULTRA',1000],
-    ['猫スロット','cat-slot','SUPER'],
+    ['猫スロット','cat-slot','SUPER'],['カプセルねこガチャ演出','capsule-gacha','RARE'],
     ['猫ガチャ NORMAL','gacha-normal','NORMAL'],['猫ガチャ RARE','gacha-rare','RARE'],['猫ガチャ SUPER','gacha-super','SUPER'],
     ['猫ガチャ ULTRA','gacha-ultra','ULTRA'],['猫ガチャ LEGEND','gacha-legend','LEGEND'],
     ['激熱カットイン','hot-cutin','ULTRA'],['猫神社','temple','LEGEND'],['宇宙猫','cosmic','SUPER'],['宝箱','treasure','RARE'],['必要経費','necessary','NORMAL',1000]
@@ -56,7 +56,7 @@
     let rarity=rollRarity(100),confirmed=Math.random()<.055;
     if(confirmed&&RARITIES.indexOf(rarity)<2)rarity=pick(['SUPER','ULTRA','LEGEND']);
     const pools={NORMAL:['gacha-normal','cat-slot'],RARE:['gacha-rare','cat-slot','treasure'],SUPER:['gacha-super','cat-slot','cosmic'],ULTRA:['gacha-ultra','cat-slot','cosmic'],LEGEND:['gacha-legend','cat-slot','legendary cat-blessing']};
-    const show=pick(pools[rarity]),cat=window.ChokinCats.choose(rarity,{persist:true}),result={show,rarity,cat,confirmed,cutIn:confirmed&&Math.random()<.72,omen:confirmed?'gold':pick(['eyes','paw','gold']),preview:false};
+    const show=pick(pools[rarity]),cat=window.ChokinCats.choose(rarity,{persist:false}),result={show,rarity,cat,confirmed,cutIn:confirmed&&Math.random()<.72,omen:confirmed?'gold':pick(['eyes','paw','gold']),preview:false};
     if(show==='cat-slot')result.slotResult=makeSlotResultForCat(cat);
     return result;
   }

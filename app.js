@@ -2,7 +2,7 @@
   'use strict';
   const KEY = 'chokin-event-app.v0.1';
   const RECOVERY_KEY = `${KEY}.recovery`;
-  const APP_VERSION = '0.9.16';
+  const APP_VERSION = '1.0';
   const BACKUP_VERSION = 1;
   const DEFAULT_QUICK_AMOUNTS = [100, 500, 1000, 3000, 5000];
   const SAVE_RANKS = Object.freeze([
@@ -31,8 +31,13 @@
   const saveState = () => localStorage.setItem(KEY, JSON.stringify(state));
   const validEntry = entry => entry && typeof entry.id === 'string' && (entry.type === 'save' || entry.type === 'spend') && Number.isInteger(entry.amount) && entry.amount > 0 && typeof entry.createdAt === 'string' && (entry.type === 'save' ? entry.category === null : ['regret','necessary','best'].includes(entry.category)) && typeof entry.memo === 'string';
   const validQuickAmounts = values => Array.isArray(values) && values.length === 5 && values.every(value => Number.isInteger(value) && value > 0);
+  const gachaStorageMessage = '保存に失敗したため、ガチャ結果は確定していません。再読み込み後にもう一度お試しください。';
+  function ensureGachaStorageReady(){return window.ChokinGachaTransaction?.ensureReady?.()===true;}
+  function syncGachaStores(){try{const collectionRaw=localStorage.getItem(window.ChokinCollection.key),coinRaw=localStorage.getItem(window.ChokinCoins.key),collectionOk=window.ChokinCollection.adoptRaw(collectionRaw),coinsOk=window.ChokinCoins.adoptRaw(coinRaw);return collectionOk&&coinsOk;}catch{return false;}}
+  function nextRecentRaw(catId){let current=[];try{const parsed=JSON.parse(localStorage.getItem(window.ChokinCats.recentKey)||'[]');if(Array.isArray(parsed))current=parsed.filter(id=>typeof id==='string').slice(0,3);}catch{}return JSON.stringify([catId,...current.filter(id=>id!==catId)].slice(0,3));}
   const backupPayload = () => ({backupVersion: BACKUP_VERSION, exportedAt: new Date().toISOString(), appVersion: APP_VERSION, data: {version: state.version, entries: state.entries, settings: state.settings, futureSettings: state.futureSettings || {}, quickAmounts: state.quickAmounts, catCollection: window.ChokinCollection.exportData(), catCoins: window.ChokinCoins.exportData(), savingsGoal: window.ChokinSavingsGoal.exportData(), goalHistory: window.ChokinGoalHistory.exportData(), badgeState: window.ChokinBadges.exportData(), dailyNotes: window.ChokinDailyNotes.exportData()}});
   function exportBackup() {
+    if(!ensureGachaStorageReady()){alert('未完了のガチャ保存を復旧できないため、バックアップを作成できません。再読み込みしてください。');return;}
     const stamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '_').slice(0, 13);
     const blob = new Blob([JSON.stringify(backupPayload(), null, 2)], {type: 'application/json'});
     const url = URL.createObjectURL(blob), link = document.createElement('a');
@@ -68,6 +73,7 @@
     if (!notesRaw || notesRaw.enabled!==notes.enabled || JSON.stringify(notesRaw.notes)!==JSON.stringify(notes.notes) || JSON.stringify(notesRaw.rewardedDates)!==JSON.stringify(notes.rewardedDates)) throw new Error('ひとこと日記を保存できませんでした。');
   }
   function applyRestoreCandidate(candidate) {
+    if(!ensureGachaStorageReady())return {ok:false,rollbackOk:true,message:'未完了のガチャ保存を復旧できないため、復元を開始できません。再読み込みしてください。'};
     const before=captureRestoreSnapshot(),data=candidate.backup.data;
     try {
       state=structuredClone(candidate.mainState);
@@ -163,7 +169,7 @@
     const container = $('#quickButtons'); if (!container) return;
     container.innerHTML = state.quickAmounts.map((amount, index) => `<button class="quick-button" data-quick="${amount}" ${quickLocked ? 'disabled' : ''}>＋${yen(amount).replace('¥','')}円</button>`).join('');
   }
-  function renderCoins(){const coin=window.ChokinCoins.getState(),button=$('#catGacha');$('#coinBalance').innerHTML=`${coinIcon()} ${coin.balance}`;$('#dailyCoinStatus').textContent=`本日の貯金コイン：${window.ChokinCoins.hasDailyAward()?'獲得済み':'未獲得'}`;button.disabled=gachaLocked||coin.balance<1;$('#coinHint').textContent=coin.balance<1?`ねこコインがありません。今日初めて貯金するか、${window.ChokinDailyNotes.TEXT.name}を保存すると1枚獲得できます。`:'';}
+  function renderCoins(){const coin=window.ChokinCoins.getState(),button=$('#catGacha'),transactionReady=window.ChokinGachaTransaction?.isReady?.()!==false;$('#coinBalance').innerHTML=`${coinIcon()} ${coin.balance}`;$('#dailyCoinStatus').textContent=`本日の貯金コイン：${window.ChokinCoins.hasDailyAward()?'獲得済み':'未獲得'}`;button.disabled=gachaLocked||coin.balance<1||!transactionReady;$('#coinHint').textContent=!transactionReady?'未完了のガチャ保存を復旧できません。再読み込みしてください。':coin.balance<1?`ねこコインがありません。今日初めて貯金するか、${window.ChokinDailyNotes.TEXT.name}を保存すると1枚獲得できます。`:'';}
   function scheduleCoinDayRefresh(){
     const now=new Date(),next=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1);
     setTimeout(()=>{renderCoins();scheduleCoinDayRefresh();},Math.max(1000,next.getTime()-now.getTime()+1000));
@@ -341,7 +347,7 @@
     }catch(error){console.error('カプセルねこガチャ演出を結果表示へ切り替えました。',error);capsuleGachaSession=null;enhancedCelebrate(entry,null,preview,null,{gamePlan:plan,collectionResult:result});}
   }
   function previewCapsuleGacha(){const plan=window.ChokinGameFX.plan({amount:5000,forcedShow:'gacha-rare',forcedRarity:'RARE'}),cat=plan.cat,result={cat,isNew:true,medals:0,stats:window.ChokinCollection.getStats(),completedNow:false,preview:true};playCapsuleGacha(plan,result,true);}
-  function startCatGacha(){if(gachaLocked||!window.ChokinCoins.canSpend(1))return;gachaLocked=true;renderCoins();let plan=null,result=null,spent=false;try{plan=window.ChokinGameFX.gachaPlan();result=window.ChokinCollection.record(plan.cat,null);spent=window.ChokinCoins.spend(1);if(!spent){gachaLocked=false;render();return;}playCapsuleGacha(plan,result,false);}catch(error){console.error('ねこガチャ演出を簡易表示へ切り替えました。',error);if(spent&&result)showGachaFallback(plan,result);else{gachaLocked=false;render();}}}
+  function startCatGacha(){if(gachaLocked||!window.ChokinCoins.canSpend(1))return;gachaLocked=true;renderCoins();let plan=null,result=null,committed=false;try{if(!ensureGachaStorageReady()){gachaLocked=false;render();alert(gachaStorageMessage);return;}plan=window.ChokinGameFX.gachaPlan();const collectionChange=window.ChokinCollection.prepareRecord(plan.cat,null),coinChange=window.ChokinCoins.prepareSpend(1);if(!collectionChange||!coinChange){gachaLocked=false;render();return;}const recentRaw=nextRecentRaw(plan.cat.id),transaction=window.ChokinGachaTransaction.commit([{key:window.ChokinCats.recentKey,raw:recentRaw},{key:window.ChokinCollection.key,raw:collectionChange.raw},{key:window.ChokinCoins.key,raw:coinChange.raw}],{applyAfter:()=>{if(!window.ChokinCollection.adoptRaw(collectionChange.raw)||!window.ChokinCoins.adoptRaw(coinChange.raw))throw new Error('保存結果を画面へ反映できませんでした。');},applyBefore:()=>{if(!syncGachaStores())throw new Error('開始前状態を画面へ反映できませんでした。');}});if(!transaction.ok){syncGachaStores();gachaLocked=false;render();console.warn('ねこガチャの保存を開始前へ戻しました。',transaction);alert(gachaStorageMessage);return;}result=collectionChange.result;committed=true;playCapsuleGacha(plan,result,false);}catch(error){console.error('ねこガチャを開始できませんでした。',error);if(committed&&result)showGachaFallback(plan,result);else{syncGachaStores();gachaLocked=false;render();alert(gachaStorageMessage);}}}
   function closeEvent() { const wasPreview = previewActive, quickEntry = !wasPreview && pendingQuickId && state.entries.find(entry => entry.id === pendingQuickId); capsuleGachaSession?.cleanup(); capsuleGachaSession=null; previewActive = false; amountAnimationToken++; window.ChokinCanvasFX?.stop(true); window.ChokinAssets?.clear($('#sceneVisual')); $('#celebration').className='celebration'; $('#celebration').setAttribute('aria-hidden','true'); $('#sceneVisual').innerHTML=''; $('#saveCheer').innerHTML=''; $('#saveCheer').className='save-cheer-layer'; $('#particles').innerHTML=''; $('#closeEvent').textContent='ホームへ'; quickLocked = false; gachaLocked=false; navigate(wasPreview ? 'settings' : 'home'); render(); window.ChokinBadges.evaluate(); if (quickEntry) showQuickUndo(quickEntry); }
   function setupQuickSettings() {
     const host = $('#settings'); if (!host || $('#quickSettings')) return;

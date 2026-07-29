@@ -16,6 +16,8 @@
   function hasEvent(eventId){return typeof eventId==='string'&&Object.prototype.hasOwnProperty.call(data.events,eventId);}
   function awardEvent(eventId,sourceKey,amount=1){if(typeof eventId!=='string'||!eventId||typeof sourceKey!=='string'||!sourceKey||!Number.isInteger(amount)||amount<=0)return {ok:false,awarded:false,reason:'invalid'};try{const current=localStorage.getItem(KEY);if(current!==null)data=normalize(JSON.parse(current));}catch{}if(hasEvent(eventId))return {ok:true,awarded:false,reason:'duplicate'};const before=snapshot(),grantedAt=nowIso();data.events[eventId]={eventId,sourceKey,grantedAt,amount};data.balance+=amount;data.totalEarned+=amount;if(!save()){data=before;return {ok:false,awarded:false,reason:'storage'};}return {ok:true,awarded:true,event:{...data.events[eventId]}};}
   function canSpend(count=1){return Number.isInteger(count)&&count>0&&data.balance>=count;}
+  function prepareSpend(count=1){if(!canSpend(count))return null;const next=snapshot();next.schemaVersion=SCHEMA_VERSION;next.balance-=count;next.totalSpent+=count;next.updatedAt=nowIso();return {data:next,raw:JSON.stringify(next)};}
+  function adoptRaw(raw){try{if(typeof raw!=='string')return false;data=normalize(JSON.parse(raw));return true;}catch{return false;}}
   function spend(count=1){if(!canSpend(count))return false;const before=snapshot();data.balance-=count;data.totalSpent+=count;if(!save()){data=before;return false;}return true;}
   function reset(){data=empty();data.welcomeCoinGranted=true;save();}
   function exportData(){return snapshot();}
@@ -23,5 +25,5 @@
   function restoreRaw(raw){try{if(raw===null){localStorage.removeItem(KEY);data=empty();return true;}const parsed=JSON.parse(raw);data=normalize(parsed);localStorage.setItem(KEY,raw);return true;}catch{return false;}}
   function inspectData(value){const object=!!value&&typeof value==='object'&&!Array.isArray(value),balanceReadable=object&&Number.isInteger(value.balance)&&value.balance>=0;return {valid:true,data:normalize(value),readable:object,balanceReadable,balance:balanceReadable?value.balance:null,state:value==null?'none':!object?'invalid':balanceReadable?'ok':'partial'};}
   load();
-  window.ChokinCoins={key:KEY,localDate,getState:snapshot,grantWelcome,awardDaily,hasDailyAward,hasEvent,awardEvent,canSpend,spend,reset,exportData,importData,inspectData,restoreRaw};
+  window.ChokinCoins={key:KEY,localDate,getState:snapshot,grantWelcome,awardDaily,hasDailyAward,hasEvent,awardEvent,canSpend,prepareSpend,adoptRaw,spend,reset,exportData,importData,inspectData,restoreRaw};
 })();
