@@ -18,7 +18,12 @@
     });cache.set(key,promise);return promise;
   };
   const preload=()=>Promise.all(Object.keys(urls).map(key=>waitImage(key))).then(images=>images.every(Boolean));
-  const fallback=className=>{const span=document.createElement('span');span.className=`capsule-gacha-paw ${className}`;span.innerHTML=PAW;return span;};
+  const fallback=(key,kind)=>{const span=document.createElement('span');
+    if(kind==='cat'){span.className='capsule-gacha-paw cat-fallback';span.innerHTML=PAW;}
+    else if(key==='glow')span.className='capsule-gacha-glow-fallback';
+    else span.className=`capsule-gacha-body-fallback capsule-${key}-fallback`;
+    span.setAttribute('aria-hidden','true');return span;
+  };
   function play(options={}){
     const host=options.host;if(!host)throw new Error('カプセル演出の表示先がありません。');
     let ended=false,revealed=false,catState='idle',capsuleState='closed';const timers=[];
@@ -26,23 +31,21 @@
     const stage=document.createElement('div');stage.className=`capsule-gacha-animation rarity-${String(options.rarity||'NORMAL').toLowerCase()}${reduced?' reduced':''}`;stage.setAttribute('aria-hidden','true');
     stage.innerHTML='<div class="capsule-gacha-aurora"></div><div class="capsule-gacha-rings"><i></i><i></i><i></i></div><div class="capsule-gacha-stars"></div><div class="capsule-gacha-flare"></div><div class="capsule-gacha-cat-slot"></div><div class="capsule-gacha-capsule-slot"></div>';
     const catSlot=stage.querySelector('.capsule-gacha-cat-slot'),capsuleSlot=stage.querySelector('.capsule-gacha-capsule-slot');
-    const catImage=document.createElement('img'),capsuleImage=document.createElement('img');catImage.className='capsule-gacha-cat';capsuleImage.className='capsule-gacha-capsule';catImage.alt='';capsuleImage.alt='';
-    catSlot.append(catImage);capsuleSlot.append(capsuleImage);
-    const setImage=(image,slot,key,kind)=>{image.hidden=false;image.classList.remove('image-failed');image.src=urls[key];image.onerror=()=>{image.hidden=true;image.classList.add('image-failed');if(!slot.querySelector(`.${kind}-fallback`))slot.append(fallback(`${kind}-fallback`));};};
-    const setCat=key=>{catState=key;catImage.className=`capsule-gacha-cat cat-${key}`;setImage(catImage,catSlot,key,'cat');};
-    const setCapsule=key=>{capsuleState=key;capsuleImage.className=`capsule-gacha-capsule capsule-${key}`;setImage(capsuleImage,capsuleSlot,key,'capsule');};
+    let catFrameToken=0,capsuleFrameToken=0;
+    const preparedImage=(image,className,key)=>{image.className=className;image.alt='';image.hidden=false;image.dataset.capsuleFrame=key;return image;};
+    const setCat=key=>{const token=++catFrameToken;catState=key;catSlot.dataset.pendingFrame=key;catSlot.dataset.frameState='loading';waitImage(key).then(source=>{if(ended||!stage.isConnected||(token!==catFrameToken&&catSlot.childElementCount))return;catSlot.replaceChildren(source?preparedImage(source,`capsule-gacha-cat cat-${key}`,key):fallback(key,'cat'));catSlot.dataset.frame=key;catSlot.dataset.frameState=source?'loaded':'failed';});};
+    const setCapsule=key=>{const token=++capsuleFrameToken;capsuleState=key;capsuleSlot.dataset.pendingFrame=key;capsuleSlot.dataset.frameState='loading';waitImage(key).then(source=>{if(ended||!stage.isConnected||(token!==capsuleFrameToken&&capsuleSlot.childElementCount))return;capsuleSlot.replaceChildren(source?preparedImage(source,`capsule-gacha-capsule capsule-${key}`,key):fallback(key,'capsule'));capsuleSlot.dataset.frame=key;capsuleSlot.dataset.frameState=source?'loaded':'failed';});};
     const schedule=(time,fn)=>{const id=setTimeout(()=>{if(!ended)fn();},time);timers.push(id);};
     const clear=()=>{timers.splice(0).forEach(clearTimeout);};
     const cleanup=()=>{if(ended)return;ended=true;clear();stage.remove();};
     const reveal=reason=>{if(revealed)return;revealed=true;clear();stage.classList.add('is-revealing');schedule(90,()=>{});const callback=options.onReveal;cleanup();callback?.(reason);};
     const open=()=>{
-      capsuleState='open';stage.classList.remove('is-tap1','is-tap2','is-pushing');stage.classList.add('is-open');capsuleSlot.replaceChildren();
-      ['bottom','glow','top'].forEach(key=>{const image=document.createElement('img');image.className=`capsule-gacha-open capsule-${key}`;image.alt='';capsuleSlot.append(image);setImage(image,capsuleSlot,key,'capsule');});
+      const token=++capsuleFrameToken,keys=['bottom','glow','top'];capsuleState='open';capsuleSlot.dataset.pendingFrame='open';capsuleSlot.dataset.frameState='loading';stage.classList.remove('is-tap1','is-tap2','is-pushing');stage.classList.add('is-open');
+      Promise.all(keys.map(key=>waitImage(key))).then(sources=>{if(ended||token!==capsuleFrameToken||!stage.isConnected)return;const nodes=keys.map((key,index)=>sources[index]?preparedImage(sources[index],`capsule-gacha-open capsule-${key}`,key):fallback(key,'capsule'));capsuleSlot.replaceChildren(...nodes);capsuleSlot.dataset.frame='open';capsuleSlot.dataset.frameState=sources.every(Boolean)?'loaded':'failed';});
       options.onPop?.();
     };
     host.replaceChildren(stage);setCat('idle');setCapsule('closed');
     const stars=stage.querySelector('.capsule-gacha-stars');stars.innerHTML=Array.from({length:reduced?8:24},(_,i)=>`<i style="--i:${i};--x:${7+(i*37)%87}%;--y:${9+(i*53)%76}%;--d:${(i%8)*.09}s"></i>`).join('');
-    preload().catch(()=>false);
     if(reduced){schedule(220,()=>{setCat('push');setCapsule('squash');stage.classList.add('is-pushing');});schedule(520,open);schedule(780,()=>{setCat('react');stage.classList.add('is-reacting');});schedule(duration,()=>reveal('complete'));}
     else{
       schedule(200,()=>stage.classList.add('is-looking'));

@@ -10,21 +10,8 @@
   const diagnostics = {};
   const jobs = [];
   let activeJobs = 0;
-  const CAT_FILE_NAMES = new Set([
-    'cat_celebrate.png','cat_cosmic.png','cat_surprised.png','cat_royal.png','cat_black.png',
-    'cat_calico.png','cat_orange_tabby.png','cat_hachiware.png','cat_ninja.png','cat_wizard.png',
-    'cat_samurai.png','cat_angel.png','cat_deity.png','cat_gray.png','cat_pirate.png',
-    'cat_knight.png','cat_detective.png','cat_chef.png','cat_dragon.png'
-  ]);
-  const knownCatPath = (source, folder) => {
-    try {
-      const path = new URL(source, document.baseURI).pathname;
-      const match = path.match(new RegExp(`/assets/${folder}/([^/]+)$`, 'i'));
-      return Boolean(match && CAT_FILE_NAMES.has(decodeURIComponent(match[1]).toLowerCase()));
-    } catch { return false; }
-  };
   const catPath = source => /(?:^|\/)assets\/cats\/[^/?#]+\.(?:png|webp)(?:[?#].*)?$/i.test(String(source || ''));
-  const transparentCatPath = source => knownCatPath(source, 'cats-transparent');
+  const transparentCatPath = source => /(?:^|\/)assets\/cats-transparent\/[^/?#]+\.(?:png|webp)(?:[?#].*)?$/i.test(String(source || ''));
   const treasurePath = source => /(?:^|\/)assets\/scenes\/treasure_chest_(?:closed|open)\.(?:png|webp)(?:[?#].*)?$/i.test(String(source || ''));
   const necessaryPath = source => /(?:^|\/)assets\/scenes\/necessary_expense_stamp_cat\.(?:png|webp)(?:[?#].*)?$/i.test(String(source || ''));
   const processablePath = source => transparentCatPath(source) || catPath(source) || treasurePath(source) || necessaryPath(source);
