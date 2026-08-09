@@ -154,7 +154,7 @@
     image.classList.toggle('cat-image-loading', state === 'pending');
     image.classList.toggle('cat-image-ready', ready);
     image.hidden = state === 'fallback';
-    if (fallback) fallback.hidden = ready;
+    if (fallback) fallback.hidden = state !== 'fallback';
   }
 
   function waitForImage(image, isCurrent) {
@@ -219,8 +219,9 @@
     } catch { return null; }
   }
 
-  async function useTransparentImage(image, source) {
+  async function useTransparentImage(image, source, options = {}) {
     const key = absolute(source);
+    if (options.allowSourceFallback === false) image.dataset.catNoSourceFallback = 'true';
     if (['processed', 'source'].includes(image.dataset.catImageState) && image.dataset.catOriginal === key) return true;
     if (image.dataset.catImageState === 'pending' && image.dataset.catOriginal === key) return false;
     const token = (processingTokens.get(image) || 0) + 1;
@@ -239,6 +240,11 @@
     }
     if (!isCurrent()) return false;
     warnProcessedOnce(key);
+    if (image.dataset.catNoSourceFallback === 'true') {
+      reportSourceFailureOnce(key);
+      setImageState(image, 'fallback');
+      return false;
+    }
     const fallbackSource = originalForTransparent(key);
     if (!fallbackSource) {
       reportSourceFailureOnce(key);
@@ -249,7 +255,8 @@
     return useSourceImage(image, fallbackSource, isCurrent);
   }
 
-  async function processElement(image, sourceOverride = null) {
+  async function processElement(image, sourceOverride = null, options = {}) {
+    if (options.allowSourceFallback === false) image.dataset.catNoSourceFallback = 'true';
     const currentSource = image.getAttribute('src');
     const markedFallback = image.dataset.catFallbackSource;
     if (markedFallback && catPath(currentSource) && absolute(currentSource) === markedFallback) {
@@ -260,7 +267,7 @@
     if (markedFallback && (!currentSource || absolute(currentSource) !== markedFallback)) delete image.dataset.catFallbackSource;
     const source = sourceOverride || (processablePath(currentSource) ? currentSource : image.dataset.catOriginal || currentSource);
     if (!processablePath(source)) return false;
-    if (transparentCatPath(source)) return useTransparentImage(image, source);
+    if (transparentCatPath(source)) return useTransparentImage(image, source, options);
     const key = absolute(source);
     if (['processed', 'source'].includes(image.dataset.catImageState) && image.dataset.catOriginal === key) return true;
     if (image.dataset.catImageState === 'pending' && image.dataset.catOriginal === key) return false;
