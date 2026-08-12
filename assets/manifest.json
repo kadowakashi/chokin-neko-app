@@ -22,6 +22,7 @@
     "assets/cats-transparent/cat_gardener.png",
     "assets/cats-transparent/cat_ranger.png",
     "assets/cats-transparent/cat_idol.png",
+    "assets/cats-transparent/cat_hachiware_scarf.png",
     "assets/cats/cat_celebrate.png",
     "assets/cats/cat_black.png",
     "assets/cats/cat_calico.png",
@@ -46,19 +47,19 @@
     "assets/scenes/treasure_chest_open.png",
     "assets/scenes/cat_temple_bg.png",
     "assets/scenes/space_bg.png",
-    "assets/scenes/necessary_expense_stamp_cat.png"
-    ,"assets/scenes/golden_blessing_core.png"
-    ,"assets/scenes/shockwave_core.png"
-    ,"assets/scenes/solar_core.png"
-    ,"assets/animations/capsule-gacha/cat_capsule_idle.png"
-    ,"assets/animations/capsule-gacha/cat_capsule_tap_1.png"
-    ,"assets/animations/capsule-gacha/cat_capsule_tap_2.png"
-    ,"assets/animations/capsule-gacha/cat_capsule_push.png"
-    ,"assets/animations/capsule-gacha/cat_capsule_react.png"
-    ,"assets/animations/capsule-gacha/capsule_closed.png"
-    ,"assets/animations/capsule-gacha/capsule_squash.png"
-    ,"assets/animations/capsule-gacha/capsule_top.png"
-    ,"assets/animations/capsule-gacha/capsule_bottom.png"
-    ,"assets/animations/capsule-gacha/capsule_inner_glow.png"
+    "assets/scenes/necessary_expense_stamp_cat.png",
+    "assets/scenes/golden_blessing_core.png",
+    "assets/scenes/shockwave_core.png",
+    "assets/scenes/solar_core.png",
+    "assets/animations/capsule-gacha/cat_capsule_idle.png",
+    "assets/animations/capsule-gacha/cat_capsule_tap_1.png",
+    "assets/animations/capsule-gacha/cat_capsule_tap_2.png",
+    "assets/animations/capsule-gacha/cat_capsule_push.png",
+    "assets/animations/capsule-gacha/cat_capsule_react.png",
+    "assets/animations/capsule-gacha/capsule_closed.png",
+    "assets/animations/capsule-gacha/capsule_squash.png",
+    "assets/animations/capsule-gacha/capsule_top.png",
+    "assets/animations/capsule-gacha/capsule_bottom.png",
+    "assets/animations/capsule-gacha/capsule_inner_glow.png"
   ]
 }
