@@ -8,7 +8,7 @@
   });
   const SCENES = Object.freeze({
     cosmic: [{src:'assets/scenes/space_bg.png',mode:'background',className:'asset-space-bg'},{src:'assets/cats-transparent/cat_cosmic.png',mode:'main',className:'asset-cosmic-cat'}],
-    treasure: [{src:'assets/scenes/treasure_chest_closed.png',mode:'main',className:'asset-chest-closed'},{src:'assets/scenes/treasure_chest_open.png',mode:'main',className:'asset-chest-open'}],
+    treasure: [{src:'assets/scenes/treasure_chest_closed_transparent.png',mode:'main',className:'asset-chest-closed'},{src:'assets/scenes/treasure_chest_open_transparent.png',mode:'main',className:'asset-chest-open'}],
     cat: [{src:'assets/cats-transparent/cat_celebrate.png',mode:'main',className:'asset-celebrate-cat'}],
     temple: [{src:'assets/scenes/cat_temple_bg.png',mode:'background',className:'asset-temple-bg'},{src:'assets/scenes/cat_temple_foreground.png',mode:'main',className:'asset-temple-foreground'},{src:'assets/cats-transparent/cat_royal.png',mode:'main',className:'asset-royal-cat'}],
     gold: [{src:'assets/scenes/golden_blessing_core.png',mode:'main',className:'asset-effect-core asset-golden-blessing-core',direct:true}],
