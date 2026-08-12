@@ -1,4 +1,4 @@
-const SHELL_CACHE = 'chokin-v100-shell-r5';
+const SHELL_CACHE = 'chokin-v100-shell-r6';
 const RUNTIME_CACHE = 'chokin-v100-runtime-assets-r1';
 
 const SHELL_ASSETS = [

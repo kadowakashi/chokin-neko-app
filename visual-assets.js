@@ -14,7 +14,7 @@
     gold: [{src:'assets/scenes/golden_blessing_core.png',mode:'main',className:'asset-effect-core asset-golden-blessing-core',direct:true}],
     shock: [{src:'assets/scenes/shockwave_core.png',mode:'main',className:'asset-effect-core asset-shockwave-core',direct:true}],
     solar: [{src:'assets/scenes/solar_core.png',mode:'main',className:'asset-effect-core asset-solar-core',direct:true}],
-    necessary: [{src:'assets/scenes/necessary_expense_stamp_cat.png',mode:'main',className:'asset-necessary-expense'}],
+    necessary: [{src:'assets/scenes/necessary_expense_stamp_cat_transparent.png',mode:'main',className:'asset-necessary-expense'}],
     gachaNormal: [{src:'assets/cats-transparent/cat_celebrate.png',mode:'main',className:'asset-gacha-cat'}],
     gachaSuper: [{src:'assets/cats-transparent/cat_cosmic.png',mode:'main',className:'asset-gacha-cat'}],
     gachaLegend: [{src:'assets/cats-transparent/cat_royal.png',mode:'main',className:'asset-gacha-cat'}],
