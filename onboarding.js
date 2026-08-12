@@ -17,7 +17,7 @@
   ]);
   const PAGES = Object.freeze([
     { id: 'small-steps', title: '少しずつでOK', body: ['1円からでも大丈夫。', '貯めた分を記録して、ねこと一緒に続けよう。'], note: '毎日できなくても、これまでの記録はなくなりません。', image: './assets/cats-transparent/cat_celebrate.png', imageAlt: 'お祝い猫', sortOrder: 1 },
-    { id: 'records', title: '貯金と出費を記録', body: ['貯金した金額は、通常入力やクイック貯金で記録できます。', '出費は「必要経費」「後悔散財」「最高の散財」の3種類です。'], note: '後悔散財を記録すると、10％のリベンジ貯金ができます。', image: './assets/cats-transparent/cat_hachiware.png', imageAlt: 'ハチワレ猫', sortOrder: 2 },
+    { id: 'records', title: '貯金と出費を記録', body: ['貯金した金額は、通常入力やクイック貯金で記録できます。', '出費は「必要経費」「後悔散財」「最高の散財」の3種類です。'], note: '後悔散財を記録すると、10％のリベンジ貯金ができます。', image: './assets/cats-transparent/cat_hachiware.png', imageAlt: 'ぶち猫', sortOrder: 2 },
     { id: 'cat-coins', title: 'ねこコインとガチャ', body: ['その日の最初の貯金で、ねこコインを1枚もらえます。', 'ねこコイン1枚で、猫ガチャを1回引けます。'], note: '貯金演出の応援猫は、ガチャで仲間になるまで図鑑には追加されません。', image: './assets/cats-transparent/cat_royal.png', imageAlt: '王様猫', sortOrder: 3 },
     { id: 'goals', title: '目標と実績', body: ['ほしいものを貯金目標に設定できます。', 'カレンダーでは、貯金した日や金額を振り返れます。', '目標を達成すると、達成アルバムやバッジにも記録されます。'], note: '', image: './assets/cats-transparent/cat_cosmic.png', imageAlt: '宇宙猫', sortOrder: 4 },
     { id: 'data-safety', title: 'データを守ろう', body: ['記録は、この端末の中に保存されます。', '設定画面から、ときどきバックアップを作っておくと安心です。'], note: 'オフラインでも使えます。更新のお知らせが出た時は、内容を適用してアプリを開き直してください。', image: './assets/cats-transparent/cat_angel.png', imageAlt: '天使猫', sortOrder: 5 },

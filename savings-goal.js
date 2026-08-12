@@ -36,7 +36,7 @@
     const [year,month,day] = value.split('-').map(Number), date = new Date(year,month-1,day);
     return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
   };
-  const catMarkup = (className, alt='目標へ進むハチワレ') => `<span class="${className} goal-cat-position" style="--goal-position:0%"><span class="goal-cat-sway">${pawFallback()}<img src="./${CAT_IMAGE}" alt="${alt}" onerror="this.hidden=true;this.previousElementSibling.hidden=false"></span></span>`;
+  const catMarkup = (className, alt='目標へ進むぶち猫') => `<span class="${className} goal-cat-position" style="--goal-position:0%"><span class="goal-cat-sway">${pawFallback()}<img src="./${CAT_IMAGE}" alt="${alt}" onerror="this.hidden=true;this.previousElementSibling.hidden=false"></span></span>`;
   function milestoneIcon(value) {
     const star='<path class="milestone-main" d="M24 4.5l5.9 12 13.2 1.9-9.5 9.3 2.2 13.1L24 34.6l-11.8 6.2 2.2-13.1-9.5-9.3 13.2-1.9z"/>';
     if (value===25) return `<svg class="goal-milestone-icon milestone-25" viewBox="0 0 48 48" aria-hidden="true">${star}</svg>`;
