@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "catalogVersion": 2,
-  "updatedAt": "2026-07-23T00:00:00+09:00",
+  "catalogVersion": 3,
+  "updatedAt": "2026-08-12T00:00:00+09:00",
   "cats": [
     {"id":"celebrate","name":"お祝い猫","rarity":"NORMAL","image":"cat_celebrate.png","imageKey":"cat_celebrate","gachaEnabled":true,"slotEnabled":true,"weight":10,"themeColor":"#fff4dc","accentColor":"#ffd75a","message":"お祝い猫が未来への一歩を祝福しています","feverTitle":"CELEBRATION CAT FEVER","sortOrder":10,"enabled":true},
     {"id":"black","name":"黒猫","rarity":"NORMAL","image":"cat_black.png","imageKey":"cat_black","gachaEnabled":true,"slotEnabled":true,"weight":10,"themeColor":"#222222","accentColor":"#ffd75a","message":"黒猫が未来資産を見守っています","feverTitle":"BLACK CAT FEVER","sortOrder":20,"enabled":true},
     {"id":"calico","name":"三毛猫","rarity":"NORMAL","image":"cat_calico.png","imageKey":"cat_calico","gachaEnabled":true,"slotEnabled":true,"weight":10,"themeColor":"#f7e6cf","accentColor":"#e98752","message":"三毛猫が幸運を運んできました","feverTitle":"CALICO FEVER","sortOrder":30,"enabled":true},
     {"id":"orange_tabby","name":"茶トラ","rarity":"NORMAL","image":"cat_orange_tabby.png","imageKey":"cat_orange_tabby","gachaEnabled":true,"slotEnabled":true,"weight":10,"themeColor":"#d98235","accentColor":"#fff0a0","message":"茶トラが元気よく貯金を応援しています","feverTitle":"ORANGE CAT FEVER","sortOrder":40,"enabled":true},
-    {"id":"hachiware","name":"ハチワレ","rarity":"NORMAL","image":"cat_hachiware.png","imageKey":"cat_hachiware","gachaEnabled":true,"slotEnabled":true,"weight":10,"themeColor":"#30333c","accentColor":"#f4f6ff","message":"ハチワレが堅実な一歩を確認しました","feverTitle":"HACHIWARE FEVER","sortOrder":50,"enabled":true},
+    {"id":"hachiware","name":"ぶち猫","rarity":"NORMAL","image":"cat_hachiware.png","imageKey":"cat_hachiware","gachaEnabled":true,"slotEnabled":true,"weight":10,"themeColor":"#30333c","accentColor":"#f4f6ff","message":"ぶち猫が堅実な一歩を確認しました","feverTitle":"BUCHI CAT FEVER","sortOrder":50,"enabled":true},
     {"id":"gray","name":"灰猫","rarity":"NORMAL","image":"cat_gray.png","imageKey":"cat_gray","gachaEnabled":true,"slotEnabled":true,"weight":10,"themeColor":"#687080","accentColor":"#bde7ff","message":"灰猫が静かに未来を強化しました","feverTitle":"GRAY CAT FEVER","sortOrder":60,"enabled":true},
     {"id":"surprised","name":"驚き猫","rarity":"RARE","image":"cat_surprised.png","imageKey":"cat_surprised","gachaEnabled":true,"slotEnabled":true,"weight":8,"themeColor":"#f0b36f","accentColor":"#ff6f91","message":"驚き猫も目を見張る貯金です","feverTitle":"SURPRISE CAT FEVER","sortOrder":70,"enabled":true},
     {"id":"ninja","name":"忍者猫","rarity":"RARE","image":"cat_ninja.png","imageKey":"cat_ninja","gachaEnabled":true,"slotEnabled":true,"weight":8,"themeColor":"#171b2c","accentColor":"#8e7cff","message":"忍者猫が気配なく未来資産を守りました","feverTitle":"NINJA CAT FEVER","sortOrder":80,"enabled":true},
@@ -25,5 +25,6 @@
     ,{"id":"gardener","name":"ガーデニング猫","rarity":"RARE","image":"cat_gardener.png","imageKey":"cat_gardener","gachaEnabled":true,"slotEnabled":true,"weight":8,"themeColor":"#49691d","accentColor":"#f6ad31","message":"こつこつ育てるのが得意だよ！","feverTitle":"GARDEN FEVER","sortOrder":200,"enabled":true}
     ,{"id":"ranger","name":"レンジャー猫","rarity":"SUPER","image":"cat_ranger.png","imageKey":"cat_ranger","gachaEnabled":true,"slotEnabled":true,"weight":6,"themeColor":"#24491e","accentColor":"#c8ff4d","message":"ねらった目標は逃さない！","feverTitle":"FOREST ARROW FEVER","sortOrder":210,"enabled":true}
     ,{"id":"idol","name":"アイドル猫","rarity":"ULTRA","image":"cat_idol.png","imageKey":"cat_idol","gachaEnabled":true,"slotEnabled":true,"weight":4,"themeColor":"#9b2c7c","accentColor":"#ffd05a","message":"みんなの応援でキラキラ全開！","feverTitle":"IDOL SPARKLE FEVER","sortOrder":220,"enabled":true}
+    ,{"id":"hachiware_scarf","name":"ハチワレ猫","rarity":"NORMAL","image":"cat_hachiware_scarf.png","imageKey":"cat_hachiware_scarf","gachaEnabled":true,"slotEnabled":true,"weight":10,"themeColor":"#2f5f95","accentColor":"#e85b5b","message":"ハチワレ猫が今日の一歩を応援します","feverTitle":"HACHIWARE CAT FEVER","sortOrder":230,"enabled":true}
   ]
 }
