@@ -1,9 +1,9 @@
 (() => {
   "use strict";
 
-  const SUPPORTED_BACKUP_VERSION = 1;
+  const SUPPORTED_BACKUP_VERSIONS = new Set([1, 2]);
   const ROOT_FIELDS = new Set(["backupVersion", "exportedAt", "appVersion", "data"]);
-  const DATA_FIELDS = new Set(["version", "entries", "settings", "futureSettings", "quickAmounts", "catCollection", "catCoins", "savingsGoal", "goalHistory", "badgeState", "dailyNotes"]);
+  const DATA_FIELDS = new Set(["version", "entries", "settings", "futureSettings", "quickAmounts", "catCollection", "catCoins", "savingsGoal", "goalHistory", "badgeState", "dailyNotes", "catLife"]);
   let options = {};
   let candidate = null;
   let restoring = false;
@@ -27,9 +27,9 @@
     return { level, message };
   }
 
-  function analyzeBackup(backup, fileName = "") {
+  function analyzeBackup(backup, fileName = "", catLifeInspection = null) {
     if (!plainObject(backup)) return { restorable: false, error: "バックアップのルート形式が正しくありません。" };
-    if (backup.backupVersion !== SUPPORTED_BACKUP_VERSION) return { restorable: false, error: "対応していないバックアップ形式です。" };
+    if (!SUPPORTED_BACKUP_VERSIONS.has(backup.backupVersion)) return { restorable: false, error: "対応していないバックアップ形式です。" };
     if (!plainObject(backup.data)) return { restorable: false, error: "復元に必要なデータ領域がありません。" };
     const mainState = options.normalizeMainData?.(backup.data);
     if (!mainState) return { restorable: false, error: "貯金記録または設定を読み取れません。" };
@@ -42,6 +42,7 @@
       history: owns(data, "goalHistory"),
       badges: owns(data, "badgeState"),
       dailyNotes: owns(data, "dailyNotes"),
+      catLife: backup.backupVersion === 2 && owns(data, "catLife"),
     };
     const inspections = {
       collection: window.ChokinCollection.inspectData(has.collection ? data.catCollection : null),
@@ -50,7 +51,15 @@
       history: window.ChokinGoalHistory.inspectData(has.history ? data.goalHistory : null),
       badges: window.ChokinBadges.inspectData(has.badges ? data.badgeState : null),
       dailyNotes: window.ChokinDailyNotes.inspectData(has.dailyNotes ? data.dailyNotes : null),
+      catLife: catLifeInspection,
     };
+    if (backup.backupVersion === 2) {
+      if (!has.catLife) return { restorable: false, error: "猫の暮らしデータがありません。" };
+      if (!catLifeInspection?.valid) return { restorable: false, error: "猫の暮らしデータが壊れているため、安全に復元できません。" };
+      const requiredV2 = ["catCollection", "catCoins", "savingsGoal", "goalHistory", "badgeState", "dailyNotes"];
+      if (requiredV2.some(key => !owns(data, key))) return { restorable: false, error: "backupVersion 2の必須データが不足しています。" };
+      if (inspections.collection.state !== "ok" || inspections.coins.state !== "ok" || !inspections.goal.valid || !inspections.history.valid || inspections.history.state === "partial" || !inspections.badges.valid || inspections.badges.state === "partial" || !inspections.dailyNotes.readable || inspections.dailyNotes.invalidItems > 0) return { restorable: false, error: "backupVersion 2の従来データ部分を安全に復元できません。" };
+    }
     const saves = mainState.entries.filter((entry) => entry.type === "save");
     const spends = mainState.entries.filter((entry) => entry.type === "spend");
     const notices = [];
@@ -227,7 +236,12 @@
       $("#backupFile").value = "";
       return;
     }
-    const analyzed = analyzeBackup(parsed, file.name);
+    let catLifeInspection = null;
+    if (parsed?.backupVersion === 2) {
+      try { catLifeInspection = await options.inspectCatLife?.(parsed); }
+      catch { catLifeInspection = { valid: false }; }
+    }
+    const analyzed = analyzeBackup(parsed, file.name, catLifeInspection);
     if (!analyzed.restorable) {
       showReadError(`バックアップを復元できません。${analyzed.error}`);
       $("#backupFile").value = "";

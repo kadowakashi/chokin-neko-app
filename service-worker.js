@@ -1,4 +1,4 @@
-const SHELL_CACHE = 'chokin-v100-shell-r9';
+const SHELL_CACHE = 'chokin-v100-shell-r10';
 const RUNTIME_CACHE = 'chokin-v100-runtime-assets-r1';
 
 const SHELL_ASSETS = [
@@ -11,7 +11,8 @@ const SHELL_ASSETS = [
   './visual-assets.js', './cat-image-processor.js', './onboarding.js', './gacha-transaction.js', './cat-collection.js',
   './cat-coins.js', './daily-note.js', './cat-characters.js', './game-effects.js', './asset-loader.js',
   './canvas-effects.js', './capsule-gacha-animation.js', './goal-history.js', './savings-goal.js', './badges.js',
-  './restore-preview.js', './app.js', './assets/manifest.json', './assets/cats/cat-catalog.json'
+  './restore-preview.js', './app.js', './assets/manifest.json', './assets/cats/cat-catalog.json',
+  './cat-life-runtime.js?v=1', './cat-life.js?v=1', './backup-v2.js?v=1', './assets/cats/cat-world.json?v=1'
 ];
 
 const scopeUrl = new URL('./', self.registration.scope);
@@ -77,17 +78,13 @@ self.addEventListener('message', event => {
 self.addEventListener('fetch', event => {
   const request = event.request;
   if (request.method !== 'GET' || request.headers.has('range')) return;
-
   const url = new URL(request.url);
   if (!isInScope(url)) return;
 
   if (request.mode === 'navigate') {
     event.respondWith((async () => {
-      try {
-        return await fetch(request);
-      } catch {
-        return (await caches.match('./index.html', { cacheName: SHELL_CACHE, ignoreSearch: true })) || Response.error();
-      }
+      try { return await fetch(request); }
+      catch { return (await caches.match('./index.html', { cacheName: SHELL_CACHE, ignoreSearch: true })) || Response.error(); }
     })());
     return;
   }

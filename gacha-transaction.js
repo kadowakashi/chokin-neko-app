@@ -9,11 +9,13 @@
   const FINGERPRINT_LIMIT = 100;
   const FINGERPRINT_RETENTION_DAYS = 180;
   const RECOVERY_ATTEMPT_LIMIT = 3;
-  const FEATURE_FLAGS = Object.freeze({ catLife: false });
+  const FEATURE_FLAGS = Object.freeze({ catLife: globalThis.__CHOKIN_TEST_ONLY_FEATURE_FLAGS__?.catLife === true });
+  const CAT_LIFE_KEY = 'chokin-event-app.catLife.v1';
   const BUSINESS_KEYS = new Set([
     'chokin-event-app.gachaRecent.v1',
     'chokin-event-app.catCollection.v1',
-    'chokin-event-app.catCoins.v1'
+    'chokin-event-app.catCoins.v1',
+    ...(FEATURE_FLAGS.catLife ? [CAT_LIFE_KEY] : [])
   ]);
   const STATES = new Set(['prepared', 'committing', 'committed', 'rolling_back', 'recovery_required', 'recovered', 'failed_safe']);
   let recoveryState = { ready: true, state: 'unchecked', error: null, recoveryAttempts: 0 };
@@ -75,7 +77,7 @@
   }
 
   function resultSignature(input) {
-    return canonical({ catId: input.catId, catLifeIncluded: false, coinCost: input.coinCost, isNew: input.isNew, result: input.isNew ? 'new' : 'duplicate' });
+    return canonical({ catId: input.catId, catLifeIncluded: input.catLifeIncluded === true, coinCost: input.coinCost, isNew: input.isNew, result: input.isNew ? 'new' : 'duplicate' });
   }
 
   function validFingerprint(entry) {
@@ -85,7 +87,8 @@
       && typeof entry.isNew === 'boolean'
       && Number.isInteger(entry.coinCost) && entry.coinCost >= 0
       && ['new', 'duplicate'].includes(entry.result)
-      && entry.catLifeIncluded === false
+      && typeof entry.catLifeIncluded === 'boolean'
+      && (!entry.catLifeIncluded || entry.isNew)
       && entry.outcome === 'committed'
       && validDate(entry.createdAt) && validDate(entry.completedAt)
       && typeof entry.requestSignature === 'string' && entry.requestSignature.length > 0
@@ -108,7 +111,7 @@
       isNew: input.isNew,
       coinCost: input.coinCost,
       result: input.isNew ? 'new' : 'duplicate',
-      catLifeIncluded: false,
+      catLifeIncluded: input.catLifeIncluded === true,
       outcome: 'committed',
       createdAt: new Date(input.createdAt).toISOString(),
       completedAt: new Date(completedAt).toISOString(),
@@ -134,6 +137,7 @@
       if (key === 'chokin-event-app.gachaRecent.v1') return Array.isArray(value) && value.every(id => typeof id === 'string');
       if (key === 'chokin-event-app.catCollection.v1') return isObject(value) && isObject(value.cats) && Number.isInteger(value.totalCatMedals) && value.totalCatMedals >= 0;
       if (key === 'chokin-event-app.catCoins.v1') return isObject(value) && Number.isInteger(value.balance) && value.balance >= 0 && Number.isInteger(value.totalSpent) && value.totalSpent >= 0;
+      if (key === CAT_LIFE_KEY) return isObject(value) && value.schemaVersion === 1 && value.economyFormulaVersion === 1 && value.goalFormulaVersion === 1 && validDate(value.updatedAt) && isObject(value.cats) && Object.entries(value.cats).every(([catId, state]) => typeof catId === 'string' && isObject(state) && state.catId === catId && state.schemaVersion === 1);
       return false;
     } catch { return false; }
   }
@@ -303,9 +307,12 @@
       catId: options.fingerprint?.catId,
       isNew: options.fingerprint?.isNew,
       coinCost: options.fingerprint?.coinCost,
+      catLifeIncluded: options.fingerprint?.catLifeIncluded === true,
       createdAt: options.fingerprint?.createdAt || new Date().toISOString()
     };
     if (typeof fingerprintInput.catId !== 'string' || !fingerprintInput.catId || typeof fingerprintInput.isNew !== 'boolean' || !Number.isInteger(fingerprintInput.coinCost) || fingerprintInput.coinCost < 0 || !validDate(fingerprintInput.createdAt)) return { ok: false, phase: 'validate', code: 'invalid-fingerprint-input', rollbackOk: true, journalPresent: false };
+    const catLifeChangeIncluded = keys.includes(CAT_LIFE_KEY);
+    if (catLifeChangeIncluded !== fingerprintInput.catLifeIncluded || (fingerprintInput.catLifeIncluded && (!FEATURE_FLAGS.catLife || !fingerprintInput.isNew))) return { ok: false, phase: 'validate', code: 'invalid-cat-life-change', rollbackOk: true, journalPresent: false };
     const completed = lookupCompleted(transactionId, fingerprintInput);
     if (completed.status === 'invalid-store') return { ok: false, phase: 'preflight', code: 'fingerprints-corrupt', rollbackOk: false, journalPresent: false, ...setRecoveryState(false, 'fingerprints-corrupt', completed.error) };
     if (completed.status === 'match') return { ok: true, duplicateTransaction: true, transactionId, changedKeys: [], fingerprint: completed.entry, cleanupPending: false };
