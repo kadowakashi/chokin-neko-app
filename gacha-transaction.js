@@ -9,7 +9,7 @@
   const FINGERPRINT_LIMIT = 100;
   const FINGERPRINT_RETENTION_DAYS = 180;
   const RECOVERY_ATTEMPT_LIMIT = 3;
-  const FEATURE_FLAGS = Object.freeze({ catLife: globalThis.__CHOKIN_TEST_ONLY_FEATURE_FLAGS__?.catLife === true });
+  const FEATURE_FLAGS = Object.freeze({ catLife: globalThis.ChokinFeatureFlags?.catLife === true });
   const CAT_LIFE_KEY = 'chokin-event-app.catLife.v1';
   const BUSINESS_KEYS = new Set([
     'chokin-event-app.gachaRecent.v1',

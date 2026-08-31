@@ -5,6 +5,7 @@
   const APP_VERSION = '1.0';
   const BACKUP_VERSION = 1;
   const CAT_LIFE_BACKUP_VERSION = 2;
+  const CAT_LIFE_STORAGE_KEY = 'chokin-event-app.catLife.v1';
   const CAT_LIFE_ENABLED = window.ChokinGachaTransaction?.featureFlags?.catLife === true;
   const DEFAULT_QUICK_AMOUNTS = [100, 500, 1000, 3000, 5000];
   const SAVE_RANKS = Object.freeze([
@@ -19,6 +20,8 @@
   let state; let formMode = 'save'; let deletingId = null; let revengeAmount = 0; let quickLocked = false; let gachaLocked = false; let pendingQuickId = null; let undoTimer = null; let amountAnimationToken = 0; let previewActive = false; let capsuleGachaSession = null; let celebrationReturnFocus = null; let collectionFilter = 'all'; const calendarNow = new Date(); let calendarYear = calendarNow.getFullYear(); let calendarMonth = calendarNow.getMonth();
   let catLifeRuntimePromise = null;
   let backupV2RuntimePromise = null;
+  let catLifeActivationDeferred = false;
+  let catLifeActivationBusy = false;
   const $ = s => document.querySelector(s);
   const yen = n => `¥${Number(n || 0).toLocaleString('ja-JP')}`;
   const coinIcon = (kind='cat') => window.ChokinVisualAssets?.coinMarkup(kind) || '🪙';
@@ -41,6 +44,43 @@
   function loadCatLifeRuntime(){if(!CAT_LIFE_ENABLED)return Promise.resolve(null);if(!catLifeRuntimePromise)catLifeRuntimePromise=import('./cat-life-runtime.js?v=1').then(()=>window.ChokinCatLifeRuntimeLoader?.load?.()).then(runtime=>{if(!runtime)throw new Error('猫生活runtimeを準備できませんでした。');return runtime;}).catch(error=>{catLifeRuntimePromise=null;throw error;});return catLifeRuntimePromise;}
   function loadBackupV2Runtime(){if(!CAT_LIFE_ENABLED)return Promise.resolve(null);if(!backupV2RuntimePromise)backupV2RuntimePromise=import('./backup-v2.js?v=1').then(()=>window.ChokinBackupV2).then(runtime=>{if(!runtime)throw new Error('backupVersion 2 runtimeを準備できませんでした。');return runtime;}).catch(error=>{backupV2RuntimePromise=null;throw error;});return backupV2RuntimePromise;}
   async function activateOwnedLegacyCatLife(timestamp=new Date().toISOString()){if(!CAT_LIFE_ENABLED)return {status:'disabled',committed:false,created:[]};const runtime=await loadCatLifeRuntime();return runtime.activateLegacy({collectionData:window.ChokinCollection.exportData(),mainState:{entries:structuredClone(state.entries)},timestamp});}
+  const CAT_LIFE_ACTIVATION_FAILURE = '猫たちの暮らしを開始できませんでした。現在のデータは変更されていません。';
+  function setCatLifeActivationStatus(message='',failed=false){const status=$('#catLifeActivationStatus');if(!status)return;status.textContent=message;status.classList.toggle('is-error',failed);}
+  function setCatLifeActivationBusy(busy){catLifeActivationBusy=busy;['#startCatLife','#deferCatLife'].forEach(selector=>{const button=$(selector);if(button)button.disabled=busy;});}
+  function hideCatLifeActivation(){const panel=$('#catLifeActivation');if(panel)panel.hidden=true;}
+  async function inspectCatLifeActivation(timestamp=new Date().toISOString()){
+    const panel=$('#catLifeActivation');
+    if(!panel||!CAT_LIFE_ENABLED||catLifeActivationDeferred){hideCatLifeActivation();return {status:CAT_LIFE_ENABLED?'deferred':'disabled',missing:[]};}
+    const collectionData=window.ChokinCollection.exportData(),records=collectionData?.cats&&typeof collectionData.cats==='object'?collectionData.cats:{},ownedIds=Object.entries(records).filter(([,record])=>record?.obtained===true).map(([catId])=>catId);
+    if(!ownedIds.length){hideCatLifeActivation();return {status:'unowned',missing:[]};}
+    try{
+      const runtime=await loadCatLifeRuntime(),loaded=runtime.loadRoot(timestamp);
+      if(!loaded.root){hideCatLifeActivation();return {status:'blocked',reason:loaded.status,missing:[]};}
+      const knownIds=new Set(runtime.catWorld.cats.map(cat=>cat.id)),missing=ownedIds.filter(catId=>knownIds.has(catId)&&!loaded.root.cats[catId]);
+      panel.hidden=missing.length===0;
+      setCatLifeActivationStatus();
+      return {status:missing.length?'eligible':'complete',missing};
+    }catch(error){console.warn('猫たちの暮らしの開始条件を確認できませんでした。',error);hideCatLifeActivation();return {status:'blocked',reason:'runtime_error',missing:[]};}
+  }
+  function showCatLifeActivationSuccess(count){const toast=document.createElement('div');toast.className='cat-life-activation-toast';toast.setAttribute('role','status');toast.textContent=count>0?`${count}匹の猫たちの暮らしが始まりました。`:'猫たちの暮らしが始まりました。';document.body.append(toast);setTimeout(()=>toast.remove(),4200);}
+  async function startCatLifeActivation(){
+    if(catLifeActivationBusy)return;
+    setCatLifeActivationBusy(true);setCatLifeActivationStatus();
+    try{
+      const result=await activateOwnedLegacyCatLife();
+      if(result.committed===true){hideCatLifeActivation();showCatLifeActivationSuccess(result.created.length);return result;}
+      if(result.status==='unchanged'){hideCatLifeActivation();return result;}
+      console.warn('猫たちの暮らしを開始できませんでした。',result);setCatLifeActivationStatus(CAT_LIFE_ACTIVATION_FAILURE,true);return result;
+    }catch(error){console.error('猫たちの暮らしを開始できませんでした。',error);setCatLifeActivationStatus(CAT_LIFE_ACTIVATION_FAILURE,true);return {status:'failed',committed:false,created:[],error};}
+    finally{setCatLifeActivationBusy(false);}
+  }
+  function setupCatLifeActivation(){
+    const panel=$('#catLifeActivation'),start=$('#startCatLife'),defer=$('#deferCatLife');
+    if(!panel||!start||!defer)return;
+    start.addEventListener('click',startCatLifeActivation);
+    defer.addEventListener('click',()=>{if(catLifeActivationBusy)return;catLifeActivationDeferred=true;hideCatLifeActivation();});
+    panel.addEventListener('keydown',event=>{if(event.key==='Escape'&&!catLifeActivationBusy){event.preventDefault();catLifeActivationDeferred=true;hideCatLifeActivation();}});
+  }
   function syncGachaStores(){try{const collectionRaw=localStorage.getItem(window.ChokinCollection.key),coinRaw=localStorage.getItem(window.ChokinCoins.key),collectionOk=window.ChokinCollection.adoptRaw(collectionRaw),coinsOk=window.ChokinCoins.adoptRaw(coinRaw);return collectionOk&&coinsOk;}catch{return false;}}
   function nextRecentRaw(catId){let current=[];try{const parsed=JSON.parse(localStorage.getItem(window.ChokinCats.recentKey)||'[]');if(Array.isArray(parsed))current=parsed.filter(id=>typeof id==='string').slice(0,3);}catch{}return JSON.stringify([catId,...current.filter(id=>id!==catId)].slice(0,3));}
   const backupV1Payload = exportedAt => ({backupVersion: BACKUP_VERSION, exportedAt, appVersion: APP_VERSION, data: {version: state.version, entries: state.entries, settings: state.settings, futureSettings: state.futureSettings || {}, quickAmounts: state.quickAmounts, catCollection: window.ChokinCollection.exportData(), catCoins: window.ChokinCoins.exportData(), savingsGoal: window.ChokinSavingsGoal.exportData(), goalHistory: window.ChokinGoalHistory.exportData(), badgeState: window.ChokinBadges.exportData(), dailyNotes: window.ChokinDailyNotes.exportData()}});
@@ -117,6 +157,10 @@
     return backupRuntime.inspectBackupV2(backup,catLifeRuntime.validateRoot);
   }
   async function applyRestoreCandidate(candidate) {
+    if(candidate.backup.backupVersion===BACKUP_VERSION){
+      const preflight=window.ChokinRestorePreview.preflightBackupV1Restore(candidate.backup,localStorage.getItem(CAT_LIFE_STORAGE_KEY));
+      if(!preflight.allowed)return {ok:false,rollbackOk:true,preflightBlocked:true,message:preflight.message,status:preflight.status};
+    }
     if(!ensureGachaStorageReady())return {ok:false,rollbackOk:true,message:'未完了のガチャ保存を復旧できないため、復元を開始できません。再読み込みしてください。'};
     if(candidate.backup.backupVersion===CAT_LIFE_BACKUP_VERSION){
       if(!CAT_LIFE_ENABLED)return {ok:false,rollbackOk:true,message:'猫の暮らし機能が有効になるまで、このバックアップは復元できません。'};
@@ -138,6 +182,7 @@
   }
   function finishRestore(result) {
     render();
+    void inspectCatLifeActivation();
     alert(result.partial?'バックアップを復元しました。読み取れない任意項目は復元していません。':'バックアップを復元しました。');
     window.setTimeout(()=>window.ChokinBadges.evaluate(),0);
   }
@@ -416,7 +461,7 @@
       const transaction=window.ChokinGachaTransaction.commit(changes,{transactionId,fingerprint:{catId:plan.cat.id,isNew:collectionChange.result.isNew,coinCost:1,catLifeIncluded,createdAt},applyAfter:()=>{if(!window.ChokinCollection.adoptRaw(collectionChange.raw)||!window.ChokinCoins.adoptRaw(coinChange.raw))throw new Error('保存結果を画面へ反映できませんでした。');},applyBefore:()=>{if(!syncGachaStores())throw new Error('開始前状態を画面へ反映できませんでした。');}});
       if(!transaction.ok){syncGachaStores();gachaLocked=false;render();console.warn('ねこガチャの保存を開始前へ戻しました。',transaction);alert(gachaStorageMessage);return;}
       if(transaction.applyAfterOk===false&&!syncGachaStores())throw new Error('保存結果を画面へ反映できませんでした。');
-      result=collectionChange.result;committed=true;playCapsuleGacha(plan,result,false);
+      result=collectionChange.result;committed=true;playCapsuleGacha(plan,result,false);void inspectCatLifeActivation();
     }catch(error){console.error('ねこガチャを開始できませんでした。',error);if(committed&&result)showGachaFallback(plan,result);else{syncGachaStores();gachaLocked=false;render();alert(gachaStorageMessage);}}
   }
   window.ChokinCatLifeBridge=Object.freeze({enabled:CAT_LIFE_ENABLED,ensureLoaded:loadCatLifeRuntime,activateLegacy:activateOwnedLegacyCatLife});
@@ -448,7 +493,7 @@
     $('#catDiagnostics').onclick=()=>{const cats=window.ChokinCats.all,images=[...section.querySelectorAll('.cat-card img')],success=images.filter(image=>image.complete&&image.naturalWidth>0).length,counts=Object.fromEntries(['NORMAL','RARE','SUPER','ULTRA','LEGEND'].map(rarity=>[rarity,cats.filter(cat=>cat.rarity===rarity).length]));$('#catDiagnosticsBody').innerHTML=`<h3>猫素材診断</h3><p>登録：${cats.length}匹<br>読込成功：${success}匹<br>読込失敗：${images.length-success}匹<br>ガチャ対象：${cats.filter(cat=>cat.gachaEnabled).length}匹<br>スロット対象：${cats.filter(cat=>cat.slotEnabled).length}匹</p><p>${Object.entries(counts).map(([rarity,count])=>`${rarity}：${count}`).join('<br>')}</p><strong>${success===images.length?'問題なし':'画像を確認してください'}</strong>`;diagnostic.showModal();};
     diagnostic.querySelector('.cat-detail-close').onclick=()=>diagnostic.close();diagnostic.addEventListener('click',event=>{if(event.target===diagnostic)diagnostic.close();});
   }
-  function setupCollectionSettings(){const host=$('#settings'),tools=host?.querySelector('.data-tools');if(!tools||$('#resetCollection'))return;const guide=document.createElement('button');guide.id='showFirstGuide';guide.className='onboarding-settings-link';guide.type='button';const guideText=document.createElement('span'),guideTitle=document.createElement('b'),guideNote=document.createElement('small'),guideArrow=document.createElement('strong');guideTitle.textContent='使い方を見る';guideNote.textContent='貯金・ねこコイン・目標などの説明';guideArrow.textContent='›';guideArrow.setAttribute('aria-hidden','true');guideText.append(guideTitle,guideNote);guide.append(guideText,guideArrow);host.insertBefore(guide,tools);guide.onclick=event=>window.ChokinOnboarding?.openManual(event.currentTarget);const diagnostic=document.createElement('button');diagnostic.id='collectionDiagnostics';diagnostic.className='data-button';diagnostic.textContent='猫図鑑診断';tools.append(diagnostic);diagnostic.onclick=()=>{const result=window.ChokinCollection.getDiagnostics(),labels={empty:'初期状態',ok:'正常',repaired:'修復済み',recovered:'破損データを退避して復旧'};const dialog=$('#catDiagnosticsDialog');$('#catDiagnosticsBody').innerHTML=`<h3>猫図鑑診断</h3><p>総猫数：${result.total}匹<br>取得猫数：${result.obtained}匹<br>未取得猫数：${result.unobtained}匹<br>完成率：${result.percent}％<br>猫メダル合計：${result.totalCatMedals}枚<br>読込状態：${labels[result.loadState]||result.loadState}<br>カタログ外データ：${result.unknownCats}件<br>データ異常：${result.anomalies}件</p><strong>${result.loadState==='recovered'?'元データを退避して安全に復旧しました':'診断ではデータを変更していません'}</strong>`;dialog.showModal();};const button=document.createElement('button');button.id='resetCollection';button.className='data-button danger-outline';button.textContent='猫図鑑をリセット';tools.append(button);button.onclick=()=>{if(!confirm('猫図鑑の取得状況と猫メダルをリセットしますか？'))return;if(!confirm('取得した猫、初取得日時、登場回数、猫メダルがすべて消去されます。本当にリセットしますか？'))return;window.ChokinCollection.reset();render();alert('猫図鑑をリセットしました。');};}
+  function setupCollectionSettings(){const host=$('#settings'),tools=host?.querySelector('.data-tools');if(!tools||$('#resetCollection'))return;const guide=document.createElement('button');guide.id='showFirstGuide';guide.className='onboarding-settings-link';guide.type='button';const guideText=document.createElement('span'),guideTitle=document.createElement('b'),guideNote=document.createElement('small'),guideArrow=document.createElement('strong');guideTitle.textContent='使い方を見る';guideNote.textContent='貯金・ねこコイン・目標などの説明';guideArrow.textContent='›';guideArrow.setAttribute('aria-hidden','true');guideText.append(guideTitle,guideNote);guide.append(guideText,guideArrow);host.insertBefore(guide,tools);guide.onclick=event=>window.ChokinOnboarding?.openManual(event.currentTarget);const diagnostic=document.createElement('button');diagnostic.id='collectionDiagnostics';diagnostic.className='data-button';diagnostic.textContent='猫図鑑診断';tools.append(diagnostic);diagnostic.onclick=()=>{const result=window.ChokinCollection.getDiagnostics(),labels={empty:'初期状態',ok:'正常',repaired:'修復済み',recovered:'破損データを退避して復旧'};const dialog=$('#catDiagnosticsDialog');$('#catDiagnosticsBody').innerHTML=`<h3>猫図鑑診断</h3><p>総猫数：${result.total}匹<br>取得猫数：${result.obtained}匹<br>未取得猫数：${result.unobtained}匹<br>完成率：${result.percent}％<br>猫メダル合計：${result.totalCatMedals}枚<br>読込状態：${labels[result.loadState]||result.loadState}<br>カタログ外データ：${result.unknownCats}件<br>データ異常：${result.anomalies}件</p><strong>${result.loadState==='recovered'?'元データを退避して安全に復旧しました':'診断ではデータを変更していません'}</strong>`;dialog.showModal();};const button=document.createElement('button');button.id='resetCollection';button.className='data-button danger-outline';button.textContent='猫図鑑をリセット';tools.append(button);button.onclick=()=>{if(!confirm('猫図鑑の取得状況と猫メダルをリセットしますか？'))return;if(!confirm('取得した猫、初取得日時、登場回数、猫メダルがすべて消去されます。本当にリセットしますか？'))return;window.ChokinCollection.reset();render();void inspectCatLifeActivation();alert('猫図鑑をリセットしました。');};}
   function setupCoinSettings(){const tools=$('#settings')?.querySelector('.data-tools');if(!tools||$('#resetCatCoins'))return;const button=document.createElement('button');button.id='resetCatCoins';button.className='data-button danger-outline';button.textContent='ねこコインをリセット';tools.append(button);button.onclick=()=>{if(!confirm('ねこコインの残高と獲得・使用履歴をリセットしますか？'))return;if(!confirm('この操作は元に戻せません。本当にリセットしますか？'))return;window.ChokinCoins.reset();render();alert('ねこコインをリセットしました。');};}
   function setupPwaSupport(){const host=$('#settings'),tools=host?.querySelector('.data-tools');if(!tools||$('#pwaDiagnostics'))return;const install=document.createElement('button');install.className='data-button';install.textContent='スマホのホーム画面に追加';tools.append(install);const diagnostic=document.createElement('button');diagnostic.id='pwaDiagnostics';diagnostic.className='data-button';diagnostic.textContent='PWA・公開診断';tools.append(diagnostic);const dialog=document.createElement('dialog');dialog.className='cat-diagnostics-dialog';dialog.innerHTML='<button class="cat-detail-close" aria-label="閉じる">×</button><div id="pwaDiagnosticsBody"></div>';document.body.append(dialog);const close=()=>dialog.close();dialog.querySelector('.cat-detail-close').onclick=close;dialog.addEventListener('click',event=>{if(event.target===dialog)close();});install.onclick=()=>{$('#pwaDiagnosticsBody').innerHTML='<h3>スマホのホーム画面に追加</h3><p><b>Android</b><br>Chromeのメニュー → ホーム画面に追加 → インストール</p><p><b>iPhone</b><br>Safariで開く → 共有 → ホーム画面に追加</p><small>OSやブラウザにより表示名が異なる場合があります。</small>';dialog.showModal();};diagnostic.onclick=async()=>{let registration=null;try{registration=await navigator.serviceWorker?.getRegistration();}catch{}const images=[...document.querySelectorAll('#catGallery img')],loaded=images.filter(image=>image.complete&&image.naturalWidth>0).length,manifest=document.querySelector('link[rel="manifest"]');$('#pwaDiagnosticsBody').innerHTML=`<h3>PWA・公開診断</h3><p>現在のURL：${escapeHtml(location.href)}<br>HTTPS：${location.protocol==='https:'?'はい':'いいえ'}<br>localhost：${['localhost','127.0.0.1'].includes(location.hostname)?'はい':'いいえ'}<br>Service Worker対応：${'serviceWorker' in navigator?'はい':'いいえ'}<br>登録状態：${registration?.active?.state||registration?.waiting?.state||registration?.installing?.state||'未登録'}<br>制御状態：${navigator.serviceWorker?.controller?'制御中':'未制御'}<br>Manifest URL：${escapeHtml(manifest?new URL(manifest.href,document.baseURI).href:'なし')}<br>standalone：${matchMedia('(display-mode: standalone)').matches?'はい':'いいえ'}<br>通信状態：${navigator.onLine?'オンライン':'オフライン'}<br>猫画像：${loaded} / ${images.length}<br>アプリ：v${APP_VERSION}</p><strong>診断ではデータを変更していません</strong>`;dialog.showModal();};}
   function showUpdate(registration){if($('#pwaUpdate'))return;const notice=document.createElement('div');notice.id='pwaUpdate';notice.className='pwa-update';notice.innerHTML='<span>新しいバージョンがあります</span><button>更新する</button>';notice.hidden=$('#onboardingDialog')?.open===true||$('#dailyNoteDialog')?.open===true||$('#dailyNoteDeleteDialog')?.open===true;document.body.append(notice);notice.querySelector('button').onclick=()=>{window.__pwaRefreshing=true;registration.waiting?.postMessage({type:'SKIP_WAITING'});};}
@@ -468,5 +513,5 @@
   $('#collectionDetail .cat-detail-close').onclick=()=>$('#collectionDetail').close();$('#collectionDetail').addEventListener('click',event=>{if(event.target===$('#collectionDetail'))$('#collectionDetail').close();});
   window.addEventListener('load',setupPwaRegistration);
   document.querySelector('.app-version').textContent = `v${APP_VERSION}`;
-  const welcomeCoinGranted=window.ChokinCoins.grantWelcome();load(); window.ChokinGoalHistory.setup({navigate}); window.ChokinSavingsGoal.setup({getEntries:()=>state.entries,getSettings:()=>state.settings,navigate}); window.ChokinBadges.setup({getEntries:()=>state.entries,getSettings:()=>state.settings,navigate}); window.ChokinRestorePreview.setup({normalizeMainData:normalizeMainBackupData,inspectCatLife:inspectCatLifeBackup,applyCandidate:applyRestoreCandidate,onRestored:finishRestore}); setupQuickSettings(); setupEffectPreview(); setupCatGallery(); setupCollectionSettings(); setupCoinSettings(); setupPwaSupport(); window.ChokinDailyNotes.setup({renderCoins,renderCalendar,reopenCalendarDay:key=>{const [year,month,day]=key.split('-').map(Number);calendarYear=year;calendarMonth=month-1;openCalendarDay(day);}}); render();scheduleCoinDayRefresh();const onboardingReady=window.ChokinOnboarding?.init?.()||Promise.resolve(false);if(welcomeCoinGranted)Promise.resolve(onboardingReady).finally(()=>setTimeout(showWelcomeCoin,300));window.ChokinBadges.evaluate();
+  const welcomeCoinGranted=window.ChokinCoins.grantWelcome();load(); window.ChokinGoalHistory.setup({navigate}); window.ChokinSavingsGoal.setup({getEntries:()=>state.entries,getSettings:()=>state.settings,navigate}); window.ChokinBadges.setup({getEntries:()=>state.entries,getSettings:()=>state.settings,navigate}); window.ChokinRestorePreview.setup({normalizeMainData:normalizeMainBackupData,inspectCatLife:inspectCatLifeBackup,applyCandidate:applyRestoreCandidate,onRestored:finishRestore}); setupQuickSettings(); setupEffectPreview(); setupCatGallery(); setupCollectionSettings(); setupCoinSettings(); setupPwaSupport(); setupCatLifeActivation(); window.ChokinDailyNotes.setup({renderCoins,renderCalendar,reopenCalendarDay:key=>{const [year,month,day]=key.split('-').map(Number);calendarYear=year;calendarMonth=month-1;openCalendarDay(day);}}); render();scheduleCoinDayRefresh();const onboardingReady=window.ChokinOnboarding?.init?.()||Promise.resolve(false);Promise.resolve(onboardingReady).finally(()=>{void inspectCatLifeActivation();if(welcomeCoinGranted)setTimeout(showWelcomeCoin,300);});window.ChokinBadges.evaluate();
 })();

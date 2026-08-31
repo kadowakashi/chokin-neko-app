@@ -4,6 +4,8 @@
   const SUPPORTED_BACKUP_VERSIONS = new Set([1, 2]);
   const ROOT_FIELDS = new Set(["backupVersion", "exportedAt", "appVersion", "data"]);
   const DATA_FIELDS = new Set(["version", "entries", "settings", "futureSettings", "quickAmounts", "catCollection", "catCoins", "savingsGoal", "goalHistory", "badgeState", "dailyNotes", "catLife"]);
+  const CAT_LIFE_ROOT_FIELDS = new Set(["schemaVersion", "economyFormulaVersion", "goalFormulaVersion", "updatedAt", "cats"]);
+  const V1_CAT_LIFE_BLOCKED_MESSAGE = "このバックアップは、猫たちの暮らしを始める前の形式です。現在の猫たちの暮らしを保持したまま安全に復元できないため、復元を中止しました。新しい形式のバックアップを使用してください。";
   let options = {};
   let candidate = null;
   let restoring = false;
@@ -11,6 +13,34 @@
   const $ = (selector) => document.querySelector(selector);
   const owns = (object, key) => Object.prototype.hasOwnProperty.call(object, key);
   const plainObject = (value) => Boolean(value) && typeof value === "object" && !Array.isArray(value);
+
+  function inspectStoredCatLifeForV1Restore(raw) {
+    if (raw === null) return { allowed: true, status: "absent", meaningful: false, catCount: 0 };
+    let root;
+    try { root = JSON.parse(raw); }
+    catch { return { allowed: false, status: "corrupted", meaningful: true, catCount: null }; }
+    const keys = plainObject(root) ? Object.keys(root) : [];
+    const validEmptyCapableRoot = plainObject(root)
+      && keys.every((key) => CAT_LIFE_ROOT_FIELDS.has(key))
+      && keys.length === CAT_LIFE_ROOT_FIELDS.size
+      && root.schemaVersion === 1
+      && root.economyFormulaVersion === 1
+      && root.goalFormulaVersion === 1
+      && typeof root.updatedAt === "string"
+      && Number.isFinite(Date.parse(root.updatedAt))
+      && plainObject(root.cats)
+      && Object.keys(root.cats).every((catId) => /^[a-z][a-z0-9_]*$/.test(catId));
+    if (!validEmptyCapableRoot) return { allowed: false, status: "corrupted", meaningful: true, catCount: null };
+    const catCount = Object.keys(root.cats).length;
+    if (catCount === 0) return { allowed: true, status: "empty", meaningful: false, catCount: 0 };
+    return { allowed: false, status: "meaningful", meaningful: true, catCount };
+  }
+
+  function preflightBackupV1Restore(backup, storedCatLifeRaw) {
+    if (backup?.backupVersion !== 1) return { allowed: true, status: "not_v1", meaningful: false, catCount: 0 };
+    const inspection = inspectStoredCatLifeForV1Restore(storedCatLifeRaw);
+    return inspection.allowed ? inspection : { ...inspection, message: V1_CAT_LIFE_BLOCKED_MESSAGE };
+  }
 
   function metadataDate(value) {
     if (typeof value !== "string" || !Number.isFinite(Date.parse(value))) return "記録なし";
@@ -270,7 +300,9 @@
     if (!result?.ok) {
       restoring = false;
       button.disabled = false;
-      status.textContent = result?.rollbackOk === false
+      status.textContent = result?.preflightBlocked === true
+        ? result.message
+        : result?.rollbackOk === false
         ? "復元に失敗し、元データの復旧も完了できませんでした。アプリを閉じずにバックアップを書き出してください。"
         : `復元に失敗しました。現在のデータは元の状態へ戻しました。${result?.message || ""}`;
       status.focus();
@@ -303,5 +335,5 @@
     dialog.addEventListener("keydown", trapFocus);
   }
 
-  window.ChokinRestorePreview = Object.freeze({ setup, analyzeBackup });
+  window.ChokinRestorePreview = Object.freeze({ setup, analyzeBackup, inspectStoredCatLifeForV1Restore, preflightBackupV1Restore, V1_CAT_LIFE_BLOCKED_MESSAGE });
 })();
