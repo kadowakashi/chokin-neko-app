@@ -19,6 +19,8 @@
   const defaults = {version: 1, entries: [], settings: {sound: true, vibration: true, effects: true}, futureSettings: {}, quickAmounts: DEFAULT_QUICK_AMOUNTS};
   let state; let formMode = 'save'; let deletingId = null; let revengeAmount = 0; let quickLocked = false; let gachaLocked = false; let pendingQuickId = null; let undoTimer = null; let amountAnimationToken = 0; let previewActive = false; let capsuleGachaSession = null; let celebrationReturnFocus = null; let collectionFilter = 'all'; const calendarNow = new Date(); let calendarYear = calendarNow.getFullYear(); let calendarMonth = calendarNow.getMonth();
   let catLifeRuntimePromise = null;
+  let catLifeViewModulePromise = null;
+  let catLifeViewer = null;
   let backupV2RuntimePromise = null;
   let catLifeActivationDeferred = false;
   let catLifeActivationBusy = false;
@@ -42,6 +44,7 @@
   const gachaRecoveryMessage = 'ガチャの保存状態を確認しています。ガチャは一時的に利用できませんが、ほかの機能はそのまま使えます。';
   function ensureGachaStorageReady(){return window.ChokinGachaTransaction?.ensureReady?.()===true;}
   function loadCatLifeRuntime(){if(!CAT_LIFE_ENABLED)return Promise.resolve(null);if(!catLifeRuntimePromise)catLifeRuntimePromise=import('./cat-life-runtime.js?v=1').then(()=>window.ChokinCatLifeRuntimeLoader?.load?.()).then(runtime=>{if(!runtime)throw new Error('猫生活runtimeを準備できませんでした。');return runtime;}).catch(error=>{catLifeRuntimePromise=null;throw error;});return catLifeRuntimePromise;}
+  function loadCatLifeViewModule(){if(!CAT_LIFE_ENABLED)return Promise.resolve(null);if(!catLifeViewModulePromise)catLifeViewModulePromise=import('./cat-life-view.js?v=1').then(()=>window.ChokinCatLifeView).then(module=>{if(!module)throw new Error('猫たちの暮らし画面を準備できませんでした。');return module;}).catch(error=>{catLifeViewModulePromise=null;throw error;});return catLifeViewModulePromise;}
   function loadBackupV2Runtime(){if(!CAT_LIFE_ENABLED)return Promise.resolve(null);if(!backupV2RuntimePromise)backupV2RuntimePromise=import('./backup-v2.js?v=1').then(()=>window.ChokinBackupV2).then(runtime=>{if(!runtime)throw new Error('backupVersion 2 runtimeを準備できませんでした。');return runtime;}).catch(error=>{backupV2RuntimePromise=null;throw error;});return backupV2RuntimePromise;}
   async function activateOwnedLegacyCatLife(timestamp=new Date().toISOString()){if(!CAT_LIFE_ENABLED)return {status:'disabled',committed:false,created:[]};const runtime=await loadCatLifeRuntime();return runtime.activateLegacy({collectionData:window.ChokinCollection.exportData(),mainState:{entries:structuredClone(state.entries)},timestamp});}
   const CAT_LIFE_ACTIVATION_FAILURE = '猫たちの暮らしを開始できませんでした。現在のデータは変更されていません。';
@@ -80,6 +83,22 @@
     start.addEventListener('click',startCatLifeActivation);
     defer.addEventListener('click',()=>{if(catLifeActivationBusy)return;catLifeActivationDeferred=true;hideCatLifeActivation();});
     panel.addEventListener('keydown',event=>{if(event.key==='Escape'&&!catLifeActivationBusy){event.preventDefault();catLifeActivationDeferred=true;hideCatLifeActivation();}});
+  }
+  function setupCatLifeViewer(){
+    const entry=$('#homeCatLifeView');
+    if(!entry)return;
+    if(!CAT_LIFE_ENABLED){entry.hidden=true;return;}
+    entry.hidden=false;
+    entry.addEventListener('click',async()=>{
+      const status=$('#catLifeViewStatus');
+      navigate('cat-life-view');
+      if(status){status.textContent='猫たちの暮らしを読み込んでいます。';status.classList.remove('is-error');}
+      try{
+        const module=await loadCatLifeViewModule();
+        if(!catLifeViewer)catLifeViewer=module.setup({screen:$('#cat-life-view'),list:$('#catLifeViewList'),detail:$('#catLifeViewDetail'),status:$('#catLifeViewStatus'),detailBack:$('#catLifeDetailBack'),loadRuntime:loadCatLifeRuntime,getCollection:()=>window.ChokinCollection.exportData(),getCatalog:()=>window.ChokinCats.all,navigate});
+        await catLifeViewer.open();
+      }catch(error){console.error('猫たちの暮らしを表示できませんでした。',error);if(status){status.textContent='猫たちの暮らしを読み込めませんでした。現在のデータは変更されていません。';status.classList.add('is-error');}}
+    });
   }
   function syncGachaStores(){try{const collectionRaw=localStorage.getItem(window.ChokinCollection.key),coinRaw=localStorage.getItem(window.ChokinCoins.key),collectionOk=window.ChokinCollection.adoptRaw(collectionRaw),coinsOk=window.ChokinCoins.adoptRaw(coinRaw);return collectionOk&&coinsOk;}catch{return false;}}
   function nextRecentRaw(catId){let current=[];try{const parsed=JSON.parse(localStorage.getItem(window.ChokinCats.recentKey)||'[]');if(Array.isArray(parsed))current=parsed.filter(id=>typeof id==='string').slice(0,3);}catch{}return JSON.stringify([catId,...current.filter(id=>id!==catId)].slice(0,3));}
@@ -513,5 +532,5 @@
   $('#collectionDetail .cat-detail-close').onclick=()=>$('#collectionDetail').close();$('#collectionDetail').addEventListener('click',event=>{if(event.target===$('#collectionDetail'))$('#collectionDetail').close();});
   window.addEventListener('load',setupPwaRegistration);
   document.querySelector('.app-version').textContent = `v${APP_VERSION}`;
-  const welcomeCoinGranted=window.ChokinCoins.grantWelcome();load(); window.ChokinGoalHistory.setup({navigate}); window.ChokinSavingsGoal.setup({getEntries:()=>state.entries,getSettings:()=>state.settings,navigate}); window.ChokinBadges.setup({getEntries:()=>state.entries,getSettings:()=>state.settings,navigate}); window.ChokinRestorePreview.setup({normalizeMainData:normalizeMainBackupData,inspectCatLife:inspectCatLifeBackup,applyCandidate:applyRestoreCandidate,onRestored:finishRestore}); setupQuickSettings(); setupEffectPreview(); setupCatGallery(); setupCollectionSettings(); setupCoinSettings(); setupPwaSupport(); setupCatLifeActivation(); window.ChokinDailyNotes.setup({renderCoins,renderCalendar,reopenCalendarDay:key=>{const [year,month,day]=key.split('-').map(Number);calendarYear=year;calendarMonth=month-1;openCalendarDay(day);}}); render();scheduleCoinDayRefresh();const onboardingReady=window.ChokinOnboarding?.init?.()||Promise.resolve(false);Promise.resolve(onboardingReady).finally(()=>{void inspectCatLifeActivation();if(welcomeCoinGranted)setTimeout(showWelcomeCoin,300);});window.ChokinBadges.evaluate();
+  const welcomeCoinGranted=window.ChokinCoins.grantWelcome();load(); window.ChokinGoalHistory.setup({navigate}); window.ChokinSavingsGoal.setup({getEntries:()=>state.entries,getSettings:()=>state.settings,navigate}); window.ChokinBadges.setup({getEntries:()=>state.entries,getSettings:()=>state.settings,navigate}); window.ChokinRestorePreview.setup({normalizeMainData:normalizeMainBackupData,inspectCatLife:inspectCatLifeBackup,applyCandidate:applyRestoreCandidate,onRestored:finishRestore}); setupQuickSettings(); setupEffectPreview(); setupCatGallery(); setupCollectionSettings(); setupCoinSettings(); setupPwaSupport(); setupCatLifeActivation(); setupCatLifeViewer(); window.ChokinDailyNotes.setup({renderCoins,renderCalendar,reopenCalendarDay:key=>{const [year,month,day]=key.split('-').map(Number);calendarYear=year;calendarMonth=month-1;openCalendarDay(day);}}); render();scheduleCoinDayRefresh();const onboardingReady=window.ChokinOnboarding?.init?.()||Promise.resolve(false);Promise.resolve(onboardingReady).finally(()=>{void inspectCatLifeActivation();if(welcomeCoinGranted)setTimeout(showWelcomeCoin,300);});window.ChokinBadges.evaluate();
 })();
