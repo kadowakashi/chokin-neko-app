@@ -1,4 +1,4 @@
-const SHELL_CACHE = 'chokin-v100-shell-r12';
+const SHELL_CACHE = 'chokin-v100-shell-r13';
 const RUNTIME_CACHE = 'chokin-v100-runtime-assets-r1';
 
 const SHELL_ASSETS = [
@@ -12,7 +12,7 @@ const SHELL_ASSETS = [
   './cat-coins.js', './daily-note.js', './cat-characters.js', './game-effects.js', './asset-loader.js',
   './canvas-effects.js', './capsule-gacha-animation.js', './goal-history.js', './savings-goal.js', './badges.js',
   './restore-preview.js', './app.js', './assets/manifest.json', './assets/cats/cat-catalog.json',
-  './cat-life-runtime.js?v=1', './cat-life.js?v=1', './cat-life-view.js?v=1', './backup-v2.js?v=1', './assets/cats/cat-world.json?v=1'
+  './cat-life-runtime.js?v=1', './cat-life.js?v=1', './cat-life-view.js?v=2', './cat-life-events.js?v=1', './backup-v2.js?v=2', './assets/cats/cat-world.json?v=1'
 ];
 
 const scopeUrl = new URL('./', self.registration.scope);

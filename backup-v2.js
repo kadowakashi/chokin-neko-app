@@ -14,15 +14,28 @@
   const object = value => !!value && typeof value === 'object' && !Array.isArray(value);
   const owns = (value, key) => Object.prototype.hasOwnProperty.call(value, key);
 
-  function inspectBackupV2(value, validateCatLifeRoot) {
+  function inspectBackupV2(value, validateCatLifeRoot, validateEventState) {
     if (!object(value) || value.backupVersion !== 2 || !object(value.data)) return { valid: false, error: 'invalid_v2_shape' };
     const missingFields = V1_DATA_FIELDS.filter(key => !owns(value.data, key));
     if (!owns(value.data, 'catLife')) return { valid: false, error: 'cat_life_missing', missingFields };
     const catLife = typeof validateCatLifeRoot === 'function' ? validateCatLifeRoot(value.data.catLife) : { valid: false, errors: [{ code: 'validator_missing' }] };
-    return { valid: missingFields.length === 0 && catLife.valid === true, error: catLife.valid === true ? null : 'cat_life_invalid', missingFields, catLife, root: catLife.valid === true ? clone(value.data.catLife) : null };
+    const eventStatePresent = owns(value.data, 'catLifeEvents');
+    const events = eventStatePresent
+      ? (typeof validateEventState === 'function' ? validateEventState(value.data.catLifeEvents) : { valid: false, errors: [{ code: 'validator_missing' }] })
+      : { valid: true, errors: [], state: 'absent' };
+    const valid = missingFields.length === 0 && catLife.valid === true && events.valid === true;
+    return {
+      valid,
+      error: catLife.valid !== true ? 'cat_life_invalid' : events.valid !== true ? 'cat_life_events_invalid' : null,
+      missingFields,
+      catLife,
+      root: catLife.valid === true ? clone(value.data.catLife) : null,
+      eventStatePresent,
+      catLifeEvents: { present: eventStatePresent, valid: events.valid === true, state: eventStatePresent && events.valid === true ? clone(value.data.catLifeEvents) : null, errors: events.errors || [] }
+    };
   }
 
-  function createBackupV2({ backupV1, catLifeRoot, validateCatLifeRoot }) {
+  function createBackupV2({ backupV1, catLifeRoot, validateCatLifeRoot, eventState, validateEventState }) {
     if (!object(backupV1) || backupV1.backupVersion !== 1 || !object(backupV1.data)) throw new TypeError('backupVersion 1 source is required');
     const missingFields = V1_DATA_FIELDS.filter(key => !owns(backupV1.data, key));
     if (missingFields.length) throw new TypeError(`backupVersion 1 fields are missing: ${missingFields.join(',')}`);
@@ -31,6 +44,11 @@
     const output = clone(backupV1);
     output.backupVersion = 2;
     output.data.catLife = clone(catLifeRoot);
+    if (eventState !== undefined) {
+      const eventChecked = typeof validateEventState === 'function' ? validateEventState(eventState) : { valid: false };
+      if (!eventChecked?.valid) throw new TypeError('valid catLife event state is required');
+      output.data.catLifeEvents = clone(eventState);
+    }
     return output;
   }
 

@@ -3,7 +3,7 @@
 
   const SUPPORTED_BACKUP_VERSIONS = new Set([1, 2]);
   const ROOT_FIELDS = new Set(["backupVersion", "exportedAt", "appVersion", "data"]);
-  const DATA_FIELDS = new Set(["version", "entries", "settings", "futureSettings", "quickAmounts", "catCollection", "catCoins", "savingsGoal", "goalHistory", "badgeState", "dailyNotes", "catLife"]);
+  const DATA_FIELDS = new Set(["version", "entries", "settings", "futureSettings", "quickAmounts", "catCollection", "catCoins", "savingsGoal", "goalHistory", "badgeState", "dailyNotes", "catLife", "catLifeEvents"]);
   const CAT_LIFE_ROOT_FIELDS = new Set(["schemaVersion", "economyFormulaVersion", "goalFormulaVersion", "updatedAt", "cats"]);
   const V1_CAT_LIFE_BLOCKED_MESSAGE = "このバックアップは、猫たちの暮らしを始める前の形式です。現在の猫たちの暮らしを保持したまま安全に復元できないため、復元を中止しました。新しい形式のバックアップを使用してください。";
   let options = {};
@@ -36,10 +36,12 @@
     return { allowed: false, status: "meaningful", meaningful: true, catCount };
   }
 
-  function preflightBackupV1Restore(backup, storedCatLifeRaw) {
+  function preflightBackupV1Restore(backup, storedCatLifeRaw, storedEventRaw = null) {
     if (backup?.backupVersion !== 1) return { allowed: true, status: "not_v1", meaningful: false, catCount: 0 };
     const inspection = inspectStoredCatLifeForV1Restore(storedCatLifeRaw);
-    return inspection.allowed ? inspection : { ...inspection, message: V1_CAT_LIFE_BLOCKED_MESSAGE };
+    if (!inspection.allowed) return { ...inspection, message: V1_CAT_LIFE_BLOCKED_MESSAGE };
+    if (storedEventRaw !== null) return { allowed: false, status: "event_history_present", meaningful: true, catCount: inspection.catCount, message: V1_CAT_LIFE_BLOCKED_MESSAGE };
+    return inspection;
   }
 
   function metadataDate(value) {
@@ -73,6 +75,7 @@
       badges: owns(data, "badgeState"),
       dailyNotes: owns(data, "dailyNotes"),
       catLife: backup.backupVersion === 2 && owns(data, "catLife"),
+      catLifeEvents: backup.backupVersion === 2 && owns(data, "catLifeEvents"),
     };
     const inspections = {
       collection: window.ChokinCollection.inspectData(has.collection ? data.catCollection : null),
@@ -82,10 +85,12 @@
       badges: window.ChokinBadges.inspectData(has.badges ? data.badgeState : null),
       dailyNotes: window.ChokinDailyNotes.inspectData(has.dailyNotes ? data.dailyNotes : null),
       catLife: catLifeInspection,
+      catLifeEvents: catLifeInspection?.catLifeEvents || { present: false, valid: true, state: null },
     };
     if (backup.backupVersion === 2) {
       if (!has.catLife) return { restorable: false, error: "猫の暮らしデータがありません。" };
-      if (!catLifeInspection?.valid) return { restorable: false, error: "猫の暮らしデータが壊れているため、安全に復元できません。" };
+      if (!catLifeInspection?.catLife?.valid) return { restorable: false, error: "猫の暮らしデータが壊れているため、安全に復元できません。" };
+      if (has.catLifeEvents && !inspections.catLifeEvents.valid) return { restorable: false, error: "猫たちのできごと履歴が壊れているため、安全に復元できません。" };
       const requiredV2 = ["catCollection", "catCoins", "savingsGoal", "goalHistory", "badgeState", "dailyNotes"];
       if (requiredV2.some(key => !owns(data, key))) return { restorable: false, error: "backupVersion 2の必須データが不足しています。" };
       if (inspections.collection.state !== "ok" || inspections.coins.state !== "ok" || !inspections.goal.valid || !inspections.history.valid || inspections.history.state === "partial" || !inspections.badges.valid || inspections.badges.state === "partial" || !inspections.dailyNotes.readable || inspections.dailyNotes.invalidItems > 0) return { restorable: false, error: "backupVersion 2の従来データ部分を安全に復元できません。" };
@@ -111,6 +116,7 @@
     else if (!inspections.coins.balanceReadable) notices.push(warning("notice", "ねこコイン残高を読み取れません。安全な初期値へ補正して復元します。"));
     if (!has.dailyNotes) notices.push(warning("info", "ひとこと日記は含まれていません。データなしとして復元します。"));
     else if (inspections.dailyNotes.invalidItems) notices.push(warning("notice", `ひとこと日記の${inspections.dailyNotes.invalidItems}件を読み取れません。検証済みの日記だけを復元します。`));
+    if (backup.backupVersion === 2 && !has.catLifeEvents) notices.push(warning("notice", "このバックアップには猫たちのできごと履歴が含まれていません。復元すると現在のできごと履歴は引き継がれず、次回起動時に未開始状態から安全に始まります。"));
 
     const unknownRoot = Object.keys(backup).filter((key) => !ROOT_FIELDS.has(key));
     const unknownData = Object.keys(data).filter((key) => !DATA_FIELDS.has(key));
@@ -196,6 +202,12 @@
     return [`${item.noteCount}件`, item.invalidItems ? "一部を読み取れません" : "復元できます"];
   }
 
+  function eventHistoryValue() {
+    if (!candidate.has.catLifeEvents) return ["データなし", "次回起動時に未開始状態から開始"];
+    const state = candidate.inspections.catLifeEvents.state;
+    return [`${state?.history?.length || 0}件`, "復元できます"];
+  }
+
   function renderCandidate() {
     const meta = $("#restorePreviewMeta");
     const items = $("#restorePreviewItems");
@@ -216,6 +228,7 @@
     addRow(items, "猫図鑑", ...collectionValue(candidate.inspections.collection));
     addRow(items, "ねこコイン", ...coinValue(candidate.inspections.coins));
     addRow(items, "ひとこと日記", ...dailyNoteValue(candidate.inspections.dailyNotes));
+    if (candidate.backup.backupVersion === 2) addRow(items, "猫たちのできごと", ...eventHistoryValue());
     candidate.notices.forEach((notice) => {
       const item = document.createElement("p");
       item.className = `restore-preview-notice is-${notice.level}`;
