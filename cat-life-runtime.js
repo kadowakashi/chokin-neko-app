@@ -152,6 +152,7 @@
     const masters = new Map(catWorld.cats.map(cat => [cat.id, cat]));
 
     function loadRoot(timestamp) {
+      if (root.ChokinCatLifeCoordination?.canRead() === false) return { status: 'recovery_required', raw: null, root: null };
       let raw;
       try { raw = storage.getItem(STORAGE_KEY); }
       catch (error) { return { status: 'storage_error', raw: null, root: null, error }; }
@@ -182,6 +183,7 @@
     }
 
     function activateLegacy({ collectionData, mainState, timestamp }) {
+      if (root.ChokinCatLifeCoordination?.canWrite() === false) return { status: 'coordination_required', committed: false, created: [] };
       const stamp = new Date(timestamp).toISOString();
       const loaded = loadRoot(stamp);
       if (!loaded.root) return { status: 'blocked', committed: false, reason: loaded.status, created: [], errors: loaded.errors || [] };

@@ -243,6 +243,7 @@
     let inFlight = null;
 
     function loadState() {
+      if (root.ChokinCatLifeCoordination?.canRead() === false) return { status: 'recovery_required', state: null, raw: null };
       let raw;
       try { raw = storage.getItem(STORAGE_KEY); }
       catch (error) { return { status: 'storage_error', state: null, raw: null, error }; }
@@ -268,9 +269,8 @@
       }
     }
 
-    async function processDay(input) {
-      if (inFlight) return inFlight;
-      inFlight = Promise.resolve().then(() => {
+    function processDaySync(input) {
+        if (root.ChokinCatLifeCoordination?.canWrite() === false) return { status: 'coordination_required', committed: false, event: null };
         const timestamp = input?.timestamp ?? new Date();
         const date = timestamp instanceof Date ? timestamp : new Date(timestamp);
         if (!Number.isFinite(date.getTime())) return { status: 'invalid_timestamp', committed: false, event: null };
@@ -292,11 +292,15 @@
         if (!planned.changed) return { status: planned.status, committed: false, event: null, state: clone(loaded.state) };
         const saved = saveAtomic(loaded.raw, planned.state);
         return saved.ok ? { status: planned.status, committed: true, event: clone(planned.event), state: clone(planned.state) } : { status: saved.conflict ? 'conflict' : 'save_failed', committed: false, event: null, rollbackOk: saved.rollbackOk, error: saved.error };
-      }).finally(() => { inFlight = null; });
+    }
+
+    async function processDay(input) {
+      if (inFlight) return inFlight;
+      inFlight = Promise.resolve().then(() => processDaySync(input)).finally(() => { inFlight = null; });
       return inFlight;
     }
 
-    return Object.freeze({ key: STORAGE_KEY, loadState, processDay });
+    return Object.freeze({ key: STORAGE_KEY, loadState, processDay, processDaySync });
   }
 
   return Object.freeze({

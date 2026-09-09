@@ -200,6 +200,7 @@
   }
 
   function recoverPending() {
+    if (globalThis.ChokinCatLifeCoordination?.canWrite() === false) return { ok: false, ready: false, state: 'coordination_required', retryable: false };
     let legacyRaw, raw;
     try {
       legacyRaw = readRaw(LEGACY_JOURNAL_KEY, 'legacy-journal-read');
@@ -406,7 +407,10 @@
     preview,
     parseJournal,
     parseFingerprints,
-    isReady: ensureReady,
+    isReady: () => {
+      const state = inspect();
+      return !state.legacyPresent && !state.journalPresent && state.fingerprintState === 'valid' && globalThis.ChokinCatLifeCoordination?.canRead() !== false;
+    },
     getRecoveryState: () => clone(recoveryState),
     inspect,
     startupRecovery

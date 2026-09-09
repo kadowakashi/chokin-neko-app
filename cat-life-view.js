@@ -35,13 +35,29 @@
 
   function createEventViewModel({ featureEnabled = true, loadResult, catWorld, catalog }) {
     if (!featureEnabled) return { status: 'disabled', message: '', recent: [], byCat: new Map() };
-    if (!loadResult || ['corrupted', 'storage_error'].includes(loadResult.status)) return { status: 'error', message: EVENT_ERROR_MESSAGE, recent: [], byCat: new Map() };
+    if (!loadResult || loadResult.financialCorrupted === true || ['corrupted', 'storage_error'].includes(loadResult.status)) return { status: 'error', message: EVENT_ERROR_MESSAGE, recent: [], byCat: new Map() };
     if (loadResult.status === 'empty' || !object(loadResult.state)) return { status: 'empty', message: EVENT_EMPTY_MESSAGE, recent: [], byCat: new Map() };
+    const financialRecords = loadResult.financialState?.records || [];
+    if (!Array.isArray(financialRecords)) return { status: 'error', message: EVENT_ERROR_MESSAGE, recent: [], byCat: new Map() };
+    const financialById = new Map();
+    for (const record of financialRecords) {
+      const projection = record?.projection, snapshot = record?.snapshot;
+      if (!object(projection) || !object(snapshot) || snapshot.occurrenceId !== projection.occurrenceId || financialById.has(projection.occurrenceId) || !['normal', 'insufficient_funds_text', 'suppressed_missing_insufficient_text'].includes(snapshot.displayNarrativeMode)) return { status: 'error', message: EVENT_ERROR_MESSAGE, recent: [], byCat: new Map() };
+      financialById.set(projection.occurrenceId, record);
+    }
+    for (const record of loadResult.state.history) {
+      const projection = financialById.get(record.occurrenceId)?.projection;
+      if (projection && (Object.keys(record).length !== Object.keys(projection).length || Object.keys(record).some(key => record[key] !== projection[key]))) return { status: 'error', message: EVENT_ERROR_MESSAGE, recent: [], byCat: new Map() };
+    }
     const masters = Array.isArray(catWorld?.cats) ? catWorld.cats : [];
     const masterCats = new Map(masters.map(cat => [cat.id, cat]));
     const catalogCats = new Map((Array.isArray(catalog) ? catalog : []).map(cat => [cat.id, cat]));
     const items = loadResult.state.history.map(record => {
       const master = masterCats.get(record.catId), definition = master?.lifeEvents?.find(event => event.eventId === record.eventId), catalogCat = catalogCats.get(record.catId);
+      const financial = financialById.get(record.occurrenceId);
+      let narrative = definition?.narrative || '詳しい内容は確認できません。';
+      if (financial?.snapshot.displayNarrativeMode === 'insufficient_funds_text') narrative = typeof definition?.insufficientFundsText === 'string' && definition.insufficientFundsText.trim() ? definition.insufficientFundsText : null;
+      if (financial?.snapshot.displayNarrativeMode === 'suppressed_missing_insufficient_text') narrative = null;
       return {
         occurrenceId: record.occurrenceId,
         catId: record.catId,
@@ -50,7 +66,8 @@
         occurredAt: record.occurredAt,
         catName: catalogCat?.name || master?.name || UNKNOWN_NAME,
         title: definition?.title || UNKNOWN_EVENT_TITLE,
-        narrative: definition?.narrative || '詳しい内容は確認できません。'
+        narrative,
+        effectMode: financial ? 'financial_v1' : record.effectMode
       };
     }).sort((left, right) => Date.parse(right.occurredAt) - Date.parse(left.occurredAt) || right.occurrenceId.localeCompare(left.occurrenceId));
     const byCat = new Map();
@@ -102,7 +119,7 @@
 
   function createViewModel({ featureEnabled = true, loadResult, collectionData, catWorld, catalog }) {
     if (!featureEnabled) return { status: 'disabled', cards: [], message: '' };
-    if (!loadResult || ['corrupted', 'storage_error'].includes(loadResult.status) || !object(loadResult.root)) return { status: 'error', cards: [], message: ERROR_MESSAGE };
+    if (!loadResult || loadResult.financialCorrupted === true || ['corrupted', 'storage_error'].includes(loadResult.status) || !object(loadResult.root)) return { status: 'error', cards: [], message: ERROR_MESSAGE };
     const masters = Array.isArray(catWorld?.cats) ? catWorld.cats : [];
     const catalogItems = Array.isArray(catalog) ? catalog : [];
     const catalogMap = new Map(catalogItems.map(cat => [cat.id, cat]));
@@ -142,7 +159,7 @@
   }
 
   function eventItemsMarkup(items) {
-    return items.map(item => `<article class="cat-life-event"><time datetime="${escapeHtml(item.occurredAt)}">${escapeHtml(item.date)}</time><small>${escapeHtml(item.catName)}</small><h4>${escapeHtml(item.title)}</h4><p>${escapeHtml(item.narrative)}</p></article>`).join('');
+    return items.map(item => `<article class="cat-life-event"><time datetime="${escapeHtml(item.occurredAt)}">${escapeHtml(item.date)}</time><small>${escapeHtml(item.catName)}</small><h4>${escapeHtml(item.title)}</h4>${item.narrative === null ? '' : `<p>${escapeHtml(item.narrative)}</p>`}</article>`).join('');
   }
 
   function eventSectionMarkup(eventModel, items, perCat = false) {
@@ -203,10 +220,13 @@
       status.textContent = '猫たちの暮らしを読み込んでいます。';
       list.innerHTML = '';
       try {
-        const runtime = await options.loadRuntime();
-        const loaded = runtime.loadRoot(new Date().toISOString());
-        const model = createViewModel({ featureEnabled: true, loadResult: loaded, collectionData: options.getCollection(), catWorld: runtime.catWorld, catalog: options.getCatalog() });
-        if (typeof options.loadEvents === 'function') {
+        const snapshot = typeof options.readSnapshot === 'function' ? await options.readSnapshot() : null;
+        const runtime = snapshot ? snapshot.runtime : await options.loadRuntime();
+        const loaded = snapshot ? snapshot.loaded : runtime.loadRoot(new Date().toISOString());
+        const model = createViewModel({ featureEnabled: true, loadResult: loaded, collectionData: snapshot ? snapshot.collectionData : options.getCollection(), catWorld: runtime.catWorld, catalog: options.getCatalog() });
+        if (snapshot) {
+          eventModel = snapshot.eventLoadResult ? createEventViewModel({ loadResult: snapshot.eventLoadResult, catWorld: runtime.catWorld, catalog: options.getCatalog() }) : createEventViewModel({ featureEnabled: false });
+        } else if (typeof options.loadEvents === 'function') {
           try { const eventRuntime = await options.loadEvents(); eventModel = createEventViewModel({ loadResult: eventRuntime.loadState(), catWorld: runtime.catWorld, catalog: options.getCatalog() }); }
           catch { eventModel = createEventViewModel({ loadResult: { status: 'storage_error', state: null }, catWorld: runtime.catWorld, catalog: options.getCatalog() }); }
         } else eventModel = createEventViewModel({ featureEnabled: false });
@@ -238,7 +258,7 @@
   }
 
   function setup(options) {
-    if (!options?.screen || !options.list || !options.detail || !options.status || !options.detailBack || typeof options.loadRuntime !== 'function') throw new TypeError('cat life view options are required');
+    if (!options?.screen || !options.list || !options.detail || !options.status || !options.detailBack || (typeof options.loadRuntime !== 'function' && typeof options.readSnapshot !== 'function')) throw new TypeError('cat life view options are required');
     return createController(options);
   }
 
