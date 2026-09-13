@@ -1,8 +1,10 @@
-const SHELL_CACHE = 'chokin-v100-shell-r14';
+importScripts('./app-release.js?v=1');
+
+const SHELL_CACHE = self.ChokinRelease.shellCache;
 const RUNTIME_CACHE = 'chokin-v100-runtime-assets-r1';
 
 const SHELL_ASSETS = [
-  './', './index.html', './favicon.svg', './manifest.webmanifest',
+  './', './index.html', './app-release.js?v=1', './favicon.svg', './manifest.webmanifest',
   './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-512.png', './icons/apple-touch-icon.png',
   './styles.css', './fixes.css', './v021-quick.css', './v03-scenes.css', './v04-canvas.css', './v05-fever.css',
   './v05-controls.css', './v051-polish.css', './v06-cats.css', './v08-collection.css', './v092-save-spectacle.css',
@@ -12,8 +14,8 @@ const SHELL_ASSETS = [
   './cat-coins.js', './daily-note.js', './cat-characters.js', './game-effects.js', './asset-loader.js',
   './canvas-effects.js', './capsule-gacha-animation.js', './goal-history.js', './savings-goal.js', './badges.js',
   './restore-preview.js', './app.js', './assets/manifest.json', './assets/cats/cat-catalog.json',
-  './cat-life-startup.js?v=1', './cat-life-restore.js?v=1', './cat-life-coordination.js?v=1', './cat-life-financial.js?v=1', './cat-life-financial-transaction.js?v=1', './cat-life-financial-runtime.js?v=1',
-  './cat-life-runtime.js?v=2', './cat-life.js?v=1', './cat-life-view.js?v=3', './cat-life-events.js?v=2', './backup-v2.js?v=3', './assets/cats/cat-world.json?v=1'
+  './cat-life-financial-activation.js?v=1', './cat-life-startup.js?v=2', './cat-life-restore.js?v=2', './cat-life-coordination.js?v=2', './cat-life-financial.js?v=1', './cat-life-financial-transaction.js?v=2', './cat-life-financial-runtime.js?v=2',
+  './cat-life-runtime.js?v=2', './cat-life.js?v=1', './cat-life-view.js?v=4', './cat-life-events.js?v=2', './backup-v2.js?v=4', './assets/cats/cat-world.json?v=1'
 ];
 
 const scopeUrl = new URL('./', self.registration.scope);

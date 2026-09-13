@@ -61,7 +61,7 @@
       return { ...loaded, financialState: financial.state };
     }
     // Caller owns the origin-wide exclusive lock, including OFF daily writes and recovery.
-    function processDay({ enabled, timestamp, collectionData, mainState }) {
+    function processDay({ enabled, activationDayKey = null, timestamp, collectionData, mainState }) {
       if (journal.pending()) return { status: 'recovery_required', committed: false, event: null };
       let life = lifeRuntime.loadRoot(new Date(timestamp).toISOString());
       // A missing/invalid basis is the frozen zero-effect case, not permission to repair it.
@@ -71,13 +71,14 @@
       if (!life.root) return { status: life.status, committed: false, event: null };
       const input = { catWorld: lifeRuntime.catWorld, catLifeRoot: life.root, collectionData, timestamp };
       if (!enabled) return eventRuntime.processDaySync(input);
+      const day = events.localDayKey(timestamp);
+      if (typeof activationDayKey !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(activationDayKey) || day <= activationDayKey) return eventRuntime.processDaySync(input);
       const loaded = eventRuntime.loadState(), financial = loadFinancial();
       if (!['ok', 'empty'].includes(financial.status)) return { status: 'financial_safe_stop', committed: false, event: null };
       if (loaded.status === 'empty') return eventRuntime.processDaySync(input); // Bootstrap is not a financial occurrence.
       if (loaded.status !== 'ok' || !events.inspectMaster(input.catWorld).valid) return { status: 'invalid_state', committed: false, event: null };
       const ledger = financial.state || model.emptySidecar();
       if (!model.validateProjectionLink(ledger, loaded.state).valid) return { status: 'financial_safe_stop', committed: false, event: null };
-      const day = events.localDayKey(timestamp);
       if (ledger.lastSettledDayKey !== null && day <= ledger.lastSettledDayKey) return { status: 'already_settled', committed: false, event: null };
       const planned = events.planDay({ ...input, state: loaded.state });
       if (!planned.changed || !planned.event) return eventRuntime.processDaySync(input);

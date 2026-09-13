@@ -28,7 +28,7 @@
     });
   }
 
-  function inspectBackupV2(value, validateCatLifeRoot, validateEventState, validateFinancialState) {
+  function inspectBackupV2(value, validateCatLifeRoot, validateEventState, validateFinancialState, validateActivationState) {
     if (!object(value) || value.backupVersion !== 2 || !object(value.data)) return { valid: false, error: 'invalid_v2_shape' };
     const missingFields = V1_DATA_FIELDS.filter(key => !owns(value.data, key));
     if (!owns(value.data, 'catLife')) return { valid: false, error: 'cat_life_missing', missingFields };
@@ -42,21 +42,27 @@
       ? (typeof validateFinancialState === 'function' ? validateFinancialState(value.data.catLifeFinancial, value.data.catLifeEvents) : { valid: false, errors: [{ code: 'validator_missing' }] })
       : { valid: true, errors: [] };
     const financialValid = financial.valid === true && (!financialStatePresent || (eventStatePresent && events.valid === true && inspectFinancialProjection(value.data.catLifeFinancial, value.data.catLifeEvents)));
-    const valid = missingFields.length === 0 && catLife.valid === true && events.valid === true && financialValid;
+    const activationStatePresent = owns(value.data, 'catLifeFinancialActivation');
+    const activation = activationStatePresent
+      ? (typeof validateActivationState === 'function' ? validateActivationState(value.data.catLifeFinancialActivation) : { valid: false, errors: [{ code: 'validator_missing' }] })
+      : { valid: true, errors: [] };
+    const valid = missingFields.length === 0 && catLife.valid === true && events.valid === true && financialValid && activation.valid === true;
     return {
       valid,
-      error: catLife.valid !== true ? 'cat_life_invalid' : events.valid !== true ? 'cat_life_events_invalid' : !financialValid ? 'cat_life_financial_invalid' : null,
+      error: catLife.valid !== true ? 'cat_life_invalid' : events.valid !== true ? 'cat_life_events_invalid' : !financialValid ? 'cat_life_financial_invalid' : activation.valid !== true ? 'cat_life_financial_activation_invalid' : null,
       missingFields,
       catLife,
       root: catLife.valid === true ? clone(value.data.catLife) : null,
       eventStatePresent,
       catLifeEvents: { present: eventStatePresent, valid: events.valid === true, state: eventStatePresent && events.valid === true ? clone(value.data.catLifeEvents) : null, errors: events.errors || [] },
       financialStatePresent,
-      catLifeFinancial: { present: financialStatePresent, valid: financialValid, state: financialStatePresent && financialValid ? clone(value.data.catLifeFinancial) : null, errors: financialValid ? [] : [...(financial.errors || []), { code: 'financial_projection_invalid' }] }
+      catLifeFinancial: { present: financialStatePresent, valid: financialValid, state: financialStatePresent && financialValid ? clone(value.data.catLifeFinancial) : null, errors: financialValid ? [] : [...(financial.errors || []), { code: 'financial_projection_invalid' }] },
+      activationStatePresent,
+      catLifeFinancialActivation: { present: activationStatePresent, valid: activation.valid === true, state: activationStatePresent && activation.valid === true ? clone(value.data.catLifeFinancialActivation) : null, errors: activation.errors || [] }
     };
   }
 
-  function createBackupV2({ backupV1, catLifeRoot, validateCatLifeRoot, eventState, validateEventState, financialState, validateFinancialState }) {
+  function createBackupV2({ backupV1, catLifeRoot, validateCatLifeRoot, eventState, validateEventState, financialState, validateFinancialState, activationState, validateActivationState }) {
     if (!object(backupV1) || backupV1.backupVersion !== 1 || !object(backupV1.data)) throw new TypeError('backupVersion 1 source is required');
     const missingFields = V1_DATA_FIELDS.filter(key => !owns(backupV1.data, key));
     if (missingFields.length) throw new TypeError(`backupVersion 1 fields are missing: ${missingFields.join(',')}`);
@@ -74,6 +80,11 @@
       const checked = typeof validateFinancialState === 'function' ? validateFinancialState(financialState, eventState) : { valid: false };
       if (!checked?.valid || !inspectFinancialProjection(financialState, eventState)) throw new TypeError('valid financial state and compatibility projections are required');
       output.data.catLifeFinancial = clone(financialState);
+    }
+    if (activationState !== undefined) {
+      const checked = typeof validateActivationState === 'function' ? validateActivationState(activationState) : { valid: false };
+      if (!checked?.valid) throw new TypeError('valid financial activation state is required');
+      output.data.catLifeFinancialActivation = clone(activationState);
     }
     return output;
   }

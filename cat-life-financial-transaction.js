@@ -13,7 +13,7 @@
     'chokin-event-app.catLifeFinancial.v1',
     'chokin-event-app.catLifeEvents.v1'
   ]);
-  const RESTORE_TARGET_KEYS = Object.freeze([
+  const LEGACY_RESTORE_TARGET_KEYS = Object.freeze([
     'chokin-event-app.v0.1',
     'chokin-event-app.catCollection.v1',
     'chokin-event-app.catCoins.v1',
@@ -24,6 +24,10 @@
     'chokin-event-app.catLife.v1',
     'chokin-event-app.catLifeFinancial.v1',
     'chokin-event-app.catLifeEvents.v1'
+  ]);
+  const RESTORE_TARGET_KEYS = Object.freeze([
+    ...LEGACY_RESTORE_TARGET_KEYS,
+    'chokin-event-app.catLifeFinancialActivation.v1'
   ]);
   const JOURNAL_FIELDS = ['journalVersion', 'state', 'occurrenceId', 'before', 'after', 'checksum'];
   const isObject = value => !!value && typeof value === 'object' && !Array.isArray(value);
@@ -219,8 +223,29 @@
   // Only an exclusive owner may call this API. Startup recovers restore before
   // starting ordinary modules/writers. Recovery never emits journal raw content.
   function createRestore(options) {
-    return createCore(options, { journalKey: RESTORE_JOURNAL_KEY, otherJournalKey: JOURNAL_KEY, targetKeys: RESTORE_TARGET_KEYS, nullableAfter: true, allowUnchanged: true });
+    const current = createCore(options, { journalKey: RESTORE_JOURNAL_KEY, otherJournalKey: JOURNAL_KEY, targetKeys: RESTORE_TARGET_KEYS, nullableAfter: true, allowUnchanged: true });
+    const activationKey = RESTORE_TARGET_KEYS.at(-1);
+    const legacy = createCore({
+      ...options,
+      validateBundle(raw, context) {
+        return options.validateBundle({ ...raw, [activationKey]: null }, context);
+      }
+    }, { journalKey: RESTORE_JOURNAL_KEY, otherJournalKey: JOURNAL_KEY, targetKeys: LEGACY_RESTORE_TARGET_KEYS, nullableAfter: true, allowUnchanged: true });
+    function legacyJournalPresent() {
+      try {
+        const raw = options.storage.getItem(RESTORE_JOURNAL_KEY);
+        if (raw === null) return false;
+        const value = JSON.parse(raw);
+        return exactKeys(value?.before, LEGACY_RESTORE_TARGET_KEYS) && exactKeys(value?.after, LEGACY_RESTORE_TARGET_KEYS);
+      } catch (_) { return false; }
+    }
+    return Object.freeze({
+      commit: current.commit,
+      recover: () => (legacyJournalPresent() ? legacy : current).recover(),
+      inspect: () => (legacyJournalPresent() ? legacy : current).inspect(),
+      pending: current.pending
+    });
   }
 
-  return Object.freeze({ JOURNAL_KEY, TARGET_KEYS, RESTORE_JOURNAL_KEY, RESTORE_TARGET_KEYS, create, createRestore });
+  return Object.freeze({ JOURNAL_KEY, TARGET_KEYS, RESTORE_JOURNAL_KEY, LEGACY_RESTORE_TARGET_KEYS, RESTORE_TARGET_KEYS, create, createRestore });
 });

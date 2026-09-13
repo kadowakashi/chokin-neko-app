@@ -58,8 +58,8 @@
       import('./cat-life-runtime.js?v=2'),
       import('./cat-life-events.js?v=2'),
       import('./cat-life-financial.js?v=1'),
-      import('./cat-life-financial-transaction.js?v=1'),
-      financialPending ? import('./cat-life-financial-runtime.js?v=1') : import('./cat-life-restore.js?v=1')
+      import('./cat-life-financial-transaction.js?v=2'),
+      financialPending ? import('./cat-life-financial-runtime.js?v=2') : import('./cat-life-restore.js?v=2')
     ]);
     const response = await fetch('./assets/cats/cat-world.json?v=1', { credentials: 'same-origin' });
     if (!response.ok) throw new Error('The cat life master is unavailable for recovery.');
@@ -74,7 +74,7 @@
         transactions: root.ChokinCatLifeFinancialTransaction, events, financialKey: root.ChokinCatLifeFinancial.STORAGE_KEY
       });
     } else {
-      operation = root.ChokinCatLifeRestore.create({ storage, lifeRuntime, events, model, transactions: root.ChokinCatLifeFinancialTransaction });
+      operation = root.ChokinCatLifeRestore.create({ storage, lifeRuntime, events, model, transactions: root.ChokinCatLifeFinancialTransaction, activation: root.ChokinCatLifeFinancialActivation });
     }
     operation.recover();
     if (operation.pending() || storage.getItem(FINANCIAL_JOURNAL_KEY) !== null || storage.getItem(RESTORE_JOURNAL_KEY) !== null) throw new Error('The saved state could not be recovered safely.');

@@ -33,6 +33,14 @@
     return `${year}年${month}月${day}日`;
   }
 
+  function financialDisplay(snapshot) {
+    if (!object(snapshot)) return null;
+    if (snapshot.financialStatus === 'insufficient_funds') return { text: '支出なし', kind: 'none' };
+    if (snapshot.financialClass === 'income' && snapshot.delta > 0) return { text: `+${formatYen(snapshot.delta)}`, kind: 'income' };
+    if (snapshot.financialClass === 'expense' && snapshot.delta < 0) return { text: `−${formatYen(-snapshot.delta)}`, kind: 'expense' };
+    return null;
+  }
+
   function createEventViewModel({ featureEnabled = true, loadResult, catWorld, catalog }) {
     if (!featureEnabled) return { status: 'disabled', message: '', recent: [], byCat: new Map() };
     if (!loadResult || loadResult.financialCorrupted === true || ['corrupted', 'storage_error'].includes(loadResult.status)) return { status: 'error', message: EVENT_ERROR_MESSAGE, recent: [], byCat: new Map() };
@@ -58,6 +66,7 @@
       let narrative = definition?.narrative || '詳しい内容は確認できません。';
       if (financial?.snapshot.displayNarrativeMode === 'insufficient_funds_text') narrative = typeof definition?.insufficientFundsText === 'string' && definition.insufficientFundsText.trim() ? definition.insufficientFundsText : null;
       if (financial?.snapshot.displayNarrativeMode === 'suppressed_missing_insufficient_text') narrative = null;
+      const amount = financialDisplay(financial?.snapshot);
       return {
         occurrenceId: record.occurrenceId,
         catId: record.catId,
@@ -67,7 +76,9 @@
         catName: catalogCat?.name || master?.name || UNKNOWN_NAME,
         title: definition?.title || UNKNOWN_EVENT_TITLE,
         narrative,
-        effectMode: financial ? 'financial_v1' : record.effectMode
+        effectMode: financial ? 'financial_v1' : record.effectMode,
+        financialText: amount?.text || null,
+        financialKind: amount?.kind || null
       };
     }).sort((left, right) => Date.parse(right.occurredAt) - Date.parse(left.occurredAt) || right.occurrenceId.localeCompare(left.occurrenceId));
     const byCat = new Map();
@@ -159,7 +170,7 @@
   }
 
   function eventItemsMarkup(items) {
-    return items.map(item => `<article class="cat-life-event"><time datetime="${escapeHtml(item.occurredAt)}">${escapeHtml(item.date)}</time><small>${escapeHtml(item.catName)}</small><h4>${escapeHtml(item.title)}</h4>${item.narrative === null ? '' : `<p>${escapeHtml(item.narrative)}</p>`}</article>`).join('');
+    return items.map(item => `<article class="cat-life-event"><time datetime="${escapeHtml(item.occurredAt)}">${escapeHtml(item.date)}</time><small>${escapeHtml(item.catName)}</small><h4>${escapeHtml(item.title)}</h4>${item.financialText ? `<strong class="cat-life-event-amount is-${escapeHtml(item.financialKind)}">${escapeHtml(item.financialText)}</strong>` : ''}${item.narrative === null ? '' : `<p>${escapeHtml(item.narrative)}</p>`}</article>`).join('');
   }
 
   function eventSectionMarkup(eventModel, items, perCat = false) {

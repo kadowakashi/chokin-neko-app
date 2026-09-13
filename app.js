@@ -8,9 +8,11 @@
   const CAT_LIFE_STORAGE_KEY = 'chokin-event-app.catLife.v1';
   const CAT_LIFE_EVENTS_STORAGE_KEY = 'chokin-event-app.catLifeEvents.v1';
   const CAT_LIFE_FINANCIAL_STORAGE_KEY = 'chokin-event-app.catLifeFinancial.v1';
+  const CAT_LIFE_FINANCIAL_ACTIVATION_KEY = 'chokin-event-app.catLifeFinancialActivation.v1';
   const CAT_LIFE_ENABLED = window.ChokinGachaTransaction?.featureFlags?.catLife === true;
   const CAT_LIFE_EVENTS_ENABLED = CAT_LIFE_ENABLED && window.ChokinFeatureFlags?.catLifeEvents === true;
-  const CAT_LIFE_FINANCIAL_ENABLED = CAT_LIFE_EVENTS_ENABLED && window.ChokinFeatureFlags?.catLifeFinancial === true;
+  const CAT_LIFE_FINANCIAL_AVAILABLE = CAT_LIFE_EVENTS_ENABLED && window.ChokinFeatureFlags?.catLifeFinancialAvailable === true;
+  const RELEASE_VERSION = window.ChokinRelease?.revision || 'r15';
   let financialRuntimePromise = null;
   let financialModel = null;
   const DEFAULT_QUICK_AMOUNTS = [100, 500, 1000, 3000, 5000];
@@ -31,6 +33,8 @@
   let backupV2RuntimePromise = null;
   let catLifeActivationDeferred = false;
   let catLifeActivationBusy = false;
+  let financialActivationDeferred = false;
+  let financialActivationBusy = false;
   const $ = s => document.querySelector(s);
   const yen = n => `¥${Number(n || 0).toLocaleString('ja-JP')}`;
   const coinIcon = (kind='cat') => window.ChokinVisualAssets?.coinMarkup(kind) || '🪙';
@@ -51,23 +55,24 @@
   const gachaRecoveryMessage = 'ガチャの保存状態を確認しています。ガチャは一時的に利用できませんが、ほかの機能はそのまま使えます。';
   function ensureGachaStorageReady(){return window.ChokinGachaTransaction?.ensureReady?.()===true;}
   function loadCatLifeRuntime(){if(!CAT_LIFE_ENABLED)return Promise.resolve(null);if(!catLifeRuntimePromise)catLifeRuntimePromise=import('./cat-life-runtime.js?v=2').then(()=>window.ChokinCatLifeRuntimeLoader?.load?.()).then(runtime=>{if(!runtime)throw new Error('猫生活runtimeを準備できませんでした。');return runtime;}).catch(error=>{catLifeRuntimePromise=null;throw error;});return catLifeRuntimePromise;}
-  function loadCatLifeViewModule(){if(!CAT_LIFE_ENABLED)return Promise.resolve(null);if(!catLifeViewModulePromise)catLifeViewModulePromise=import('./cat-life-view.js?v=3').then(()=>window.ChokinCatLifeView).then(module=>{if(!module)throw new Error('猫たちの暮らし画面を準備できませんでした。');return module;}).catch(error=>{catLifeViewModulePromise=null;throw error;});return catLifeViewModulePromise;}
+  function loadCatLifeViewModule(){if(!CAT_LIFE_ENABLED)return Promise.resolve(null);if(!catLifeViewModulePromise)catLifeViewModulePromise=import('./cat-life-view.js?v=4').then(()=>window.ChokinCatLifeView).then(module=>{if(!module)throw new Error('猫たちの暮らし画面を準備できませんでした。');return module;}).catch(error=>{catLifeViewModulePromise=null;throw error;});return catLifeViewModulePromise;}
   function loadCatLifeEventsRuntime(){if(!CAT_LIFE_EVENTS_ENABLED)return Promise.resolve(null);if(!catLifeEventsRuntimePromise)catLifeEventsRuntimePromise=import('./cat-life-events.js?v=2').then(()=>window.ChokinCatLifeEvents?.createRuntime?.()).then(runtime=>{if(!runtime)throw new Error('猫たちのできごとruntimeを準備できませんでした。');return runtime;}).catch(error=>{catLifeEventsRuntimePromise=null;throw error;});return catLifeEventsRuntimePromise;}
-  function loadBackupV2Runtime(){if(!CAT_LIFE_ENABLED)return Promise.resolve(null);if(!backupV2RuntimePromise)backupV2RuntimePromise=import('./backup-v2.js?v=3').then(()=>window.ChokinBackupV2).then(runtime=>{if(!runtime)throw new Error('backupVersion 2 runtimeを準備できませんでした。');return runtime;}).catch(error=>{backupV2RuntimePromise=null;throw error;});return backupV2RuntimePromise;}
+  function loadBackupV2Runtime(){if(!CAT_LIFE_ENABLED)return Promise.resolve(null);if(!backupV2RuntimePromise)backupV2RuntimePromise=import('./backup-v2.js?v=4').then(()=>window.ChokinBackupV2).then(runtime=>{if(!runtime)throw new Error('backupVersion 2 runtimeを準備できませんでした。');return runtime;}).catch(error=>{backupV2RuntimePromise=null;throw error;});return backupV2RuntimePromise;}
   async function loadFinancialRuntime() {
     if(!CAT_LIFE_ENABLED)return null;
     if(!financialRuntimePromise)financialRuntimePromise=Promise.all([
       loadCatLifeRuntime(),loadCatLifeEventsRuntime(),
-      import('./cat-life-financial.js?v=1'),import('./cat-life-financial-transaction.js?v=1'),import('./cat-life-financial-runtime.js?v=1')
+      import('./cat-life-financial.js?v=1'),import('./cat-life-financial-transaction.js?v=2'),import('./cat-life-financial-runtime.js?v=2')
     ]).then(([lifeRuntime,eventRuntime])=>{
       financialModel=window.ChokinCatLifeFinancial.createModel({life:window.ChokinCatLife,events:window.ChokinCatLifeEvents,runtime:window.ChokinCatLifeRuntimeLoader});
       return window.ChokinCatLifeFinancialRuntime.create({storage:localStorage,lifeRuntime,eventRuntime,model:financialModel,transactions:window.ChokinCatLifeFinancialTransaction,events:window.ChokinCatLifeEvents,financialKey:CAT_LIFE_FINANCIAL_STORAGE_KEY});
     }).catch(error=>{financialRuntimePromise=null;throw error;});
     return financialRuntimePromise;
   }
+  function financialActivationLoad(){return window.ChokinCatLifeFinancialActivation?.load(localStorage)||{status:'storage_error',state:null};}
   function currentMainForLife(){const raw=localStorage.getItem(KEY);if(raw===null)return {entries:structuredClone(state.entries)};const main=normalizeMainBackupData(JSON.parse(raw));if(!main)throw new Error('保存状態を確認できません。');return {entries:main.entries};}
   function currentCollection(){const raw=localStorage.getItem(window.ChokinCollection.key);return raw===null?window.ChokinCollection.exportData():JSON.parse(raw);}
-  async function runCatLifeOperation(callback,{recover=false}={}) {
+  async function runCatLifeOperation(callback,{recover=false,financial:financialOperation=false}={}) {
     const financial=await loadFinancialRuntime();
     return window.ChokinCatLifeCoordination.run(()=>{
       if(recover&&financial?.pending()){
@@ -78,7 +83,7 @@
       if(financial?.pending())throw new Error('未完了の猫の暮らし保存があります。再読み込みしてください。');
       if(!ensureGachaStorageReady())throw new Error(gachaRecoveryMessage);
       return callback(financial);
-    },{recovery:recover,financial:CAT_LIFE_FINANCIAL_ENABLED});
+    },{recovery:recover,financial:financialOperation});
   }
   async function readCatLifeSnapshot() {
     const [runtime,financial]=await Promise.all([loadCatLifeRuntime(),loadFinancialRuntime()]);
@@ -90,7 +95,13 @@
   }
   async function processDailyCatLifeEvent(timestamp=new Date()){
     if(!CAT_LIFE_EVENTS_ENABLED)return {status:'disabled',committed:false,event:null};
-    try{return await runCatLifeOperation(financial=>financial.processDay({enabled:CAT_LIFE_FINANCIAL_ENABLED,timestamp,collectionData:currentCollection(),mainState:currentMainForLife()}),{recover:true});}
+    const before=financialActivationLoad(),financial=CAT_LIFE_FINANCIAL_AVAILABLE&&before.status==='ok'&&before.state.enabled===true;
+    try{return await runCatLifeOperation(runtime=>{
+      const activation=financialActivationLoad();
+      if(!['empty','ok'].includes(activation.status))return {status:'financial_activation_safe_stop',committed:false,event:null};
+      const enabled=CAT_LIFE_FINANCIAL_AVAILABLE&&activation.state.enabled===true;
+      return runtime.processDay({enabled,activationDayKey:enabled?activation.state.activatedDayKey:null,timestamp,collectionData:currentCollection(),mainState:currentMainForLife()});
+    },{recover:true,financial});}
     catch(error){console.warn('猫たちのできごとの日次処理を安全に停止しました。',error);return {status:'runtime_error',committed:false,event:null};}
   }
   async function activateOwnedLegacyCatLife(timestamp=new Date().toISOString()){
@@ -148,8 +159,44 @@
         const module=await loadCatLifeViewModule();
         if(!catLifeViewer)catLifeViewer=module.setup({screen:$('#cat-life-view'),list:$('#catLifeViewList'),detail:$('#catLifeViewDetail'),status:$('#catLifeViewStatus'),detailBack:$('#catLifeDetailBack'),loadRuntime:loadCatLifeRuntime,loadEvents:CAT_LIFE_EVENTS_ENABLED?loadCatLifeEventsRuntime:null,getCollection:()=>window.ChokinCollection.exportData(),getCatalog:()=>window.ChokinCats.all,readSnapshot:readCatLifeSnapshot,navigate});
         await catLifeViewer.open();
+        refreshFinancialActivation();
       }catch(error){console.error('猫たちの暮らしを表示できませんでした。',error);if(status){status.textContent='猫たちの暮らしを読み込めませんでした。現在のデータは変更されていません。';status.classList.add('is-error');}}
     });
+  }
+  function setFinancialActivationBusy(busy){financialActivationBusy=busy;['#startCatLifeFinancial','#deferCatLifeFinancial'].forEach(selector=>{const button=$(selector);if(button)button.disabled=busy;});}
+  function setFinancialActivationStatus(message='',failed=false){const status=$('#catLifeFinancialActivationStatus');if(!status)return;status.textContent=message;status.classList.toggle('is-error',failed);}
+  function refreshFinancialActivation(){
+    const panel=$('#catLifeFinancialActivation');
+    if(!panel)return {status:'missing'};
+    if(!CAT_LIFE_FINANCIAL_AVAILABLE||financialActivationDeferred){panel.hidden=true;return {status:CAT_LIFE_FINANCIAL_AVAILABLE?'deferred':'unavailable'};}
+    const loaded=financialActivationLoad();
+    if(loaded.status==='ok'&&loaded.state.enabled===true){panel.hidden=true;return {status:'enabled',state:loaded.state};}
+    panel.hidden=false;
+    const safe=['empty','ok'].includes(loaded.status);
+    setFinancialActivationBusy(!safe);
+    setFinancialActivationStatus(safe?'':'開始設定を確認できません。データは変更されていません。',!safe);
+    return loaded;
+  }
+  async function startFinancialActivation(){
+    if(financialActivationBusy||!CAT_LIFE_FINANCIAL_AVAILABLE)return;
+    setFinancialActivationBusy(true);setFinancialActivationStatus();
+    try{
+      const result=await runCatLifeOperation(()=>window.ChokinCatLifeFinancialActivation.activate({storage:localStorage,timestamp:new Date()}),{financial:true});
+      if(result.committed===true||result.status==='already_enabled'){
+        $('#catLifeFinancialActivation').hidden=true;
+        const notice=document.createElement('p');notice.className='cat-life-activation-toast';notice.setAttribute('role','status');notice.textContent='猫たちのお金の暮らしを始めました。変化は明日以降のできごとから始まります。';document.body.append(notice);setTimeout(()=>notice.remove(),5200);
+        void processDailyCatLifeEvent();
+        return result;
+      }
+      setFinancialActivationStatus('猫たちのお金の暮らしを開始できませんでした。データは変更されていません。',true);return result;
+    }catch(error){console.error('猫たちのお金の暮らしを開始できませんでした。',error);setFinancialActivationStatus('猫たちのお金の暮らしを開始できませんでした。データは変更されていません。',true);return {status:'failed',committed:false,error};}
+    finally{setFinancialActivationBusy(false);}
+  }
+  function setupFinancialActivation(){
+    const panel=$('#catLifeFinancialActivation'),start=$('#startCatLifeFinancial'),defer=$('#deferCatLifeFinancial');
+    if(!panel||!start||!defer)return;
+    start.addEventListener('click',startFinancialActivation);
+    defer.addEventListener('click',()=>{if(financialActivationBusy)return;financialActivationDeferred=true;panel.hidden=true;});
   }
   function syncGachaStores(){try{const collectionRaw=localStorage.getItem(window.ChokinCollection.key),coinRaw=localStorage.getItem(window.ChokinCoins.key),collectionOk=window.ChokinCollection.adoptRaw(collectionRaw),coinsOk=window.ChokinCoins.adoptRaw(coinRaw);return collectionOk&&coinsOk;}catch{return false;}}
   function nextRecentRaw(catId){let current=[];try{const parsed=JSON.parse(localStorage.getItem(window.ChokinCats.recentKey)||'[]');if(Array.isArray(parsed))current=parsed.filter(id=>typeof id==='string').slice(0,3);}catch{}return JSON.stringify([catId,...current.filter(id=>id!==catId)].slice(0,3));}
@@ -163,7 +210,10 @@
       if(!loaded.root)throw new Error('猫の暮らしデータが壊れているため、バックアップを作成できません。');
       let eventLoaded=eventRuntime.loadState();
       if(eventLoaded.status==='empty'){
-        financial.processDay({enabled:CAT_LIFE_FINANCIAL_ENABLED,timestamp:exportedAt,collectionData:currentCollection(),mainState:currentMainForLife()});
+        const activation=financialActivationLoad();
+        if(!['empty','ok'].includes(activation.status))throw new Error('猫たちのお金の開始設定を確認できません。');
+        const enabled=CAT_LIFE_FINANCIAL_AVAILABLE&&activation.state.enabled===true;
+        financial.processDay({enabled,activationDayKey:enabled?activation.state.activatedDayKey:null,timestamp:exportedAt,collectionData:currentCollection(),mainState:currentMainForLife()});
         eventLoaded=eventRuntime.loadState();
       }
       if(!['empty','ok'].includes(eventLoaded.status))throw new Error('猫たちのできごと履歴を確認できません。');
@@ -175,7 +225,9 @@
       if(mainRaw!==null){const main=normalizeMainBackupData(JSON.parse(mainRaw));if(!main)throw new Error('貯金記録を確認できません。');Object.assign(v1.data,main);}
       const fields={catCollection:window.ChokinCollection.key,catCoins:window.ChokinCoins.key,savingsGoal:window.ChokinSavingsGoal.getStorageKey(),goalHistory:window.ChokinGoalHistory.getStorageKey(),badgeState:window.ChokinBadges.getStorageKey(),dailyNotes:window.ChokinDailyNotes.getStorageKey()};
       Object.entries(fields).forEach(([field,key])=>{const raw=localStorage.getItem(key);if(raw!==null)v1.data[field]=JSON.parse(raw);});
-      return backupRuntime.createBackupV2({backupV1:v1,catLifeRoot:loaded.root,validateCatLifeRoot:catLifeRuntime.validateRoot,eventState:eventLoaded.state||undefined,validateEventState:window.ChokinCatLifeEvents.validateState,financialState:storedFinancial.state||undefined,validateFinancialState:financialModel.validateProjectionLink});
+      const activation=financialActivationLoad();
+      if(!['empty','ok'].includes(activation.status))throw new Error('猫たちのお金の開始設定を確認できません。');
+      return backupRuntime.createBackupV2({backupV1:v1,catLifeRoot:loaded.root,validateCatLifeRoot:catLifeRuntime.validateRoot,eventState:eventLoaded.state||undefined,validateEventState:window.ChokinCatLifeEvents.validateState,financialState:storedFinancial.state||undefined,validateFinancialState:financialModel.validateProjectionLink,activationState:activation.state,validateActivationState:window.ChokinCatLifeFinancialActivation.validateState});
     });
   }
   async function exportBackup() {
@@ -225,6 +277,7 @@
       if(!checked.valid||JSON.stringify(parsed)!==JSON.stringify(candidate.inspections.catLife.root))throw new Error('猫の暮らしデータを保存できませんでした。');
       if(eventRuntime){const expectedEvents=candidate.has.catLifeEvents?candidate.inspections.catLifeEvents.state:null;exactStored(eventRuntime.key,expectedEvents);}
       exactStored(CAT_LIFE_FINANCIAL_STORAGE_KEY,candidate.has.catLifeFinancial?candidate.inspections.catLifeFinancial.state:null);
+      exactStored(CAT_LIFE_FINANCIAL_ACTIVATION_KEY,candidate.has.catLifeFinancialActivation?candidate.inspections.catLifeFinancialActivation.state:null);
     }
   }
   function applyRestoreData(candidate,catLifeRuntime=null,eventRuntime=null) {
@@ -238,6 +291,7 @@
     if(!window.ChokinDailyNotes.importData(candidate.has.dailyNotes?candidate.inspections.dailyNotes.data:null))throw new Error('ひとこと日記を復元できませんでした。');
     if(candidate.backup.backupVersion===CAT_LIFE_BACKUP_VERSION){localStorage.setItem(catLifeRuntime.key,JSON.stringify(candidate.inspections.catLife.root));if(eventRuntime){if(candidate.has.catLifeEvents)localStorage.setItem(eventRuntime.key,JSON.stringify(candidate.inspections.catLifeEvents.state));else localStorage.removeItem(eventRuntime.key);}}
     if(candidate.backup.backupVersion===CAT_LIFE_BACKUP_VERSION){if(candidate.has.catLifeFinancial)localStorage.setItem(CAT_LIFE_FINANCIAL_STORAGE_KEY,JSON.stringify(candidate.inspections.catLifeFinancial.state));else localStorage.removeItem(CAT_LIFE_FINANCIAL_STORAGE_KEY);}
+    if(candidate.backup.backupVersion===CAT_LIFE_BACKUP_VERSION&&candidate.has.catLifeFinancialActivation)localStorage.setItem(CAT_LIFE_FINANCIAL_ACTIVATION_KEY,JSON.stringify(candidate.inspections.catLifeFinancialActivation.state));else localStorage.removeItem(CAT_LIFE_FINANCIAL_ACTIVATION_KEY);
     saveState();verifyRestoredStorage(candidate,catLifeRuntime,eventRuntime);
   }
   async function inspectCatLifeBackup(backup) {
@@ -245,12 +299,12 @@
     const [catLifeRuntime,backupRuntime,eventRuntime]=await Promise.all([loadCatLifeRuntime(),loadBackupV2Runtime(),CAT_LIFE_EVENTS_ENABLED?loadCatLifeEventsRuntime():Promise.resolve(null)]);
     await loadFinancialRuntime();
     if(window.ChokinCatLifeCoordination.pending())return {valid:false,error:'financial_recovery_required'};
-    return backupRuntime.inspectBackupV2(backup,catLifeRuntime.validateRoot,eventRuntime?.loadState?window.ChokinCatLifeEvents.validateState:undefined,financialModel.validateProjectionLink);
+    return backupRuntime.inspectBackupV2(backup,catLifeRuntime.validateRoot,eventRuntime?.loadState?window.ChokinCatLifeEvents.validateState:undefined,financialModel.validateProjectionLink,window.ChokinCatLifeFinancialActivation.validateState);
   }
   async function applyRestoreCandidate(candidate) {
     let catLifeRuntime,backupRuntime,eventRuntime;
     try{
-      await import('./cat-life-restore.js?v=1');
+      await import('./cat-life-restore.js?v=2');
       [catLifeRuntime,backupRuntime,eventRuntime]=await Promise.all([loadCatLifeRuntime(),loadBackupV2Runtime(),loadCatLifeEventsRuntime()]);
       return await runCatLifeOperation(()=>{
         const version=candidate.backup.backupVersion;
@@ -258,12 +312,12 @@
           const preflight=window.ChokinRestorePreview.preflightBackupV1Restore(candidate.backup,localStorage.getItem(CAT_LIFE_STORAGE_KEY),localStorage.getItem(CAT_LIFE_EVENTS_STORAGE_KEY),localStorage.getItem(CAT_LIFE_FINANCIAL_STORAGE_KEY));
           if(!preflight.allowed)return {ok:false,rollbackOk:true,preflightBlocked:true,message:preflight.message,status:preflight.status};
         }else{
-          const checked=backupRuntime.inspectBackupV2(candidate.backup,catLifeRuntime.validateRoot,window.ChokinCatLifeEvents.validateState,financialModel.validateProjectionLink);
+          const checked=backupRuntime.inspectBackupV2(candidate.backup,catLifeRuntime.validateRoot,window.ChokinCatLifeEvents.validateState,financialModel.validateProjectionLink,window.ChokinCatLifeFinancialActivation.validateState);
           if(!checked.valid)return {ok:false,rollbackOk:true,preflightBlocked:true,message:'復元データの整合性を確認できません。'};
         }
-        const v2=version===CAT_LIFE_BACKUP_VERSION,extraKeys=v2?[catLifeRuntime.key,eventRuntime.key,CAT_LIFE_FINANCIAL_STORAGE_KEY]:[];
+        const v2=version===CAT_LIFE_BACKUP_VERSION,extraKeys=v2?[catLifeRuntime.key,eventRuntime.key,CAT_LIFE_FINANCIAL_STORAGE_KEY,CAT_LIFE_FINANCIAL_ACTIVATION_KEY]:[CAT_LIFE_FINANCIAL_ACTIVATION_KEY];
         if(v2){
-          const restore=window.ChokinCatLifeRestore.create({storage:localStorage,lifeRuntime:catLifeRuntime,events:window.ChokinCatLifeEvents,model:financialModel,transactions:window.ChokinCatLifeFinancialTransaction});
+          const restore=window.ChokinCatLifeRestore.create({storage:localStorage,lifeRuntime:catLifeRuntime,events:window.ChokinCatLifeEvents,model:financialModel,transactions:window.ChokinCatLifeFinancialTransaction,activation:window.ChokinCatLifeFinancialActivation});
           const outcome=restore.commitCandidate(candidate);
           if(outcome.pending)restore.recover();
           if(restore.pending()){document.querySelector('main').inert=true;return {ok:false,rollbackOk:false,message:'未完了の復元を保持して停止しました。データを初期化せず再読み込みしてください。'};}
@@ -274,7 +328,7 @@
         const transaction=backupRuntime.runSynchronous({capture:()=>captureRestoreSnapshot(extraKeys),apply:()=>applyRestoreData(candidate,v2?catLifeRuntime:null,v2?eventRuntime:null),verify:()=>verifyRestoredStorage(candidate,v2?catLifeRuntime:null,v2?eventRuntime:null),rollback:restoreRawSnapshot});
         if(!transaction.ok)return {ok:false,rollbackOk:transaction.rollbackOk,message:transaction.error instanceof Error?transaction.error.message:'復元処理に失敗しました。'};
         return {ok:true,partial:!v2&&(!candidate.inspections.goal.valid||!candidate.inspections.history.valid||!candidate.inspections.badges.valid||candidate.inspections.collection.state==='partial'||candidate.inspections.coins.state==='partial'||candidate.inspections.dailyNotes.invalidItems>0)};
-      });
+      },{financial:candidate?.has?.catLifeFinancialActivation&&candidate.inspections.catLifeFinancialActivation.state?.enabled===true});
     }catch(error){return {ok:false,rollbackOk:true,preflightBlocked:true,message:error instanceof Error?error.message:'復元準備に失敗しました。'};}
   }
   function finishRestore(result) {
@@ -598,7 +652,7 @@
   }
   function setupCollectionSettings(){const host=$('#settings'),tools=host?.querySelector('.data-tools');if(!tools||$('#resetCollection'))return;const guide=document.createElement('button');guide.id='showFirstGuide';guide.className='onboarding-settings-link';guide.type='button';const guideText=document.createElement('span'),guideTitle=document.createElement('b'),guideNote=document.createElement('small'),guideArrow=document.createElement('strong');guideTitle.textContent='使い方を見る';guideNote.textContent='貯金・ねこコイン・目標などの説明';guideArrow.textContent='›';guideArrow.setAttribute('aria-hidden','true');guideText.append(guideTitle,guideNote);guide.append(guideText,guideArrow);host.insertBefore(guide,tools);guide.onclick=event=>window.ChokinOnboarding?.openManual(event.currentTarget);const diagnostic=document.createElement('button');diagnostic.id='collectionDiagnostics';diagnostic.className='data-button';diagnostic.textContent='猫図鑑診断';tools.append(diagnostic);diagnostic.onclick=()=>{const result=window.ChokinCollection.getDiagnostics(),labels={empty:'初期状態',ok:'正常',repaired:'修復済み',recovered:'破損データを退避して復旧'};const dialog=$('#catDiagnosticsDialog');$('#catDiagnosticsBody').innerHTML=`<h3>猫図鑑診断</h3><p>総猫数：${result.total}匹<br>取得猫数：${result.obtained}匹<br>未取得猫数：${result.unobtained}匹<br>完成率：${result.percent}％<br>猫メダル合計：${result.totalCatMedals}枚<br>読込状態：${labels[result.loadState]||result.loadState}<br>カタログ外データ：${result.unknownCats}件<br>データ異常：${result.anomalies}件</p><strong>${result.loadState==='recovered'?'元データを退避して安全に復旧しました':'診断ではデータを変更していません'}</strong>`;dialog.showModal();};const button=document.createElement('button');button.id='resetCollection';button.className='data-button danger-outline';button.textContent='猫図鑑をリセット';tools.append(button);button.onclick=()=>{if(!confirm('猫図鑑の取得状況と猫メダルをリセットしますか？'))return;if(!confirm('取得した猫、初取得日時、登場回数、猫メダルがすべて消去されます。本当にリセットしますか？'))return;window.ChokinCollection.reset();render();void inspectCatLifeActivation();alert('猫図鑑をリセットしました。');};}
   function setupCoinSettings(){const tools=$('#settings')?.querySelector('.data-tools');if(!tools||$('#resetCatCoins'))return;const button=document.createElement('button');button.id='resetCatCoins';button.className='data-button danger-outline';button.textContent='ねこコインをリセット';tools.append(button);button.onclick=()=>{if(!confirm('ねこコインの残高と獲得・使用履歴をリセットしますか？'))return;if(!confirm('この操作は元に戻せません。本当にリセットしますか？'))return;window.ChokinCoins.reset();render();alert('ねこコインをリセットしました。');};}
-  function setupPwaSupport(){const host=$('#settings'),tools=host?.querySelector('.data-tools');if(!tools||$('#pwaDiagnostics'))return;const install=document.createElement('button');install.className='data-button';install.textContent='スマホのホーム画面に追加';tools.append(install);const diagnostic=document.createElement('button');diagnostic.id='pwaDiagnostics';diagnostic.className='data-button';diagnostic.textContent='PWA・公開診断';tools.append(diagnostic);const dialog=document.createElement('dialog');dialog.className='cat-diagnostics-dialog';dialog.innerHTML='<button class="cat-detail-close" aria-label="閉じる">×</button><div id="pwaDiagnosticsBody"></div>';document.body.append(dialog);const close=()=>dialog.close();dialog.querySelector('.cat-detail-close').onclick=close;dialog.addEventListener('click',event=>{if(event.target===dialog)close();});install.onclick=()=>{$('#pwaDiagnosticsBody').innerHTML='<h3>スマホのホーム画面に追加</h3><p><b>Android</b><br>Chromeのメニュー → ホーム画面に追加 → インストール</p><p><b>iPhone</b><br>Safariで開く → 共有 → ホーム画面に追加</p><small>OSやブラウザにより表示名が異なる場合があります。</small>';dialog.showModal();};diagnostic.onclick=async()=>{let registration=null;try{registration=await navigator.serviceWorker?.getRegistration();}catch{}const images=[...document.querySelectorAll('#catGallery img')],loaded=images.filter(image=>image.complete&&image.naturalWidth>0).length,manifest=document.querySelector('link[rel="manifest"]');$('#pwaDiagnosticsBody').innerHTML=`<h3>PWA・公開診断</h3><p>現在のURL：${escapeHtml(location.href)}<br>HTTPS：${location.protocol==='https:'?'はい':'いいえ'}<br>localhost：${['localhost','127.0.0.1'].includes(location.hostname)?'はい':'いいえ'}<br>Service Worker対応：${'serviceWorker' in navigator?'はい':'いいえ'}<br>登録状態：${registration?.active?.state||registration?.waiting?.state||registration?.installing?.state||'未登録'}<br>制御状態：${navigator.serviceWorker?.controller?'制御中':'未制御'}<br>Manifest URL：${escapeHtml(manifest?new URL(manifest.href,document.baseURI).href:'なし')}<br>standalone：${matchMedia('(display-mode: standalone)').matches?'はい':'いいえ'}<br>通信状態：${navigator.onLine?'オンライン':'オフライン'}<br>猫画像：${loaded} / ${images.length}<br>アプリ：v${APP_VERSION}</p><strong>診断ではデータを変更していません</strong>`;dialog.showModal();};}
+  function setupPwaSupport(){const host=$('#settings'),tools=host?.querySelector('.data-tools');if(!tools||$('#pwaDiagnostics'))return;const install=document.createElement('button');install.className='data-button';install.textContent='スマホのホーム画面に追加';tools.append(install);const diagnostic=document.createElement('button');diagnostic.id='pwaDiagnostics';diagnostic.className='data-button';diagnostic.textContent='PWA・公開診断';tools.append(diagnostic);const dialog=document.createElement('dialog');dialog.className='cat-diagnostics-dialog';dialog.innerHTML='<button class="cat-detail-close" aria-label="閉じる">×</button><div id="pwaDiagnosticsBody"></div>';document.body.append(dialog);const close=()=>dialog.close();dialog.querySelector('.cat-detail-close').onclick=close;dialog.addEventListener('click',event=>{if(event.target===dialog)close();});install.onclick=()=>{$('#pwaDiagnosticsBody').innerHTML='<h3>スマホのホーム画面に追加</h3><p><b>Android</b><br>Chromeのメニュー → ホーム画面に追加 → インストール</p><p><b>iPhone</b><br>Safariで開く → 共有 → ホーム画面に追加</p><small>OSやブラウザにより表示名が異なる場合があります。</small>';dialog.showModal();};diagnostic.onclick=async()=>{let registration=null;try{registration=await navigator.serviceWorker?.getRegistration();}catch{}const images=[...document.querySelectorAll('#catGallery img')],loaded=images.filter(image=>image.complete&&image.naturalWidth>0).length,manifest=document.querySelector('link[rel="manifest"]');$('#pwaDiagnosticsBody').innerHTML=`<h3>PWA・公開診断</h3><p>現在のURL：${escapeHtml(location.href)}<br>HTTPS：${location.protocol==='https:'?'はい':'いいえ'}<br>localhost：${['localhost','127.0.0.1'].includes(location.hostname)?'はい':'いいえ'}<br>Service Worker対応：${'serviceWorker' in navigator?'はい':'いいえ'}<br>登録状態：${registration?.active?.state||registration?.waiting?.state||registration?.installing?.state||'未登録'}<br>制御状態：${navigator.serviceWorker?.controller?'制御中':'未制御'}<br>Manifest URL：${escapeHtml(manifest?new URL(manifest.href,document.baseURI).href:'なし')}<br>standalone：${matchMedia('(display-mode: standalone)').matches?'はい':'いいえ'}<br>通信状態：${navigator.onLine?'オンライン':'オフライン'}<br>猫画像：${loaded} / ${images.length}<br>アプリ：${escapeHtml(RELEASE_VERSION)}</p><strong>診断ではデータを変更していません</strong>`;dialog.showModal();};}
   function showUpdate(registration){if($('#pwaUpdate'))return;const notice=document.createElement('div');notice.id='pwaUpdate';notice.className='pwa-update';notice.innerHTML='<span>新しいバージョンがあります</span><button>更新する</button>';notice.hidden=$('#onboardingDialog')?.open===true||$('#dailyNoteDialog')?.open===true||$('#dailyNoteDeleteDialog')?.open===true;document.body.append(notice);notice.querySelector('button').onclick=()=>{window.__pwaRefreshing=true;registration.waiting?.postMessage({type:'SKIP_WAITING'});};}
   async function setupPwaRegistration(){if(!('serviceWorker' in navigator))return;try{const registration=await navigator.serviceWorker.register('./service-worker.js',{scope:'./'});if(registration.waiting)showUpdate(registration);registration.addEventListener('updatefound',()=>{const worker=registration.installing;worker?.addEventListener('statechange',()=>{if(worker.state==='installed'&&navigator.serviceWorker.controller)showUpdate(registration);});});navigator.serviceWorker.addEventListener('controllerchange',()=>{if(window.__pwaRefreshing)location.reload();});}catch(error){console.warn('Service Workerを登録できませんでした。',error);}}
   $('#entryForm').addEventListener('submit', e=>{ e.preventDefault(); if(quickLocked)return; const amount=Math.floor(Number($('#amount').value)); if(!Number.isFinite(amount)||amount<=0){ $('#amount').setCustomValidity('1円以上の金額を入力してください。'); $('#amount').reportValidity(); return; } $('#amount').setCustomValidity('');quickLocked=true; const entry={id:crypto.randomUUID?.()||`${Date.now()}-${Math.random()}`,type:formMode,amount,category:formMode==='spend'?$('#category').value:null,memo:$('#memo').value.trim(),createdAt:new Date().toISOString()}; state.entries.unshift(entry); saveState();const dailyCoinAwarded=entry.type==='save'&&window.ChokinCoins.awardDaily(); enhancedCelebrate(entry,null,false,null,{dailyCoinAwarded}); });
@@ -615,6 +669,6 @@
   $('#calendarDayDetail .calendar-detail-close').onclick=()=>$('#calendarDayDetail').close(); $('#calendarDayDetail').addEventListener('click',event=>{if(event.target===$('#calendarDayDetail'))$('#calendarDayDetail').close();});
   $('#collectionDetail .cat-detail-close').onclick=()=>$('#collectionDetail').close();$('#collectionDetail').addEventListener('click',event=>{if(event.target===$('#collectionDetail'))$('#collectionDetail').close();});
   if(document.readyState==='complete')void setupPwaRegistration();else window.addEventListener('load',setupPwaRegistration,{once:true});
-  document.querySelector('.app-version').textContent = `v${APP_VERSION}`;
-  const welcomeCoinGranted=window.ChokinCoins.grantWelcome();load(); window.ChokinGoalHistory.setup({navigate}); window.ChokinSavingsGoal.setup({getEntries:()=>state.entries,getSettings:()=>state.settings,navigate}); window.ChokinBadges.setup({getEntries:()=>state.entries,getSettings:()=>state.settings,navigate}); window.ChokinRestorePreview.setup({normalizeMainData:normalizeMainBackupData,inspectCatLife:inspectCatLifeBackup,applyCandidate:applyRestoreCandidate,onRestored:finishRestore}); setupQuickSettings(); setupEffectPreview(); setupCatGallery(); setupCollectionSettings(); setupCoinSettings(); setupPwaSupport(); setupCatLifeActivation(); setupCatLifeViewer(); window.ChokinDailyNotes.setup({renderCoins,renderCalendar,reopenCalendarDay:key=>{const [year,month,day]=key.split('-').map(Number);calendarYear=year;calendarMonth=month-1;openCalendarDay(day);}}); render();scheduleCoinDayRefresh();const onboardingReady=window.ChokinOnboarding?.init?.()||Promise.resolve(false);Promise.resolve(onboardingReady).finally(()=>{void inspectCatLifeActivation();void processDailyCatLifeEvent();if(welcomeCoinGranted)setTimeout(showWelcomeCoin,300);});window.ChokinBadges.evaluate();
+  document.querySelector('.app-version').textContent = `アプリバージョン：${RELEASE_VERSION}`;
+  const welcomeCoinGranted=window.ChokinCoins.grantWelcome();load(); window.ChokinGoalHistory.setup({navigate}); window.ChokinSavingsGoal.setup({getEntries:()=>state.entries,getSettings:()=>state.settings,navigate}); window.ChokinBadges.setup({getEntries:()=>state.entries,getSettings:()=>state.settings,navigate}); window.ChokinRestorePreview.setup({normalizeMainData:normalizeMainBackupData,inspectCatLife:inspectCatLifeBackup,applyCandidate:applyRestoreCandidate,onRestored:finishRestore}); setupQuickSettings(); setupEffectPreview(); setupCatGallery(); setupCollectionSettings(); setupCoinSettings(); setupPwaSupport(); setupCatLifeActivation(); setupCatLifeViewer(); setupFinancialActivation(); window.ChokinDailyNotes.setup({renderCoins,renderCalendar,reopenCalendarDay:key=>{const [year,month,day]=key.split('-').map(Number);calendarYear=year;calendarMonth=month-1;openCalendarDay(day);}}); render();scheduleCoinDayRefresh();const onboardingReady=window.ChokinOnboarding?.init?.()||Promise.resolve(false);Promise.resolve(onboardingReady).finally(()=>{void inspectCatLifeActivation();void processDailyCatLifeEvent();if(welcomeCoinGranted)setTimeout(showWelcomeCoin,300);});window.ChokinBadges.evaluate();
 })();
