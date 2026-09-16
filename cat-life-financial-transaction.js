@@ -8,6 +8,7 @@
 
   const JOURNAL_KEY = 'chokin-event-app.catLifeFinancialJournal.v1';
   const RESTORE_JOURNAL_KEY = 'chokin-event-app.catLifeRestoreJournal.v1';
+  const PROGRESSION_JOURNAL_KEY = 'chokin-event-app.catLifeGoalProgressionJournal.v1';
   const TARGET_KEYS = Object.freeze([
     'chokin-event-app.catLife.v1',
     'chokin-event-app.catLifeFinancial.v1',
@@ -25,9 +26,19 @@
     'chokin-event-app.catLifeFinancial.v1',
     'chokin-event-app.catLifeEvents.v1'
   ]);
-  const RESTORE_TARGET_KEYS = Object.freeze([
+  const R15_RESTORE_TARGET_KEYS = Object.freeze([
     ...LEGACY_RESTORE_TARGET_KEYS,
     'chokin-event-app.catLifeFinancialActivation.v1'
+  ]);
+  const RESTORE_TARGET_KEYS = Object.freeze([
+    ...R15_RESTORE_TARGET_KEYS,
+    'chokin-event-app.catLifeGoalProgression.v1',
+    'chokin-event-app.catLifeGoalProgressionActivation.v1'
+  ]);
+  const PROGRESSION_TARGET_KEYS = Object.freeze([
+    'chokin-event-app.v0.1',
+    'chokin-event-app.catLife.v1',
+    'chokin-event-app.catLifeGoalProgression.v1'
   ]);
   const JOURNAL_FIELDS = ['journalVersion', 'state', 'occurrenceId', 'before', 'after', 'checksum'];
   const isObject = value => !!value && typeof value === 'object' && !Array.isArray(value);
@@ -80,7 +91,8 @@
    */
   function createCore({ storage, validateBundle } = {}, config) {
     const JOURNAL_KEY = config.journalKey, TARGET_KEYS = config.targetKeys;
-    const otherJournalKey = config.otherJournalKey;
+    const otherJournalKeys = Object.freeze([...(config.otherJournalKeys || (config.otherJournalKey ? [config.otherJournalKey] : []))]);
+    const competing = () => otherJournalKeys.some(key => storage.getItem(key) !== null);
     const copyMap = value => Object.fromEntries(TARGET_KEYS.map(key => [key, value[key]]));
     const validMap = (value, nullable) => exactKeys(value, TARGET_KEYS) && TARGET_KEYS.every(key => typeof value[key] === 'string' || (nullable && value[key] === null));
     const checksum = value => journalChecksum(value, TARGET_KEYS);
@@ -123,14 +135,14 @@
       if (storage.getItem(JOURNAL_KEY) !== null) throw new Error('Financial journal cleanup pending.');
     }
     function pending() {
-      try { return storage.getItem(JOURNAL_KEY) !== null || storage.getItem(otherJournalKey) !== null; } catch (_) { return true; }
+      try { return storage.getItem(JOURNAL_KEY) !== null || competing(); } catch (_) { return true; }
     }
     function inspect() {
       try {
         const journal = readJournal();
         if (journal.raw === null) return result('clean', { ok: true, committed: false, pending: false, safeStop: false });
         if (journal.invalid) return result('invalid_journal');
-        if (storage.getItem(otherJournalKey) !== null) return result('competing_journals');
+        if (competing()) return result('competing_journals');
         const actual = readTargets();
         if (!known(actual, journal.record)) return result('foreign_state');
         if (journal.record.state === 'committed' && !matches(actual, journal.record.after)) return result('committed_state_mismatch');
@@ -146,7 +158,7 @@
         journal = readJournal();
         if (journal.raw === null) return result('clean', { ok: true, committed: false, pending: false, safeStop: false });
         if (journal.invalid) return result('invalid_journal');
-        if (storage.getItem(otherJournalKey) !== null) return result('competing_journals');
+        if (competing()) return result('competing_journals');
         const record = journal.record;
         committed = record.state === 'committed';
         const actual = readTargets();
@@ -179,7 +191,7 @@
     function commit({ occurrenceId, before, after } = {}) {
       let committed = false;
       try {
-        if (storage.getItem(JOURNAL_KEY) !== null || storage.getItem(otherJournalKey) !== null) return result('pending_transaction');
+        if (storage.getItem(JOURNAL_KEY) !== null || competing()) return result('pending_transaction');
         if (!validId(occurrenceId) || !validMap(before, true) || !validMap(after, config.nullableAfter)) return result('invalid_bundle', { committed: false, pending: false });
         // Freeze the caller's intended bytes into private maps before validation.
         const record = { journalVersion: 1, state: 'prepared', occurrenceId, before: copyMap(before), after: copyMap(after) };
@@ -216,36 +228,50 @@
   }
 
   function create(options) {
-    return createCore(options, { journalKey: JOURNAL_KEY, otherJournalKey: RESTORE_JOURNAL_KEY, targetKeys: TARGET_KEYS, nullableAfter: false, allowUnchanged: false });
+    return createCore(options, { journalKey: JOURNAL_KEY, otherJournalKeys: [RESTORE_JOURNAL_KEY, PROGRESSION_JOURNAL_KEY], targetKeys: TARGET_KEYS, nullableAfter: false, allowUnchanged: false });
+  }
+  function createProgression(options) {
+    return createCore(options, { journalKey: PROGRESSION_JOURNAL_KEY, otherJournalKeys: [JOURNAL_KEY, RESTORE_JOURNAL_KEY], targetKeys: PROGRESSION_TARGET_KEYS, nullableAfter: false, allowUnchanged: false });
   }
   // Restore is explicit user replacement, not automatic repair. The caller's
   // validator must fully validate AFTER; BEFORE may contain malformed raw data.
   // Only an exclusive owner may call this API. Startup recovers restore before
   // starting ordinary modules/writers. Recovery never emits journal raw content.
   function createRestore(options) {
-    const current = createCore(options, { journalKey: RESTORE_JOURNAL_KEY, otherJournalKey: JOURNAL_KEY, targetKeys: RESTORE_TARGET_KEYS, nullableAfter: true, allowUnchanged: true });
-    const activationKey = RESTORE_TARGET_KEYS.at(-1);
+    const competingJournals = [JOURNAL_KEY, PROGRESSION_JOURNAL_KEY];
+    const current = createCore(options, { journalKey: RESTORE_JOURNAL_KEY, otherJournalKeys: competingJournals, targetKeys: RESTORE_TARGET_KEYS, nullableAfter: true, allowUnchanged: true });
+    const progressionKey = RESTORE_TARGET_KEYS.at(-2), progressionActivationKey = RESTORE_TARGET_KEYS.at(-1);
+    const r15 = createCore({
+      ...options,
+      validateBundle(raw, context) {
+        return options.validateBundle({ ...raw, [progressionKey]: null, [progressionActivationKey]: null }, context);
+      }
+    }, { journalKey: RESTORE_JOURNAL_KEY, otherJournalKeys: competingJournals, targetKeys: R15_RESTORE_TARGET_KEYS, nullableAfter: true, allowUnchanged: true });
     const legacy = createCore({
       ...options,
       validateBundle(raw, context) {
-        return options.validateBundle({ ...raw, [activationKey]: null }, context);
+        const financialActivationKey = R15_RESTORE_TARGET_KEYS.at(-1);
+        return options.validateBundle({ ...raw, [financialActivationKey]: null, [progressionKey]: null, [progressionActivationKey]: null }, context);
       }
-    }, { journalKey: RESTORE_JOURNAL_KEY, otherJournalKey: JOURNAL_KEY, targetKeys: LEGACY_RESTORE_TARGET_KEYS, nullableAfter: true, allowUnchanged: true });
-    function legacyJournalPresent() {
+    }, { journalKey: RESTORE_JOURNAL_KEY, otherJournalKeys: competingJournals, targetKeys: LEGACY_RESTORE_TARGET_KEYS, nullableAfter: true, allowUnchanged: true });
+    function journalGeneration() {
       try {
         const raw = options.storage.getItem(RESTORE_JOURNAL_KEY);
-        if (raw === null) return false;
+        if (raw === null) return 'current';
         const value = JSON.parse(raw);
-        return exactKeys(value?.before, LEGACY_RESTORE_TARGET_KEYS) && exactKeys(value?.after, LEGACY_RESTORE_TARGET_KEYS);
-      } catch (_) { return false; }
+        if (exactKeys(value?.before, LEGACY_RESTORE_TARGET_KEYS) && exactKeys(value?.after, LEGACY_RESTORE_TARGET_KEYS)) return 'legacy';
+        if (exactKeys(value?.before, R15_RESTORE_TARGET_KEYS) && exactKeys(value?.after, R15_RESTORE_TARGET_KEYS)) return 'r15';
+        return 'current';
+      } catch (_) { return 'current'; }
     }
+    const selected = () => journalGeneration() === 'legacy' ? legacy : journalGeneration() === 'r15' ? r15 : current;
     return Object.freeze({
       commit: current.commit,
-      recover: () => (legacyJournalPresent() ? legacy : current).recover(),
-      inspect: () => (legacyJournalPresent() ? legacy : current).inspect(),
+      recover: () => selected().recover(),
+      inspect: () => selected().inspect(),
       pending: current.pending
     });
   }
 
-  return Object.freeze({ JOURNAL_KEY, TARGET_KEYS, RESTORE_JOURNAL_KEY, LEGACY_RESTORE_TARGET_KEYS, RESTORE_TARGET_KEYS, create, createRestore });
+  return Object.freeze({ JOURNAL_KEY, TARGET_KEYS, PROGRESSION_JOURNAL_KEY, PROGRESSION_TARGET_KEYS, RESTORE_JOURNAL_KEY, LEGACY_RESTORE_TARGET_KEYS, R15_RESTORE_TARGET_KEYS, RESTORE_TARGET_KEYS, create, createProgression, createRestore });
 });

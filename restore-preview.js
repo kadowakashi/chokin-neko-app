@@ -3,7 +3,7 @@
 
   const SUPPORTED_BACKUP_VERSIONS = new Set([1, 2]);
   const ROOT_FIELDS = new Set(["backupVersion", "exportedAt", "appVersion", "data"]);
-  const DATA_FIELDS = new Set(["version", "entries", "settings", "futureSettings", "quickAmounts", "catCollection", "catCoins", "savingsGoal", "goalHistory", "badgeState", "dailyNotes", "catLife", "catLifeEvents", "catLifeFinancial", "catLifeFinancialActivation"]);
+  const DATA_FIELDS = new Set(["version", "entries", "settings", "futureSettings", "quickAmounts", "catCollection", "catCoins", "savingsGoal", "goalHistory", "badgeState", "dailyNotes", "catLife", "catLifeEvents", "catLifeFinancial", "catLifeFinancialActivation", "catLifeGoalProgression", "catLifeGoalProgressionActivation"]);
   const CAT_LIFE_ROOT_FIELDS = new Set(["schemaVersion", "economyFormulaVersion", "goalFormulaVersion", "updatedAt", "cats"]);
   const V1_CAT_LIFE_BLOCKED_MESSAGE = "このバックアップは、猫たちの暮らしを始める前の形式です。現在の猫たちの暮らしを保持したまま安全に復元できないため、復元を中止しました。新しい形式のバックアップを使用してください。";
   let options = {};
@@ -36,12 +36,13 @@
     return { allowed: false, status: "meaningful", meaningful: true, catCount };
   }
 
-  function preflightBackupV1Restore(backup, storedCatLifeRaw, storedEventRaw = null, storedFinancialRaw = null) {
+  function preflightBackupV1Restore(backup, storedCatLifeRaw, storedEventRaw = null, storedFinancialRaw = null, storedProgressionRaw = null) {
     if (backup?.backupVersion !== 1) return { allowed: true, status: "not_v1", meaningful: false, catCount: 0 };
     const inspection = inspectStoredCatLifeForV1Restore(storedCatLifeRaw);
     if (!inspection.allowed) return { ...inspection, message: V1_CAT_LIFE_BLOCKED_MESSAGE };
     if (storedEventRaw !== null) return { allowed: false, status: "event_history_present", meaningful: true, catCount: inspection.catCount, message: V1_CAT_LIFE_BLOCKED_MESSAGE };
     if (storedFinancialRaw !== null) return { allowed: false, status: "financial_history_present", meaningful: true, catCount: inspection.catCount, message: V1_CAT_LIFE_BLOCKED_MESSAGE };
+    if (storedProgressionRaw !== null) return { allowed: false, status: "goal_progression_present", meaningful: true, catCount: inspection.catCount, message: V1_CAT_LIFE_BLOCKED_MESSAGE };
     return inspection;
   }
 
@@ -79,6 +80,8 @@
       catLifeEvents: backup.backupVersion === 2 && owns(data, "catLifeEvents"),
       catLifeFinancial: backup.backupVersion === 2 && owns(data, "catLifeFinancial"),
       catLifeFinancialActivation: backup.backupVersion === 2 && owns(data, "catLifeFinancialActivation"),
+      catLifeGoalProgression: backup.backupVersion === 2 && owns(data, "catLifeGoalProgression"),
+      catLifeGoalProgressionActivation: backup.backupVersion === 2 && owns(data, "catLifeGoalProgressionActivation"),
     };
     const inspections = {
       collection: window.ChokinCollection.inspectData(has.collection ? data.catCollection : null),
@@ -91,6 +94,8 @@
       catLifeEvents: catLifeInspection?.catLifeEvents || { present: false, valid: true, state: null },
       catLifeFinancial: catLifeInspection?.catLifeFinancial || { present: false, valid: !has.catLifeFinancial, state: null },
       catLifeFinancialActivation: catLifeInspection?.catLifeFinancialActivation || { present: false, valid: !has.catLifeFinancialActivation, state: null },
+      catLifeGoalProgression: catLifeInspection?.catLifeGoalProgression || { present: false, valid: !has.catLifeGoalProgression, state: null },
+      catLifeGoalProgressionActivation: catLifeInspection?.catLifeGoalProgressionActivation || { present: false, valid: !has.catLifeGoalProgressionActivation, state: null },
     };
     if (backup.backupVersion === 2) {
       if (!has.catLife) return { restorable: false, error: "猫の暮らしデータがありません。" };
@@ -98,6 +103,7 @@
       if (has.catLifeEvents && !inspections.catLifeEvents.valid) return { restorable: false, error: "猫たちのできごと履歴が壊れているため、安全に復元できません。" };
       if (has.catLifeFinancial && !inspections.catLifeFinancial.valid) return { restorable: false, error: "猫たちの資産変動の記録を安全に復元できません。現在のデータは変更されていません。" };
       if (has.catLifeFinancialActivation && !inspections.catLifeFinancialActivation.valid) return { restorable: false, error: "猫たちのお金の開始設定を安全に復元できません。現在のデータは変更されていません。" };
+      if ((has.catLifeGoalProgression && !inspections.catLifeGoalProgression.valid) || (has.catLifeGoalProgressionActivation && !inspections.catLifeGoalProgressionActivation.valid)) return { restorable: false, error: "猫たちの貯金の歩みを安全に復元できません。現在のデータは変更されていません。" };
       const requiredV2 = ["catCollection", "catCoins", "savingsGoal", "goalHistory", "badgeState", "dailyNotes"];
       if (requiredV2.some(key => !owns(data, key))) return { restorable: false, error: "backupVersion 2の必須データが不足しています。" };
       if (inspections.collection.state !== "ok" || inspections.coins.state !== "ok" || !inspections.goal.valid || !inspections.history.valid || inspections.history.state === "partial" || !inspections.badges.valid || inspections.badges.state === "partial" || !inspections.dailyNotes.readable || inspections.dailyNotes.invalidItems > 0) return { restorable: false, error: "backupVersion 2の従来データ部分を安全に復元できません。" };
@@ -126,6 +132,7 @@
     if (backup.backupVersion === 2 && !has.catLifeEvents) notices.push(warning("notice", "このバックアップには猫たちのできごと履歴が含まれていません。復元すると現在のできごと履歴は引き継がれず、次回起動時に未開始状態から安全に始まります。"));
     if (has.catLifeFinancial) notices.push(warning("info", "猫たちの資産変動の記録は、暮らし・できごとの履歴と一緒に復元します。"));
     if (backup.backupVersion === 2) notices.push(warning("info", has.catLifeFinancialActivation && inspections.catLifeFinancialActivation.state?.enabled === true ? "猫たちのお金の開始設定も復元します。" : "猫たちのお金は開始前の状態で復元します。"));
+    if (backup.backupVersion === 2) notices.push(warning("info", has.catLifeGoalProgressionActivation && inspections.catLifeGoalProgressionActivation.state?.enabled === true ? "猫たちの貯金の歩みも復元します。" : "猫たちの貯金の歩みは開始前の状態で復元します。"));
 
     const unknownRoot = Object.keys(backup).filter((key) => !ROOT_FIELDS.has(key));
     const unknownData = Object.keys(data).filter((key) => !DATA_FIELDS.has(key));

@@ -28,7 +28,7 @@
     });
   }
 
-  function inspectBackupV2(value, validateCatLifeRoot, validateEventState, validateFinancialState, validateActivationState) {
+  function inspectBackupV2(value, validateCatLifeRoot, validateEventState, validateFinancialState, validateActivationState, validateProgressionState, validateProgressionActivation) {
     if (!object(value) || value.backupVersion !== 2 || !object(value.data)) return { valid: false, error: 'invalid_v2_shape' };
     const missingFields = V1_DATA_FIELDS.filter(key => !owns(value.data, key));
     if (!owns(value.data, 'catLife')) return { valid: false, error: 'cat_life_missing', missingFields };
@@ -46,10 +46,20 @@
     const activation = activationStatePresent
       ? (typeof validateActivationState === 'function' ? validateActivationState(value.data.catLifeFinancialActivation) : { valid: false, errors: [{ code: 'validator_missing' }] })
       : { valid: true, errors: [] };
-    const valid = missingFields.length === 0 && catLife.valid === true && events.valid === true && financialValid && activation.valid === true;
+    const progressionStatePresent = owns(value.data, 'catLifeGoalProgression');
+    const progression = progressionStatePresent
+      ? (typeof validateProgressionState === 'function' ? validateProgressionState(value.data.catLifeGoalProgression) : { valid: false, errors: [{ code: 'validator_missing' }] })
+      : { valid: true, errors: [] };
+    const progressionActivationPresent = owns(value.data, 'catLifeGoalProgressionActivation');
+    const progressionActivation = progressionActivationPresent
+      ? (typeof validateProgressionActivation === 'function' ? validateProgressionActivation(value.data.catLifeGoalProgressionActivation) : { valid: false, errors: [{ code: 'validator_missing' }] })
+      : { valid: true, errors: [] };
+    const progressionLinkValid = progression.valid === true && progressionActivation.valid === true
+      && (!progressionStatePresent || progressionActivationPresent && value.data.catLifeGoalProgressionActivation?.enabled === true && value.data.catLifeGoalProgression?.activatedAt === value.data.catLifeGoalProgressionActivation?.activatedAt);
+    const valid = missingFields.length === 0 && catLife.valid === true && events.valid === true && financialValid && activation.valid === true && progressionLinkValid;
     return {
       valid,
-      error: catLife.valid !== true ? 'cat_life_invalid' : events.valid !== true ? 'cat_life_events_invalid' : !financialValid ? 'cat_life_financial_invalid' : activation.valid !== true ? 'cat_life_financial_activation_invalid' : null,
+      error: catLife.valid !== true ? 'cat_life_invalid' : events.valid !== true ? 'cat_life_events_invalid' : !financialValid ? 'cat_life_financial_invalid' : activation.valid !== true ? 'cat_life_financial_activation_invalid' : !progressionLinkValid ? 'cat_life_goal_progression_invalid' : null,
       missingFields,
       catLife,
       root: catLife.valid === true ? clone(value.data.catLife) : null,
@@ -58,11 +68,15 @@
       financialStatePresent,
       catLifeFinancial: { present: financialStatePresent, valid: financialValid, state: financialStatePresent && financialValid ? clone(value.data.catLifeFinancial) : null, errors: financialValid ? [] : [...(financial.errors || []), { code: 'financial_projection_invalid' }] },
       activationStatePresent,
-      catLifeFinancialActivation: { present: activationStatePresent, valid: activation.valid === true, state: activationStatePresent && activation.valid === true ? clone(value.data.catLifeFinancialActivation) : null, errors: activation.errors || [] }
+      catLifeFinancialActivation: { present: activationStatePresent, valid: activation.valid === true, state: activationStatePresent && activation.valid === true ? clone(value.data.catLifeFinancialActivation) : null, errors: activation.errors || [] },
+      progressionStatePresent,
+      catLifeGoalProgression: { present: progressionStatePresent, valid: progressionLinkValid, state: progressionStatePresent && progressionLinkValid ? clone(value.data.catLifeGoalProgression) : null, errors: progressionLinkValid ? [] : (progression.errors || []) },
+      progressionActivationPresent,
+      catLifeGoalProgressionActivation: { present: progressionActivationPresent, valid: progressionLinkValid, state: progressionActivationPresent && progressionLinkValid ? clone(value.data.catLifeGoalProgressionActivation) : null, errors: progressionLinkValid ? [] : (progressionActivation.errors || []) }
     };
   }
 
-  function createBackupV2({ backupV1, catLifeRoot, validateCatLifeRoot, eventState, validateEventState, financialState, validateFinancialState, activationState, validateActivationState }) {
+  function createBackupV2({ backupV1, catLifeRoot, validateCatLifeRoot, eventState, validateEventState, financialState, validateFinancialState, activationState, validateActivationState, progressionState, validateProgressionState, progressionActivationState, validateProgressionActivation }) {
     if (!object(backupV1) || backupV1.backupVersion !== 1 || !object(backupV1.data)) throw new TypeError('backupVersion 1 source is required');
     const missingFields = V1_DATA_FIELDS.filter(key => !owns(backupV1.data, key));
     if (missingFields.length) throw new TypeError(`backupVersion 1 fields are missing: ${missingFields.join(',')}`);
@@ -85,6 +99,16 @@
       const checked = typeof validateActivationState === 'function' ? validateActivationState(activationState) : { valid: false };
       if (!checked?.valid) throw new TypeError('valid financial activation state is required');
       output.data.catLifeFinancialActivation = clone(activationState);
+    }
+    if (progressionActivationState !== undefined) {
+      const checked = typeof validateProgressionActivation === 'function' ? validateProgressionActivation(progressionActivationState) : { valid: false };
+      if (!checked?.valid) throw new TypeError('valid goal progression activation state is required');
+      output.data.catLifeGoalProgressionActivation = clone(progressionActivationState);
+    }
+    if (progressionState !== undefined) {
+      const checked = typeof validateProgressionState === 'function' ? validateProgressionState(progressionState) : { valid: false };
+      if (!checked?.valid || progressionActivationState?.enabled !== true || progressionState.activatedAt !== progressionActivationState.activatedAt) throw new TypeError('valid goal progression state and activation are required');
+      output.data.catLifeGoalProgression = clone(progressionState);
     }
     return output;
   }

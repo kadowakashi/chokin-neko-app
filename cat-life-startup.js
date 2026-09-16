@@ -3,6 +3,7 @@
 
   const FINANCIAL_JOURNAL_KEY = 'chokin-event-app.catLifeFinancialJournal.v1';
   const RESTORE_JOURNAL_KEY = 'chokin-event-app.catLifeRestoreJournal.v1';
+  const PROGRESSION_JOURNAL_KEY = 'chokin-event-app.catLifeGoalProgressionJournal.v1';
   const GACHA_JOURNAL_KEY = 'chokin-event-app.gachaTransactionJournal.v2';
   const LEGACY_GACHA_JOURNAL_KEY = 'chokin-event-app.gachaTransaction.v1';
   const SCRIPT_PATH = /^\.\/[a-z0-9][a-z0-9._-]*\.js\?v=[0-9]+(?:\.[0-9]+)*$/i;
@@ -48,9 +49,10 @@
   async function recoverBeforeInitialization(storage) {
     const financialPending = storage.getItem(FINANCIAL_JOURNAL_KEY) !== null;
     const restorePending = storage.getItem(RESTORE_JOURNAL_KEY) !== null;
-    if (!financialPending && !restorePending) return { financialBlocked: false };
+    const progressionPending = storage.getItem(PROGRESSION_JOURNAL_KEY) !== null;
+    if (!financialPending && !restorePending && !progressionPending) return { financialBlocked: false };
     const gachaPending = storage.getItem(GACHA_JOURNAL_KEY) !== null || storage.getItem(LEGACY_GACHA_JOURNAL_KEY) !== null;
-    if (financialPending && restorePending || gachaPending) throw new Error('Multiple unresolved state operations require review.');
+    if ([financialPending, restorePending, progressionPending].filter(Boolean).length > 1 || gachaPending) throw new Error('Multiple unresolved state operations require review.');
     try {
     // These modules are pure until create/recover is called. No collection/coin initialization has run.
     await Promise.all([
@@ -58,8 +60,10 @@
       import('./cat-life-runtime.js?v=2'),
       import('./cat-life-events.js?v=2'),
       import('./cat-life-financial.js?v=1'),
-      import('./cat-life-financial-transaction.js?v=2'),
-      financialPending ? import('./cat-life-financial-runtime.js?v=2') : import('./cat-life-restore.js?v=2')
+      import('./cat-life-financial-transaction.js?v=3'),
+      progressionPending || restorePending ? import('./cat-life-goal-progression.js?v=1') : Promise.resolve(),
+      progressionPending ? import('./cat-life-goal-progression-runtime.js?v=1') : Promise.resolve(),
+      financialPending ? import('./cat-life-financial-runtime.js?v=2') : restorePending ? import('./cat-life-restore.js?v=3') : Promise.resolve()
     ]);
     const response = await fetch('./assets/cats/cat-world.json?v=1', { credentials: 'same-origin' });
     if (!response.ok) throw new Error('The cat life master is unavailable for recovery.');
@@ -73,11 +77,17 @@
         storage, lifeRuntime, eventRuntime: events.createRuntime({ storage }), model,
         transactions: root.ChokinCatLifeFinancialTransaction, events, financialKey: root.ChokinCatLifeFinancial.STORAGE_KEY
       });
+    } else if (restorePending) {
+      const progression = root.ChokinCatLifeGoalProgression;
+      const progressionModel = progression.createModel({ life: root.ChokinCatLife, catWorld });
+      operation = root.ChokinCatLifeRestore.create({ storage, lifeRuntime, events, model, transactions: root.ChokinCatLifeFinancialTransaction, activation: root.ChokinCatLifeFinancialActivation, progression, progressionModel });
     } else {
-      operation = root.ChokinCatLifeRestore.create({ storage, lifeRuntime, events, model, transactions: root.ChokinCatLifeFinancialTransaction, activation: root.ChokinCatLifeFinancialActivation });
+      const progression = root.ChokinCatLifeGoalProgression;
+      const progressionModel = progression.createModel({ life: root.ChokinCatLife, catWorld });
+      operation = root.ChokinCatLifeGoalProgressionRuntime.create({ storage, lifeRuntime, model: progressionModel, progression, transactions: root.ChokinCatLifeFinancialTransaction });
     }
     operation.recover();
-    if (operation.pending() || storage.getItem(FINANCIAL_JOURNAL_KEY) !== null || storage.getItem(RESTORE_JOURNAL_KEY) !== null) throw new Error('The saved state could not be recovered safely.');
+    if (operation.pending() || storage.getItem(FINANCIAL_JOURNAL_KEY) !== null || storage.getItem(RESTORE_JOURNAL_KEY) !== null || storage.getItem(PROGRESSION_JOURNAL_KEY) !== null) throw new Error('The saved state could not be recovered safely.');
     return { financialBlocked: false };
     } catch (error) {
       // The financial journal does not contain the user's saving/spending or coin stores.

@@ -10,9 +10,12 @@
   const SIDECAR_KEY = 'chokin-event-app.catLifeFinancial.v1';
   const ACTIVATION_KEY = 'chokin-event-app.catLifeFinancialActivation.v1';
   const RESTORE_JOURNAL_KEY = 'chokin-event-app.catLifeRestoreJournal.v1';
+  const PROGRESSION_JOURNAL_KEY = 'chokin-event-app.catLifeGoalProgressionJournal.v1';
+  const PROGRESSION_KEY = 'chokin-event-app.catLifeGoalProgression.v1';
+  const PROGRESSION_ACTIVATION_KEY = 'chokin-event-app.catLifeGoalProgressionActivation.v1';
   function create({ storage = root.localStorage, locks = root.navigator?.locks } = {}) {
     let owner = false;
-    const pending = () => { try { return storage.getItem(JOURNAL_KEY) !== null || storage.getItem(RESTORE_JOURNAL_KEY) !== null; } catch { return true; } };
+    const pending = () => { try { return storage.getItem(JOURNAL_KEY) !== null || storage.getItem(RESTORE_JOURNAL_KEY) !== null || storage.getItem(PROGRESSION_JOURNAL_KEY) !== null; } catch { return true; } };
     const canWrite = () => owner && !pending();
     const canRead = () => { try { return !pending() && storage.getItem('chokin-event-app.gachaTransactionJournal.v2') === null && storage.getItem('chokin-event-app.gachaTransaction.v1') === null; } catch { return false; } };
     const activationEnabled = () => {
@@ -38,7 +41,7 @@
       };
       if (locks?.request) return locks.request(LOCK_NAME, { mode: 'exclusive' }, execute);
       // No new financial mutation without an origin-wide lock. Legacy OFF behavior remains available.
-      if (financial || pending() || storage.getItem(SIDECAR_KEY) !== null || activationEnabled()) throw new Error('origin-wide storage lock unavailable');
+      if (financial || pending() || storage.getItem(SIDECAR_KEY) !== null || activationEnabled() || storage.getItem(PROGRESSION_KEY) !== null || storage.getItem(PROGRESSION_ACTIVATION_KEY) !== null) throw new Error('origin-wide storage lock unavailable');
       return execute();
     }
     // Startup alone may await script loading. No application handlers exist until
@@ -50,10 +53,10 @@
         try { return await callback(); } finally { owner = false; }
       };
       if (locks?.request) return locks.request(LOCK_NAME, { mode: 'exclusive' }, execute);
-      if (pending() || storage.getItem(SIDECAR_KEY) !== null || activationEnabled()) throw new Error('origin-wide startup lock unavailable');
+      if (pending() || storage.getItem(SIDECAR_KEY) !== null || activationEnabled() || storage.getItem(PROGRESSION_KEY) !== null || storage.getItem(PROGRESSION_ACTIVATION_KEY) !== null) throw new Error('origin-wide startup lock unavailable');
       return execute();
     }
     return Object.freeze({ run, runStartup, pending, canWrite, canRead, isOwner: () => owner, supported: !!locks?.request, key: JOURNAL_KEY });
   }
-  return Object.freeze({ create, LOCK_NAME, JOURNAL_KEY, SIDECAR_KEY, ACTIVATION_KEY, RESTORE_JOURNAL_KEY });
+  return Object.freeze({ create, LOCK_NAME, JOURNAL_KEY, SIDECAR_KEY, ACTIVATION_KEY, RESTORE_JOURNAL_KEY, PROGRESSION_JOURNAL_KEY, PROGRESSION_KEY, PROGRESSION_ACTIVATION_KEY });
 });

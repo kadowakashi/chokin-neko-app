@@ -13,9 +13,10 @@ const SHELL_ASSETS = [
   './visual-assets.js', './cat-image-processor.js', './onboarding.js', './gacha-transaction.js', './cat-collection.js',
   './cat-coins.js', './daily-note.js', './cat-characters.js', './game-effects.js', './asset-loader.js',
   './canvas-effects.js', './capsule-gacha-animation.js', './goal-history.js', './savings-goal.js', './badges.js',
-  './restore-preview.js', './app.js', './assets/manifest.json', './assets/cats/cat-catalog.json',
-  './cat-life-financial-activation.js?v=1', './cat-life-startup.js?v=2', './cat-life-restore.js?v=2', './cat-life-coordination.js?v=2', './cat-life-financial.js?v=1', './cat-life-financial-transaction.js?v=2', './cat-life-financial-runtime.js?v=2',
-  './cat-life-runtime.js?v=2', './cat-life.js?v=1', './cat-life-view.js?v=4', './cat-life-events.js?v=2', './backup-v2.js?v=4', './assets/cats/cat-world.json?v=1'
+  './restore-preview.js?v=1.6', './app.js?v=1.0.10', './assets/manifest.json', './assets/cats/cat-catalog.json',
+  './cat-life-financial-activation.js?v=1', './cat-life-startup.js?v=3', './cat-life-restore.js?v=3', './cat-life-coordination.js?v=3', './cat-life-financial.js?v=1', './cat-life-financial-transaction.js?v=3', './cat-life-financial-runtime.js?v=2',
+  './cat-life-goal-progression.js?v=1', './cat-life-goal-progression-runtime.js?v=1',
+  './cat-life-runtime.js?v=2', './cat-life.js?v=1', './cat-life-view.js?v=4', './cat-life-events.js?v=2', './backup-v2.js?v=5', './assets/cats/cat-world.json?v=1'
 ];
 
 const scopeUrl = new URL('./', self.registration.scope);
