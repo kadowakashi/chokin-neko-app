@@ -9,7 +9,7 @@ const SHELL_ASSETS = [
   './styles.css', './fixes.css', './v021-quick.css', './v03-scenes.css', './v04-canvas.css', './v05-fever.css',
   './v05-controls.css', './v051-polish.css', './v06-cats.css', './v08-collection.css', './v092-save-spectacle.css',
   './v093-assets.css', './v097-calendar.css', './v098-goal.css', './v099-goal-history.css', './v0910-badges.css',
-  './v0911-restore-preview.css', './v0912-onboarding.css', './v0913-daily-note.css', './v0916-capsule-gacha.css',
+  './v0911-restore-preview.css', './v0912-onboarding.css', './v0913-daily-note.css', './v0916-capsule-gacha.css', './v10-room-theme.css?v=1',
   './visual-assets.js', './cat-image-processor.js', './onboarding.js', './gacha-transaction.js', './cat-collection.js',
   './cat-coins.js', './daily-note.js', './cat-characters.js', './game-effects.js', './asset-loader.js',
   './canvas-effects.js', './capsule-gacha-animation.js', './goal-history.js', './savings-goal.js', './badges.js',
