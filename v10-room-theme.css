@@ -1,4 +1,4 @@
-/* r18: warm room theme. Visual overrides only; no application state or behavior. */
+/* r19: warm cat-room theme. Visual overrides only; no application state or behavior. */
 :root{
   color-scheme:light;
   --bg:#f4e9df;
@@ -26,11 +26,13 @@ body{
   min-height:100vh;
   overflow-x:hidden;
   background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Cg fill='none' stroke='%23b9797e' stroke-opacity='.10' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M23 55 31 40l11 12c14-2 27 9 27 23 0 15-12 26-27 26S15 90 15 75c0-8 3-15 8-20Z'/%3E%3Cpath d='M29 74h.1M53 74h.1M35 84c4 4 9 4 13 0'/%3E%3Cpath d='M118 122c-9-4-17 3-15 12 2 8 11 14 17 14s15-6 17-14c2-9-6-16-15-12-1 1-3 2-4 3-1-1-2-2-4-3Z'/%3E%3Ccircle cx='101' cy='113' r='6'/%3E%3Ccircle cx='115' cy='106' r='6'/%3E%3Ccircle cx='130' cy='109' r='6'/%3E%3Ccircle cx='141' cy='120' r='6'/%3E%3C/g%3E%3C/svg%3E"),
     radial-gradient(circle at 14% 12%,rgba(255,255,255,.86) 0 2px,transparent 3px),
     radial-gradient(circle at 86% 19%,rgba(220,157,155,.18) 0 4px,transparent 5px),
     repeating-linear-gradient(90deg,rgba(174,132,112,.035) 0 1px,transparent 1px 54px),
     linear-gradient(180deg,#fbf5ef 0%,var(--room-wall) 67%,#e3c8aa 67%,#d8b693 100%);
-  background-size:auto,auto,54px 100%,auto;
+  background-size:270px 270px,auto,auto,54px 100%,auto;
+  background-position:26px 34px,0 0,0 0,0 0,0 0;
   color:var(--text);
 }
 body::before{
@@ -60,10 +62,31 @@ body::after{
   pointer-events:none;
   border:1px solid rgba(185,116,123,.18);
   border-radius:50%;
-  background:radial-gradient(ellipse at center,rgba(232,174,176,.48),rgba(235,193,179,.28) 58%,transparent 70%);
+  background:
+    radial-gradient(circle at 20% 51%,rgba(183,105,119,.62) 0 8px,rgba(248,215,210,.9) 9px 11px,transparent 12px),
+    linear-gradient(24deg,transparent 0 19%,rgba(168,105,97,.28) 19.4% 20%,transparent 20.4%),
+    radial-gradient(ellipse at center,rgba(232,174,176,.48),rgba(235,193,179,.28) 58%,transparent 70%);
 }
 
 .app{position:relative;z-index:1}
+.app::before{
+  content:"";
+  position:fixed;
+  z-index:-1;
+  right:max(18px,calc(50% - 430px));
+  bottom:32vh;
+  width:92px;
+  height:190px;
+  pointer-events:none;
+  opacity:.16;
+  background:
+    radial-gradient(ellipse at 50% 18%,#95745e 0 25%,transparent 27%),
+    linear-gradient(#95745e,#95745e) 48% 24%/5px 57% no-repeat,
+    linear-gradient(#95745e,#95745e) 73% 50%/4px 38% no-repeat,
+    radial-gradient(ellipse at 51% 55%,#95745e 0 32%,transparent 34%),
+    radial-gradient(ellipse at 73% 72%,#95745e 0 22%,transparent 24%),
+    linear-gradient(#95745e,#95745e) 50% 96%/72% 5px no-repeat;
+}
 .app>header{
   position:relative;
   overflow:hidden;
@@ -74,18 +97,46 @@ body::after{
   background:rgba(255,250,246,.84);
   box-shadow:0 12px 28px var(--room-shadow),inset 0 1px rgba(255,255,255,.95);
 }
+.app>header::before{
+  content:"";
+  position:absolute;
+  right:55px;
+  top:9px;
+  width:37px;
+  height:22px;
+  background:rgba(190,127,128,.16);
+  clip-path:polygon(0 100%,12% 12%,39% 67%,61% 67%,88% 12%,100% 100%);
+}
 .app>header::after{
-  content:"🐾";
+  content:"";
   position:absolute;
   right:14px;
   top:10px;
   color:var(--room-rose);
-  font-size:30px;
+  width:28px;
+  height:25px;
+  background:radial-gradient(circle at 50% 68%,currentColor 0 7px,transparent 7.7px),radial-gradient(circle at 15% 25%,currentColor 0 3px,transparent 3.6px),radial-gradient(circle at 39% 8%,currentColor 0 3px,transparent 3.6px),radial-gradient(circle at 65% 8%,currentColor 0 3px,transparent 3.6px),radial-gradient(circle at 87% 28%,currentColor 0 3px,transparent 3.6px);
   opacity:.17;
   transform:rotate(14deg);
 }
 .eyebrow{color:#9a6741}.sub{color:var(--muted)}
 h1,h2,h3,h4{color:#3f342f}
+
+#home .section-title h2::before,
+#settings>h2::before,
+.collection-summary::before,
+.cat-life-view-heading h2::before,
+.cat-gallery-heading h3::before{
+  content:"";
+  display:inline-block;
+  width:16px;
+  height:14px;
+  margin-right:.42em;
+  color:#b9757c;
+  background:radial-gradient(circle at 50% 70%,currentColor 0 4px,transparent 4.5px),radial-gradient(circle at 16% 22%,currentColor 0 2px,transparent 2.5px),radial-gradient(circle at 50% 8%,currentColor 0 2px,transparent 2.5px),radial-gradient(circle at 84% 22%,currentColor 0 2px,transparent 2.5px);
+  opacity:.72;
+  transform:rotate(-9deg);
+}
 
 /* Shared surfaces */
 :is(.hero-card,.stat,.total,.setting,.record,.cat-coin-card,.home-calendar-link,.goal-home-empty,.goal-home-open,.home-daily-note,.home-cat-life-view,.home-collection-progress,.onboarding-settings-link,.cat-gallery,.collection-summary,.calendar-summary div,.calendar-day,.calendar-day-detail,.daily-note-calendar-section,.badge-next,.badge-card,.badge-settings-link,.cat-life-activation,.cat-life-view-card,.cat-life-view-detail-card,.cat-life-events,.cat-life-financial-activation,.cat-life-goal-progression-activation,.cat-life-progression-summary,.goal-hero,.goal-numbers div,.goal-memo,.goal-recent,.goal-deadline,.goal-missing){
@@ -146,6 +197,31 @@ input[role=switch]:checked{background:#5d9d97}
 .home-cat-life-view b{color:#76503d}
 .home-daily-note{border-color:#d9c1d2;background:linear-gradient(135deg,#fffaf7,#f1e4ec)}
 .home-collection-progress{color:#594a42}.home-collection-progress b{color:#9b6267}
+.home-cat-life-view,.home-collection-progress,.collection-summary,.cat-life-view-card,.cat-life-events,.cat-life-financial-activation,.cat-life-goal-progression-activation{position:relative;overflow:hidden}
+:is(.home-cat-life-view,.home-collection-progress,.collection-summary,.cat-life-view-card,.cat-life-events,.cat-life-financial-activation,.cat-life-goal-progression-activation)::after{
+  content:"";
+  position:absolute;
+  right:10px;
+  bottom:5px;
+  color:#b77b7e;
+  width:24px;
+  height:20px;
+  background:radial-gradient(circle at 50% 70%,currentColor 0 6px,transparent 6.6px),radial-gradient(circle at 16% 22%,currentColor 0 2.6px,transparent 3.2px),radial-gradient(circle at 50% 8%,currentColor 0 2.6px,transparent 3.2px),radial-gradient(circle at 84% 22%,currentColor 0 2.6px,transparent 3.2px);
+  opacity:.08;
+  transform:rotate(-17deg);
+  pointer-events:none;
+}
+.home-cat-life-view::before,.cat-life-financial-activation::before,.cat-life-goal-progression-activation::before{
+  content:"";
+  position:absolute;
+  right:36px;
+  top:-1px;
+  width:28px;
+  height:16px;
+  background:rgba(189,125,127,.13);
+  clip-path:polygon(0 100%,14% 12%,40% 68%,60% 68%,86% 12%,100% 100%);
+  pointer-events:none;
+}
 
 /* Navigation */
 .bottom-nav{
@@ -155,6 +231,22 @@ input[role=switch]:checked{background:#5d9d97}
   backdrop-filter:blur(14px);
 }
 .bottom-nav button{color:#74665e}
+.bottom-nav button{position:relative;border-radius:16px;transition:transform .15s ease,background-color .15s ease,color .15s ease}
+.bottom-nav button::after{
+  content:"";
+  position:absolute;
+  left:50%;
+  bottom:3px;
+  width:15px;
+  height:9px;
+  transform:translateX(-50%) scale(.7);
+  border-radius:50%;
+  background:radial-gradient(circle at 50% 70%,currentColor 0 3px,transparent 3.5px),radial-gradient(circle at 18% 22%,currentColor 0 1.5px,transparent 2px),radial-gradient(circle at 50% 8%,currentColor 0 1.5px,transparent 2px),radial-gradient(circle at 82% 22%,currentColor 0 1.5px,transparent 2px);
+  opacity:0;
+  transition:opacity .15s ease,transform .15s ease;
+}
+.bottom-nav button:is(:hover,:focus-visible)::after{opacity:.22;transform:translateX(-50%) scale(1)}
+.bottom-nav button:active{transform:translateY(1px)}
 .bottom-nav .action-save{background:#f2e1c8;color:#8a5a29}
 .bottom-nav .action-spend{background:#f3dfe2;color:#a34251}
 
@@ -230,6 +322,8 @@ input[role=switch]:checked{background:#5d9d97}
 
 /* Settings, badges, notes, restore, dialogs */
 .setting small,.quick-settings p,.app-version{color:var(--muted)}
+#settings>.setting{border-left:4px solid #d8b2a7;transition:border-color .2s ease,background .2s ease}
+#settings>.setting:has(input:checked){border-left-color:#5f9c97;background:linear-gradient(145deg,#fffdf9,#eef7f4)}
 .data-button{border-color:#d8c4b8;background:#fffaf5;color:#55473f}
 .danger-outline,.daily-note-delete{border-color:#d9a8ae;background:#fff3f3;color:#a33f4d}
 .badge-next span,.badge-next small,.badge-screen-heading p,.badge-card p,.badge-settings-link small{color:var(--muted)}
@@ -274,6 +368,79 @@ menu button{background:#eaded6;color:#55473f}.danger{background:#b84d5b!importan
 .onboarding-settings-link{border-color:#d8c4b8;background:#fffaf5;color:#51433d}
 .onboarding-settings-link small{color:#827169}.onboarding-settings-link>strong{color:#4d918c}
 
+/* The settings preview is a gallery of clearly separated playable cards. */
+.effect-preview{
+  position:relative;
+  overflow:hidden;
+  margin:24px 0 18px;
+  padding:17px 14px 15px;
+  border:1px solid #d8c4b8;
+  border-radius:20px;
+  background:linear-gradient(145deg,rgba(255,253,249,.98),rgba(244,231,222,.96));
+  box-shadow:0 10px 26px var(--room-shadow),inset 0 1px rgba(255,255,255,.95);
+}
+.effect-preview::before{
+  content:"";
+  position:absolute;
+  right:12px;
+  top:8px;
+  color:#b9757c;
+  width:25px;
+  height:22px;
+  background:radial-gradient(circle at 50% 70%,currentColor 0 6px,transparent 6.7px),radial-gradient(circle at 16% 22%,currentColor 0 2.8px,transparent 3.4px),radial-gradient(circle at 50% 8%,currentColor 0 2.8px,transparent 3.4px),radial-gradient(circle at 84% 22%,currentColor 0 2.8px,transparent 3.4px);
+  opacity:.13;
+  transform:rotate(12deg);
+}
+.effect-preview h3{margin:0 34px 5px 0;color:#714d3f;font-size:17px}
+.effect-preview h3::before{content:"";display:inline-block;width:10px;height:10px;margin-right:.48em;background:#c27d82;clip-path:polygon(50% 0,61% 38%,100% 50%,61% 62%,50% 100%,39% 62%,0 50%,39% 38%)}
+.effect-preview>p{margin:0 28px 13px 0;color:#75655d;font-size:12px;line-height:1.55}
+.preview-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.preview-button,.preview-button:last-child{
+  position:relative;
+  min-height:64px;
+  padding:11px 43px 11px 12px;
+  overflow:hidden;
+  border:1px solid #d9c2b4;
+  border-radius:14px;
+  background:linear-gradient(145deg,#fffdf9,#f4e6dc);
+  color:#53443d;
+  box-shadow:0 5px 12px rgba(83,59,46,.1),inset 0 1px #fff;
+  font:inherit;
+  font-size:13px;
+  font-weight:800;
+  line-height:1.35;
+  text-align:left;
+  cursor:pointer;
+  transition:transform .15s ease,border-color .15s ease,box-shadow .15s ease;
+}
+.preview-button::before{
+  content:"";
+  position:absolute;
+  right:12px;
+  top:12px;
+  width:21px;
+  height:21px;
+  border-radius:50%;
+  background:radial-gradient(circle at 50% 65%,#bd777e 0 5px,transparent 5.5px),radial-gradient(circle at 19% 24%,#bd777e 0 2.2px,transparent 2.7px),radial-gradient(circle at 50% 9%,#bd777e 0 2.2px,transparent 2.7px),radial-gradient(circle at 81% 24%,#bd777e 0 2.2px,transparent 2.7px);
+  opacity:.58;
+}
+.preview-button::after{
+  content:"";
+  position:absolute;
+  right:13px;
+  bottom:8px;
+  width:0;
+  height:0;
+  border-top:4px solid transparent;
+  border-bottom:4px solid transparent;
+  border-left:6px solid #92746a;
+  opacity:.75;
+}
+.preview-button:nth-child(3n+2){border-color:#bcd2cf;background:linear-gradient(145deg,#fffdf9,#eaf4f1)}
+.preview-button:nth-child(3n){border-color:#d8bfd0;background:linear-gradient(145deg,#fffdf9,#f2e6ef)}
+.preview-button:is(:hover,:focus-visible){border-color:#b9747b;box-shadow:0 7px 16px rgba(151,83,89,.17),inset 0 1px #fff;transform:translateY(-1px)}
+.preview-button:active{transform:translateY(1px);box-shadow:0 3px 8px rgba(83,59,46,.12)}
+
 /* Status surfaces stay high contrast. */
 .pwa-update,.quick-undo,.cat-life-activation-toast,.daily-note-toast,.coin-welcome-toast{
   border-color:#d5a59e;
@@ -288,11 +455,14 @@ menu button{background:#eaded6;color:#55473f}.danger{background:#b84d5b!importan
   .app{padding-left:14px;padding-right:14px}
   .app>header{padding:15px 16px;border-radius:19px}
   body::after{bottom:-62px;height:150px}
+  .app::before{right:-15px;bottom:32vh;width:70px;opacity:.09}
 }
 @media(max-width:390px){
   .app{padding-left:12px;padding-right:12px}
   .hero-card{padding:19px 15px}
-  .app>header::after{right:10px;font-size:25px}
+  .app>header::after{right:10px;width:24px;height:22px}
+  .preview-grid{gap:8px}
+  .preview-button,.preview-button:last-child{min-height:60px;padding-left:10px;font-size:12px}
 }
 @media(prefers-reduced-motion:reduce){
   body{background-attachment:scroll}
