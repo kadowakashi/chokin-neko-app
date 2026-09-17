@@ -60,9 +60,9 @@
       import('./cat-life-runtime.js?v=2'),
       import('./cat-life-events.js?v=2'),
       import('./cat-life-financial.js?v=1'),
-      import('./cat-life-financial-transaction.js?v=3'),
+      import('./cat-life-financial-transaction.js?v=4'),
       progressionPending || restorePending ? import('./cat-life-goal-progression.js?v=1') : Promise.resolve(),
-      progressionPending ? import('./cat-life-goal-progression-runtime.js?v=1') : Promise.resolve(),
+      progressionPending ? import('./cat-life-goal-progression-runtime.js?v=2') : Promise.resolve(),
       financialPending ? import('./cat-life-financial-runtime.js?v=2') : restorePending ? import('./cat-life-restore.js?v=3') : Promise.resolve()
     ]);
     const response = await fetch('./assets/cats/cat-world.json?v=1', { credentials: 'same-origin' });

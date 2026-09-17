@@ -35,10 +35,14 @@
     'chokin-event-app.catLifeGoalProgression.v1',
     'chokin-event-app.catLifeGoalProgressionActivation.v1'
   ]);
-  const PROGRESSION_TARGET_KEYS = Object.freeze([
+  const R16_PROGRESSION_TARGET_KEYS = Object.freeze([
     'chokin-event-app.v0.1',
     'chokin-event-app.catLife.v1',
     'chokin-event-app.catLifeGoalProgression.v1'
+  ]);
+  const PROGRESSION_TARGET_KEYS = Object.freeze([
+    ...R16_PROGRESSION_TARGET_KEYS,
+    'chokin-event-app.catLifeGoalProgressionActivation.v1'
   ]);
   const JOURNAL_FIELDS = ['journalVersion', 'state', 'occurrenceId', 'before', 'after', 'checksum'];
   const isObject = value => !!value && typeof value === 'object' && !Array.isArray(value);
@@ -231,7 +235,32 @@
     return createCore(options, { journalKey: JOURNAL_KEY, otherJournalKeys: [RESTORE_JOURNAL_KEY, PROGRESSION_JOURNAL_KEY], targetKeys: TARGET_KEYS, nullableAfter: false, allowUnchanged: false });
   }
   function createProgression(options) {
-    return createCore(options, { journalKey: PROGRESSION_JOURNAL_KEY, otherJournalKeys: [JOURNAL_KEY, RESTORE_JOURNAL_KEY], targetKeys: PROGRESSION_TARGET_KEYS, nullableAfter: false, allowUnchanged: false });
+    const config = { journalKey: PROGRESSION_JOURNAL_KEY, otherJournalKeys: [JOURNAL_KEY, RESTORE_JOURNAL_KEY], nullableAfter: false, allowUnchanged: false };
+    const current = createCore(options, { ...config, targetKeys: PROGRESSION_TARGET_KEYS });
+    const activationKey = PROGRESSION_TARGET_KEYS.at(-1);
+    const legacy = createCore({
+      ...options,
+      validateBundle(raw, context) {
+        const activationRaw = options.storage.getItem(activationKey);
+        const expand = value => ({ ...value, [activationKey]: activationRaw });
+        return options.validateBundle(expand(raw), { ...context, before: expand(context.before), after: expand(context.after) });
+      }
+    }, { ...config, targetKeys: R16_PROGRESSION_TARGET_KEYS });
+    function journalGeneration() {
+      try {
+        const raw = options.storage.getItem(PROGRESSION_JOURNAL_KEY);
+        if (raw === null) return 'current';
+        const value = JSON.parse(raw);
+        return exactKeys(value?.before, R16_PROGRESSION_TARGET_KEYS) && exactKeys(value?.after, R16_PROGRESSION_TARGET_KEYS) ? 'r16' : 'current';
+      } catch (_) { return 'current'; }
+    }
+    const selected = () => journalGeneration() === 'r16' ? legacy : current;
+    return Object.freeze({
+      commit: current.commit,
+      recover: () => selected().recover(),
+      inspect: () => selected().inspect(),
+      pending: current.pending
+    });
   }
   // Restore is explicit user replacement, not automatic repair. The caller's
   // validator must fully validate AFTER; BEFORE may contain malformed raw data.
@@ -273,5 +302,5 @@
     });
   }
 
-  return Object.freeze({ JOURNAL_KEY, TARGET_KEYS, PROGRESSION_JOURNAL_KEY, PROGRESSION_TARGET_KEYS, RESTORE_JOURNAL_KEY, LEGACY_RESTORE_TARGET_KEYS, R15_RESTORE_TARGET_KEYS, RESTORE_TARGET_KEYS, create, createProgression, createRestore });
+  return Object.freeze({ JOURNAL_KEY, TARGET_KEYS, PROGRESSION_JOURNAL_KEY, R16_PROGRESSION_TARGET_KEYS, PROGRESSION_TARGET_KEYS, RESTORE_JOURNAL_KEY, LEGACY_RESTORE_TARGET_KEYS, R15_RESTORE_TARGET_KEYS, RESTORE_TARGET_KEYS, create, createProgression, createRestore });
 });

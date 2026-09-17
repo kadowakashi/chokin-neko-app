@@ -24,16 +24,27 @@
     return { kind: 'batch', mutations };
   }
   function create({ storage, lifeRuntime, model, progression, transactions }) {
-    const LIFE = lifeRuntime.key, SIDE = progression.STORAGE_KEY;
+    const LIFE = lifeRuntime.key, SIDE = progression.STORAGE_KEY, ACTIVATION = progression.ACTIVATION_KEY;
     const parse = raw => raw === null ? null : JSON.parse(raw);
-    const rawBundle = () => Object.fromEntries([MAIN_KEY, LIFE, SIDE].map(key => [key, storage.getItem(key)]));
+    const rawBundle = () => Object.fromEntries([MAIN_KEY, LIFE, SIDE, ACTIVATION].map(key => [key, storage.getItem(key)]));
     function validateBundle(raw, context) {
       try {
-        const values = { main: parse(raw[MAIN_KEY]), life: parse(raw[LIFE]), side: parse(raw[SIDE]) };
-        if (!validMain(values.main) || !lifeRuntime.validateRoot(values.life).valid || !model.validateState(values.side).valid) return false;
+        const read = source => ({ main: parse(source[MAIN_KEY]), life: parse(source[LIFE]), side: parse(source[SIDE]), activation: progression.parseActivation(source[ACTIVATION]) });
+        const values = read(raw);
+        if (!validMain(values.main) || !lifeRuntime.validateRoot(values.life).valid || !['empty', 'ok'].includes(values.activation.status)) return false;
+        const activationOperation = context.occurrenceId.startsWith('gp1.activate.');
+        if (activationOperation) {
+          if (context.phase === 'before') return values.side === null && values.activation.state.enabled === false;
+          const before = read(context.before);
+          if (!validMain(before.main) || !lifeRuntime.validateRoot(before.life).valid || before.side !== null || !['empty', 'ok'].includes(before.activation.status) || before.activation.state.enabled !== false) return false;
+          if (!values.activation.state.enabled || !model.validateState(values.side).valid || !same(before.main, values.main) || !same(before.life, values.life)) return false;
+          const expected = model.createInitialState({ activation: values.activation.state, catLifeRoot: values.life });
+          return same(expected, values.side);
+        }
+        if (!model.validateState(values.side).valid || values.activation.status !== 'ok' || values.activation.state.enabled !== true) return false;
         if (context.phase === 'before') return true;
-        const before = { main: parse(context.before[MAIN_KEY]), life: parse(context.before[LIFE]), side: parse(context.before[SIDE]) };
-        if (!validMain(before.main) || !lifeRuntime.validateRoot(before.life).valid || !model.validateState(before.side).valid) return false;
+        const before = read(context.before);
+        if (!validMain(before.main) || !lifeRuntime.validateRoot(before.life).valid || !model.validateState(before.side).valid || before.activation.status !== 'ok' || before.activation.state.enabled !== true || !same(before.activation.state, values.activation.state)) return false;
         if (context.occurrenceId.startsWith('gp1.clock.')) return same(before.life, values.life) && same(before.side, values.side);
         const timestamp = values.side.lastObservedAt;
         const mutation = entryMutations(before.main, values.main);
@@ -56,6 +67,29 @@
       const activation = loadActivation();
       return activation.status === 'ok' && activation.state.enabled === true;
     }
+    function activate({ timestamp, financialEnabled = false, ownedCatIds = [] } = {}) {
+      if (journal.pending()) return { status: 'recovery_required', committed: false };
+      const activation = loadActivation(), loaded = loadState();
+      if (!['empty', 'ok'].includes(activation.status) || !['empty', 'ok'].includes(loaded.status)) return { status: 'activation_safe_stop', committed: false };
+      if (activation.state.enabled === true) return loaded.status === 'ok' && loaded.state.activatedAt === activation.state.activatedAt ? { status: 'already_enabled', committed: false, state: activation.state } : { status: 'activation_safe_stop', committed: false };
+      if (financialEnabled !== true) return { status: 'financial_not_enabled', committed: false };
+      if (loaded.status !== 'empty') return { status: 'activation_safe_stop', committed: false };
+      const before = rawBundle(), main = parse(before[MAIN_KEY]), lifeRoot = parse(before[LIFE]);
+      if (!validMain(main) || !lifeRuntime.validateRoot(lifeRoot).valid) return { status: 'invalid_state', committed: false };
+      const requested = Array.isArray(ownedCatIds) ? [...new Set(ownedCatIds.filter(id => typeof id === 'string' && id))] : [];
+      if (requested.some(catId => !object(lifeRoot.cats?.[catId]))) return { status: 'cat_life_incomplete', committed: false };
+      const nextActivation = progression.enabledActivation(timestamp);
+      const side = model.createInitialState({ activation: nextActivation, catLifeRoot: lifeRoot });
+      const after = {
+        [MAIN_KEY]: before[MAIN_KEY],
+        [LIFE]: before[LIFE],
+        [SIDE]: JSON.stringify(side),
+        [ACTIVATION]: JSON.stringify(nextActivation)
+      };
+      const occurrenceId = `gp1.activate.${nextActivation.activatedAt}`;
+      const result = journal.commit({ occurrenceId, before, after });
+      return { ...result, status: result.committed ? 'progression_activated' : result.status, state: result.committed ? nextActivation : null, progression: result.committed ? side : null };
+    }
     function prepareCommit({ afterMain = null, timestamp }) {
       if (journal.pending()) return { status: 'recovery_required', committed: false };
       const activation = loadActivation();
@@ -67,7 +101,7 @@
       if (!validMain(targetMain)) return { status: 'invalid_main', committed: false };
       const mutation = entryMutations(beforeMain, targetMain);
       const computed = model.mutateEntry({ progression: beforeSide, catLifeRoot: beforeLife, mainStateBefore: beforeMain, timestamp, mutation });
-      const after = { [MAIN_KEY]: JSON.stringify(targetMain), [LIFE]: JSON.stringify(computed.catLifeRoot), [SIDE]: JSON.stringify(computed.progression) };
+      const after = { [MAIN_KEY]: JSON.stringify(targetMain), [LIFE]: JSON.stringify(computed.catLifeRoot), [SIDE]: JSON.stringify(computed.progression), [ACTIVATION]: before[ACTIVATION] };
       if (Object.keys(after).every(key => after[key] === before[key])) return { status: computed.status, committed: false, settlement: computed.settlement, mainState: targetMain };
       const mutationIds = mutation.mutations.map(item => item.id).sort().join('.');
       const prefix = computed.status === 'clock_regression' ? 'gp1.clock' : 'gp1';
@@ -97,7 +131,7 @@
       return { ...prepared, key: SIDE, raw: JSON.stringify(prepared.progression) };
     }
     return Object.freeze({
-      key: SIDE, activationKey: progression.ACTIVATION_KEY, loadActivation, loadState, isEnabled,
+      key: SIDE, activationKey: progression.ACTIVATION_KEY, loadActivation, loadState, isEnabled, activate,
       commitMain, settle, prepareAcquisition, recover: journal.recover, pending: journal.pending,
       inspect: journal.inspect, validateBundle, entryMutations
     });

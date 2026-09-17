@@ -86,28 +86,34 @@
     return { status: items.length ? 'ready' : 'empty', message: items.length ? '' : EVENT_EMPTY_MESSAGE, recent: items.slice(0, 3), byCat };
   }
 
-  function goalProgress(state) {
+  function goalProgress(state, progressionRecord = null) {
     const goal = object(state?.currentGoal) ? state.currentGoal : null;
     if (!goal) return null;
     const increase = Number(goal.requiredIncrease);
     const current = Number(state.currentBalance);
     const start = Number(goal.startBalance);
-    const raw = increase > 0 ? ((current - start) / increase) * 100 : current >= Number(goal.targetBalance) ? 100 : 0;
+    const protectedAmount = progressionRecord?.goalId === goal.goalId && Number.isSafeInteger(progressionRecord?.protectedAmount) ? progressionRecord.protectedAmount : 0;
+    const effectiveIncrease = Math.max(current - start, protectedAmount);
+    const raw = increase > 0 ? (effectiveIncrease / increase) * 100 : current >= Number(goal.targetBalance) ? 100 : 0;
     return Math.max(0, Math.min(100, Math.round(Number.isFinite(raw) ? raw : 0)));
   }
 
-  function resolveGoal(master, state) {
+  function resolveGoal(master, state, progressionRecord = null) {
     if (!object(state?.currentGoal)) return null;
     const definition = Array.isArray(master?.goals) ? master.goals.find(goal => goal.goalId === state.currentGoal.goalId) : null;
+    const protectedAmount = progressionRecord?.goalId === state.currentGoal.goalId && Number.isSafeInteger(progressionRecord?.protectedAmount) ? progressionRecord.protectedAmount : 0;
+    const balanceIncrease = Math.max(0, state.currentBalance - state.currentGoal.startBalance);
+    const effectiveIncrease = Math.max(balanceIncrease, protectedAmount);
     return {
       title: definition?.title || '暮らしの目標を確認できません',
       targetBalance: state.currentGoal.targetBalance,
-      remaining: Math.max(0, state.currentGoal.targetBalance - state.currentBalance),
-      progress: goalProgress(state)
+      remaining: Math.max(0, state.currentGoal.requiredIncrease - effectiveIncrease),
+      progress: goalProgress(state, progressionRecord),
+      includesSavingProgress: protectedAmount > balanceIncrease
     };
   }
 
-  function createCard(master, catalog, state, started, unknown = false) {
+  function createCard(master, catalog, state, started, unknown = false, progressionRecord = null, latestCredit = null) {
     const name = unknown ? UNKNOWN_NAME : (catalog?.name || master?.name || UNKNOWN_NAME);
     const worldName = unknown ? '記録に残る猫' : (master?.worldName || name);
     return {
@@ -122,13 +128,14 @@
       lifeStartedText: started ? formatLifeDate(state.lifeStartedAt) : 'まだ暮らしを始めていません',
       initialBalance: started ? state.initialBalance : null,
       currentBalance: started ? state.currentBalance : null,
-      goal: started ? resolveGoal(master, state) : null,
+      goal: started ? resolveGoal(master, state, progressionRecord) : null,
+      latestProgressionAmount: Number.isSafeInteger(latestCredit?.amount) && latestCredit.amount > 0 ? latestCredit.amount : 0,
       longTerm: started && state.currentGoal === null && state.longTermSavingMode?.active === true,
       state: started ? clone(state) : null
     };
   }
 
-  function createViewModel({ featureEnabled = true, loadResult, collectionData, catWorld, catalog }) {
+  function createViewModel({ featureEnabled = true, loadResult, collectionData, catWorld, catalog, progression = null }) {
     if (!featureEnabled) return { status: 'disabled', cards: [], message: '' };
     if (!loadResult || loadResult.financialCorrupted === true || ['corrupted', 'storage_error'].includes(loadResult.status) || !object(loadResult.root)) return { status: 'error', cards: [], message: ERROR_MESSAGE };
     const masters = Array.isArray(catWorld?.cats) ? catWorld.cats : [];
@@ -136,20 +143,38 @@
     const catalogMap = new Map(catalogItems.map(cat => [cat.id, cat]));
     const records = object(collectionData?.cats) ? collectionData.cats : {};
     const states = object(loadResult.root.cats) ? loadResult.root.cats : {};
+    const progressionCats = object(progression?.state?.cats) ? progression.state.cats : {};
+    const latestCredits = new Map(Array.isArray(progression?.state?.latestSettlement?.credits) ? progression.state.latestSettlement.credits.map(credit => [credit.catId, credit]) : []);
     const cards = [];
     for (const master of masters) {
       if (records[master.id]?.obtained !== true) continue;
       const state = states[master.id];
-      cards.push(createCard(master, catalogMap.get(master.id), state, object(state), false));
+      cards.push(createCard(master, catalogMap.get(master.id), state, object(state), false, progressionCats[master.id], latestCredits.get(master.id)));
     }
     const knownIds = new Set(masters.map(cat => cat.id));
-    Object.keys(states).filter(catId => !knownIds.has(catId)).sort().forEach(catId => cards.push(createCard(null, null, states[catId], true, true)));
+    Object.keys(states).filter(catId => !knownIds.has(catId)).sort().forEach(catId => cards.push(createCard(null, null, states[catId], true, true, progressionCats[catId], latestCredits.get(catId))));
     const emptyRoot = loadResult.status === 'empty';
     return {
       status: emptyRoot ? 'empty' : 'ready',
       cards,
       message: emptyRoot ? EMPTY_MESSAGE : cards.length ? '' : '暮らしを表示できる猫はまだいません。'
     };
+  }
+
+  function createProgressionViewModel({ activationResult, loadResult }) {
+    if (!activationResult || !['empty', 'ok'].includes(activationResult.status) || !loadResult || !['empty', 'ok'].includes(loadResult.status)) return { status: 'error', summary: null, byCat: new Map() };
+    if (activationResult.state?.enabled !== true) return { status: 'disabled', summary: null, byCat: new Map() };
+    if (loadResult.status !== 'ok' || !object(loadResult.state)) return { status: 'error', summary: null, byCat: new Map() };
+    const credits = Array.isArray(loadResult.state.latestSettlement?.credits) ? loadResult.state.latestSettlement.credits.filter(credit => Number.isSafeInteger(credit?.amount) && credit.amount > 0) : [];
+    const amounts = credits.map(credit => credit.amount);
+    const summary = amounts.length ? (new Set(amounts).size === 1 ? `貯金にあわせて、1匹につき＋${formatYen(amounts[0])}` : '貯金にあわせて、猫たちの貯金も増えました。') : null;
+    return { status: 'ready', summary, byCat: new Map(credits.map(credit => [credit.catId, credit])) };
+  }
+
+  function progressionSectionMarkup(model) {
+    if (model.status === 'disabled' || model.status === 'ready' && !model.summary) return '';
+    if (model.status === 'error') return '<section class="cat-life-progression-summary"><h3>猫たちの貯金の歩み</h3><p>貯金の歩みを読み込めませんでした。現在のデータは変更されていません。</p></section>';
+    return `<section class="cat-life-progression-summary"><h3>猫たちの貯金の歩み</h3><p>${escapeHtml(model.summary)}</p></section>`;
   }
 
   function imageMarkup(card) {
@@ -186,11 +211,11 @@
       : card.longTerm
         ? '<section class="cat-life-view-goal"><h3>いまの暮らし</h3><p>のんびり貯金を続けています。</p></section>'
         : goal
-          ? `<section class="cat-life-view-goal"><h3>いまの目標</h3><strong>${escapeHtml(goal.title)}</strong><div class="cat-life-view-progress" role="progressbar" aria-label="目標の進み具合 ${goal.progress}％" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${goal.progress}"><i style="width:${goal.progress}%"></i></div><dl><dt>目標の資産</dt><dd>${formatYen(goal.targetBalance)}</dd><dt>目標まで</dt><dd>あと${formatYen(goal.remaining)}</dd></dl></section>`
+          ? `<section class="cat-life-view-goal"><h3>いまの目標</h3><strong>${escapeHtml(goal.title)}</strong><div class="cat-life-view-progress" role="progressbar" aria-label="目標の進み具合 ${goal.progress}％" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${goal.progress}"><i style="width:${goal.progress}%"></i></div><dl><dt>目標の資産</dt><dd>${formatYen(goal.targetBalance)}</dd><dt>目標まで</dt><dd>あと${formatYen(goal.remaining)}</dd></dl>${goal.includesSavingProgress ? '<p class="cat-life-view-goal-note">貯金にあわせた歩みも、目標に反映されています。</p>' : ''}</section>`
           : '<section class="cat-life-view-goal"><h3>いまの目標</h3><p>いまの目標はまだありません。</p></section>';
     const balances = card.started ? `<dl class="cat-life-view-balances"><dt>現在の資産</dt><dd>${formatYen(card.currentBalance)}</dd><dt>初期の資産</dt><dd>${formatYen(card.initialBalance)}</dd></dl>` : '';
     const events = eventModel.byCat.get(card.id) || [];
-    detail.innerHTML = `<div class="cat-life-view-detail-card"><div class="cat-life-view-detail-hero"><div class="cat-life-view-image">${imageMarkup(card)}</div><div><small>${escapeHtml(card.worldName)}</small><h2 id="catLifeDetailTitle" tabindex="-1">${escapeHtml(card.name)}</h2><p>${escapeHtml(card.description)}</p></div></div>${card.role ? `<p class="cat-life-view-role"><b>暮らしの役割</b>${escapeHtml(card.role)}</p>` : ''}${balances}${goalBlock}${eventSectionMarkup(eventModel, events, true)}<p class="cat-life-view-started">${escapeHtml(card.lifeStartedText)}</p></div>`;
+    detail.innerHTML = `<div class="cat-life-view-detail-card"><div class="cat-life-view-detail-hero"><div class="cat-life-view-image">${imageMarkup(card)}</div><div><small>${escapeHtml(card.worldName)}</small><h2 id="catLifeDetailTitle" tabindex="-1">${escapeHtml(card.name)}</h2><p>${escapeHtml(card.description)}</p></div></div>${card.role ? `<p class="cat-life-view-role"><b>暮らしの役割</b>${escapeHtml(card.role)}</p>` : ''}${balances}${card.latestProgressionAmount > 0 ? `<p class="cat-life-progression-recent">最近の貯金の歩み：＋${formatYen(card.latestProgressionAmount)}</p>` : ''}${goalBlock}${eventSectionMarkup(eventModel, events, true)}<p class="cat-life-view-started">${escapeHtml(card.lifeStartedText)}</p></div>`;
     bindImages(detail);
   }
 
@@ -203,6 +228,7 @@
     const homeBack = screen.querySelector('[data-nav="home"]');
     let cards = [];
     let eventModel = { status: 'disabled', message: '', recent: [], byCat: new Map() };
+    let progressionModel = { status: 'disabled', summary: null, byCat: new Map() };
     let lastTrigger = null;
 
     function showList(focus = false) {
@@ -234,7 +260,8 @@
         const snapshot = typeof options.readSnapshot === 'function' ? await options.readSnapshot() : null;
         const runtime = snapshot ? snapshot.runtime : await options.loadRuntime();
         const loaded = snapshot ? snapshot.loaded : runtime.loadRoot(new Date().toISOString());
-        const model = createViewModel({ featureEnabled: true, loadResult: loaded, collectionData: snapshot ? snapshot.collectionData : options.getCollection(), catWorld: runtime.catWorld, catalog: options.getCatalog() });
+        progressionModel = snapshot ? createProgressionViewModel({ activationResult: snapshot.progressionActivationResult, loadResult: snapshot.progressionLoadResult }) : { status: 'disabled', summary: null, byCat: new Map() };
+        const model = createViewModel({ featureEnabled: true, loadResult: loaded, collectionData: snapshot ? snapshot.collectionData : options.getCollection(), catWorld: runtime.catWorld, catalog: options.getCatalog(), progression: snapshot?.progressionLoadResult?.status === 'ok' ? snapshot.progressionLoadResult : null });
         if (snapshot) {
           eventModel = snapshot.eventLoadResult ? createEventViewModel({ loadResult: snapshot.eventLoadResult, catWorld: runtime.catWorld, catalog: options.getCatalog() }) : createEventViewModel({ featureEnabled: false });
         } else if (typeof options.loadEvents === 'function') {
@@ -246,10 +273,11 @@
         status.classList.toggle('is-error', model.status === 'error');
         if (model.status === 'error') return model;
         const eventSection = eventSectionMarkup(eventModel, eventModel.recent);
-        if (!cards.length) { list.innerHTML = eventSection; return { ...model, events: eventModel }; }
-        list.innerHTML = `${eventSection}<div class="cat-life-view-cards">${cards.map((card, index) => `<button class="cat-life-view-card${card.started ? '' : ' is-unstarted'}" type="button" data-cat-life-index="${index}" aria-label="${escapeHtml(card.name)}の暮らしを見る"><span class="cat-life-view-image">${imageMarkup(card)}</span><span class="cat-life-view-card-copy"><b>${escapeHtml(card.name)}</b><small>${escapeHtml(card.worldName)}</small>${card.started ? `<strong>${formatYen(card.currentBalance)}</strong><em>${escapeHtml(card.longTerm ? 'のんびり貯金を続けています' : card.goal?.title || 'いまの目標はまだありません')}</em>` : '<em>まだ暮らしを始めていません</em>'}</span><span class="cat-life-view-chevron" aria-hidden="true">›</span></button>`).join('')}</div>`;
+        const progressionSection = progressionSectionMarkup(progressionModel);
+        if (!cards.length) { list.innerHTML = `${progressionSection}${eventSection}`; return { ...model, events: eventModel, progression: progressionModel }; }
+        list.innerHTML = `${progressionSection}${eventSection}<div class="cat-life-view-cards">${cards.map((card, index) => `<button class="cat-life-view-card${card.started ? '' : ' is-unstarted'}" type="button" data-cat-life-index="${index}" aria-label="${escapeHtml(card.name)}の暮らしを見る"><span class="cat-life-view-image">${imageMarkup(card)}</span><span class="cat-life-view-card-copy"><b>${escapeHtml(card.name)}</b><small>${escapeHtml(card.worldName)}</small>${card.started ? `<strong>${formatYen(card.currentBalance)}</strong><em>${escapeHtml(card.longTerm ? 'のんびり貯金を続けています' : card.goal?.title || 'いまの目標はまだありません')}</em>` : '<em>まだ暮らしを始めていません</em>'}</span><span class="cat-life-view-chevron" aria-hidden="true">›</span></button>`).join('')}</div>`;
         bindImages(list);
-        return { ...model, events: eventModel };
+        return { ...model, events: eventModel, progression: progressionModel };
       } catch (error) {
         status.textContent = ERROR_MESSAGE;
         status.classList.add('is-error');
@@ -273,5 +301,5 @@
     return createController(options);
   }
 
-  return Object.freeze({ EMPTY_MESSAGE, ERROR_MESSAGE, EVENT_ERROR_MESSAGE, EVENT_EMPTY_MESSAGE, UNKNOWN_NAME, UNKNOWN_EVENT_TITLE, formatYen, formatLifeDate, formatEventDate, goalProgress, createViewModel, createEventViewModel, setup });
+  return Object.freeze({ EMPTY_MESSAGE, ERROR_MESSAGE, EVENT_ERROR_MESSAGE, EVENT_EMPTY_MESSAGE, UNKNOWN_NAME, UNKNOWN_EVENT_TITLE, formatYen, formatLifeDate, formatEventDate, goalProgress, createViewModel, createEventViewModel, createProgressionViewModel, setup });
 });
