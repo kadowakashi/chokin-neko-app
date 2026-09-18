@@ -1,4 +1,4 @@
-/* r19: warm cat-room theme. Visual overrides only; no application state or behavior. */
+/* r20: calm cat-room theme. Visual overrides only; no application state or behavior. */
 :root{
   color-scheme:light;
   --bg:#f4e9df;
@@ -26,13 +26,13 @@ body{
   min-height:100vh;
   overflow-x:hidden;
   background:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Cg fill='none' stroke='%23b9797e' stroke-opacity='.10' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M23 55 31 40l11 12c14-2 27 9 27 23 0 15-12 26-27 26S15 90 15 75c0-8 3-15 8-20Z'/%3E%3Cpath d='M29 74h.1M53 74h.1M35 84c4 4 9 4 13 0'/%3E%3Cpath d='M118 122c-9-4-17 3-15 12 2 8 11 14 17 14s15-6 17-14c2-9-6-16-15-12-1 1-3 2-4 3-1-1-2-2-4-3Z'/%3E%3Ccircle cx='101' cy='113' r='6'/%3E%3Ccircle cx='115' cy='106' r='6'/%3E%3Ccircle cx='130' cy='109' r='6'/%3E%3Ccircle cx='141' cy='120' r='6'/%3E%3C/g%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 480 380'%3E%3Cg fill='none' stroke='%23a76f74' stroke-opacity='.065' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M48 99 58 67l24 19c7-3 16-3 23 0l24-19 10 32c8 9 12 21 12 34 0 28-23 47-57 47s-57-19-57-47c0-13 4-25 11-34Z'/%3E%3Cpath d='m90 130 4 4 4-4m-4 4v7m-9 5c6 5 12 5 18 0M73 134l-26-5m27 13-26 6m67-14 26-5m-27 13 26 6'/%3E%3Cpath d='M353 277c-12-6-24 3-21 16 3 12 15 21 24 21s21-9 24-21c3-13-9-22-21-16l-3 3-3-3Z'/%3E%3Cpath d='M329 269c-7 0-12-5-12-12s5-12 12-12 12 5 12 12-5 12-12 12Zm24-13c-7 0-12-6-12-13s5-13 12-13 12 6 12 13-5 13-12 13Zm27 8c-7 0-12-5-12-12s5-12 12-12 12 5 12 12-5 12-12 12Zm19 20c-7 0-12-5-12-12s5-12 12-12 12 5 12 12-5 12-12 12Z'/%3E%3C/g%3E%3C/svg%3E"),
     radial-gradient(circle at 14% 12%,rgba(255,255,255,.86) 0 2px,transparent 3px),
     radial-gradient(circle at 86% 19%,rgba(220,157,155,.18) 0 4px,transparent 5px),
     repeating-linear-gradient(90deg,rgba(174,132,112,.035) 0 1px,transparent 1px 54px),
     linear-gradient(180deg,#fbf5ef 0%,var(--room-wall) 67%,#e3c8aa 67%,#d8b693 100%);
-  background-size:270px 270px,auto,auto,54px 100%,auto;
-  background-position:26px 34px,0 0,0 0,0 0,0 0;
+  background-size:560px 440px,auto,auto,54px 100%,auto;
+  background-position:58px 46px,0 0,0 0,0 0,0 0;
   color:var(--text);
 }
 body::before{
@@ -69,24 +69,6 @@ body::after{
 }
 
 .app{position:relative;z-index:1}
-.app::before{
-  content:"";
-  position:fixed;
-  z-index:-1;
-  right:max(18px,calc(50% - 430px));
-  bottom:32vh;
-  width:92px;
-  height:190px;
-  pointer-events:none;
-  opacity:.16;
-  background:
-    radial-gradient(ellipse at 50% 18%,#95745e 0 25%,transparent 27%),
-    linear-gradient(#95745e,#95745e) 48% 24%/5px 57% no-repeat,
-    linear-gradient(#95745e,#95745e) 73% 50%/4px 38% no-repeat,
-    radial-gradient(ellipse at 51% 55%,#95745e 0 32%,transparent 34%),
-    radial-gradient(ellipse at 73% 72%,#95745e 0 22%,transparent 24%),
-    linear-gradient(#95745e,#95745e) 50% 96%/72% 5px no-repeat;
-}
 .app>header{
   position:relative;
   overflow:hidden;
@@ -455,7 +437,6 @@ menu button{background:#eaded6;color:#55473f}.danger{background:#b84d5b!importan
   .app{padding-left:14px;padding-right:14px}
   .app>header{padding:15px 16px;border-radius:19px}
   body::after{bottom:-62px;height:150px}
-  .app::before{right:-15px;bottom:32vh;width:70px;opacity:.09}
 }
 @media(max-width:390px){
   .app{padding-left:12px;padding-right:12px}
