@@ -1,4 +1,4 @@
-/* r22: calm cat-room theme with a responsive hero banner. Visual overrides only. */
+/* r23: calm cat-room theme with a responsive hero and softer goal surfaces. Visual overrides only. */
 :root{
   color-scheme:light;
   --bg:#f4e9df;
@@ -231,19 +231,47 @@ input[role=switch]:checked{background:#5d9d97}
 .calendar-detail-total span{color:var(--muted)}
 
 /* Goals */
-.goal-home-empty small,.goal-home-copy small,.goal-title-row small{color:#9b6267}
-.goal-home-open>strong,.goal-numbers b,.goal-recent-list b{color:#875b35}
-.goal-home-copy>span,.goal-home-open>em{color:var(--muted)}
-.goal-home-progress,.goal-progress,.cat-life-view-progress{background:#e8ddd5;border-color:#d8c6bb}
-.goal-home-progress i,.goal-progress i,.cat-life-view-progress i{background:linear-gradient(90deg,#d99291,#e5b77d,#75aaa4);box-shadow:none}
-.goal-title-row p,.goal-deadline,.goal-memo p,.goal-empty-note{color:#665950}
-.goal-detail-icon{border-color:#d7ae91;background:#fff8ef}
-.goal-journey{border-color:#ddc9bd;background:linear-gradient(180deg,#f8eee7,#ead7c6)}
-.goal-journey::before{background:repeating-linear-gradient(90deg,#c9877d 0 11px,#fff7ef 11px 20px);box-shadow:none}
-.goal-target-icon{border-color:#bc7a72;background:#fff5e9;box-shadow:0 5px 15px rgba(120,76,56,.14)}
-.goal-memo,.goal-recent,.goal-deadline,.goal-numbers div{border-color:#decac0}
-.goal-actions button,.goal-form-actions button{border-color:#d5beb2;background:#fff9f4;color:#55463e}
-.goal-form-actions .submit{border-color:#b86770;background:linear-gradient(135deg,#e8a3a5,#d77f86);color:#3c2927;text-shadow:none;box-shadow:0 5px 14px rgba(166,82,91,.2)}
+.goal-home-card .goal-home-empty,.goal-home-card .goal-home-open,
+.goal-detail-body .goal-hero,.goal-detail-body .goal-hero.achieved,.goal-detail-body .goal-missing{
+  border-color:#e5d3cf;
+  background:linear-gradient(145deg,#fdf8f5 0%,#f7ecec 100%);
+  color:#5a4a46;
+  box-shadow:0 6px 16px rgba(91,71,64,.1);
+}
+.goal-home-empty small,.goal-home-copy small,.goal-title-row small{color:#7d6762}
+.goal-home-empty b,.goal-home-copy b,.goal-title-row h3,.goal-missing h3{color:#5a4a46}
+.goal-home-empty button{
+  border:1px solid #c98f98;
+  background:linear-gradient(135deg,#e6b7bd,#d6a1a8);
+  color:#493a37;
+  box-shadow:0 3px 9px rgba(126,83,88,.14);
+}
+.goal-home-open>strong,.goal-numbers b,.goal-recent-list b{color:#8b5f64}
+.goal-home-copy>span,.goal-home-open>em,.goal-numbers span,.goal-recent-list time{color:#7d6762}
+.goal-home-journey,.goal-journey{
+  border-color:#e5d3cf;
+  background:linear-gradient(180deg,#fbf5f2,#f1e3df);
+}
+.goal-home-journey::before{background:repeating-linear-gradient(90deg,#c98f98 0 8px,#fffaf7 8px 15px);box-shadow:none}
+.goal-journey::before{background:repeating-linear-gradient(90deg,#c98f98 0 11px,#fffaf7 11px 20px);box-shadow:none}
+.goal-home-target,.goal-target-icon{border-color:#d6a1a8;background:#fff9f6;box-shadow:0 4px 12px rgba(112,78,73,.11)}
+.goal-home-progress,.goal-progress,.cat-life-view-progress{background:#eadfda;border-color:#dfcec8}
+.goal-home-progress i,.goal-progress i,.cat-life-view-progress i{background:linear-gradient(90deg,#c98f98,#d9aca8,#83aaa4);box-shadow:none}
+.goal-title-row p,.goal-deadline,.goal-memo p,.goal-empty-note,.goal-missing p{color:#6f5e59}
+.goal-detail-icon{border-color:#ddc2bd;background:#fff8f4}
+.goal-progress-copy strong{color:#80595f}
+.goal-progress-copy b{color:#526f6a}
+.goal-milestones span{color:#7d6762}
+.goal-milestones .reached{color:#8b5f64}
+.goal-detail-body .goal-memo,.goal-detail-body .goal-recent,.goal-detail-body .goal-deadline,.goal-detail-body .goal-numbers div{
+  border-color:#e5d3cf;
+  background:linear-gradient(145deg,#fffaf7,#f8f1ee);
+  box-shadow:0 3px 10px rgba(91,71,64,.07);
+}
+.goal-recent-list div{border-bottom-color:#eadbd6}
+.goal-actions button,.goal-form-actions button,.goal-form-actions button:first-child{border-color:#dcc8c2;background:#fff9f6;color:#5a4a46;box-shadow:none}
+.goal-actions .danger-outline{border-color:#d9a8ad;color:#9b515c}
+.goal-form-actions .submit{border-color:#c98f98;background:linear-gradient(135deg,#e6b7bd,#d6a1a8);color:#493a37;text-shadow:none;box-shadow:0 4px 11px rgba(126,83,88,.16)}
 
 /* Collection and cats */
 .collection-total strong,.collection-total b{color:#8b5d35}
