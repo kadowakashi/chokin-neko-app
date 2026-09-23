@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 320" role="img" aria-label="heart paw trail">
+  <defs>
+    <g id="paw" fill="#B89A9A">
+      <ellipse cx="22" cy="28" rx="13" ry="14"/>
+      <ellipse cx="48" cy="16" rx="13" ry="14"/>
+      <ellipse cx="78" cy="16" rx="13" ry="14"/>
+      <ellipse cx="104" cy="28" rx="13" ry="14"/>
+      <path d="M63 94
+        C58 94 28 74 28 51
+        C28 39 37 31 48 31
+        C55 31 60 35 63 41
+        C66 35 71 31 78 31
+        C89 31 98 39 98 51
+        C98 74 68 94 63 94 Z"/>
+    </g>
+  </defs>
+  <g opacity="0.9">
+    <use href="#paw" transform="translate(612 30) rotate(244 63 47) scale(.82)"/>
+    <use href="#paw" transform="translate(510 90) rotate(252 63 47) scale(.90)"/>
+    <use href="#paw" transform="translate(405 96) rotate(238 63 47) scale(.86)"/>
+    <use href="#paw" transform="translate(310 155) rotate(250 63 47) scale(.94)"/>
+    <use href="#paw" transform="translate(205 160) rotate(242 63 47) scale(.84)"/>
+    <use href="#paw" transform="translate(96 222) rotate(254 63 47) scale(.90)"/>
+  </g>
+</svg>

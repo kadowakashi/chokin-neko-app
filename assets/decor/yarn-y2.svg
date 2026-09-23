@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 140" role="img" aria-label="yarn ball with curled thread" fill="none">
+  <g stroke="#7B665D" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="62" cy="72" r="32" stroke-width="5"/>
+    <path d="M38 60 Q62 48 86 60" stroke-width="4"/>
+    <path d="M34 74 Q62 64 90 74" stroke-width="4"/>
+    <path d="M40 88 Q62 82 84 88" stroke-width="4"/>
+    <path d="M52 42 Q46 72 52 102" stroke-width="4"/>
+    <path d="M72 42 Q78 72 72 102" stroke-width="4"/>
+    <path d="M92 92
+      C108 94 120 104 122 116
+      C124 128 116 136 105 134
+      C94 132 88 122 91 114
+      C94 106 102 102 109 105
+      C116 108 119 114 117 120
+      C115 125 110 127 106 125"
+      stroke-width="4"/>
+  </g>
+</svg>

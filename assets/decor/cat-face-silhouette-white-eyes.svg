@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 180" role="img" aria-label="cat face silhouette">
+  <g fill="#8D767E" stroke="#8D767E" stroke-linecap="round">
+    <path d="M54 148
+      C44 140 38 128 38 114
+      C38 96 44 84 54 76
+      L72 24
+      C74 18 80 14 87 14
+      C92 14 97 16 101 21
+      L122 47
+      Q130 43 138 47
+      L159 21
+      C163 16 168 14 173 14
+      C180 14 186 18 188 24
+      L206 76
+      C216 84 222 96 222 114
+      C222 128 216 140 206 148
+      C192 160 172 166 130 166
+      C88 166 68 160 54 148 Z"/>
+    <path d="M50 132 L16 122" fill="none" stroke-width="5"/>
+    <path d="M46 146 L22 140" fill="none" stroke-width="5"/>
+    <path d="M210 132 L244 122" fill="none" stroke-width="5"/>
+    <path d="M214 146 L238 140" fill="none" stroke-width="5"/>
+  </g>
+  <ellipse cx="103" cy="111" rx="5.2" ry="5.2" fill="#FFFFFF"/>
+  <ellipse cx="157" cy="111" rx="5.2" ry="5.2" fill="#FFFFFF"/>
+</svg>

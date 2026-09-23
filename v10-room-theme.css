@@ -1,4 +1,4 @@
-/* r20: calm cat-room theme. Visual overrides only; no application state or behavior. */
+/* r21: calm cat-room theme with approved decor assets. Visual overrides only. */
 :root{
   color-scheme:light;
   --bg:#f4e9df;
@@ -26,13 +26,12 @@ body{
   min-height:100vh;
   overflow-x:hidden;
   background:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 480 380'%3E%3Cg fill='none' stroke='%23a76f74' stroke-opacity='.065' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M48 99 58 67l24 19c7-3 16-3 23 0l24-19 10 32c8 9 12 21 12 34 0 28-23 47-57 47s-57-19-57-47c0-13 4-25 11-34Z'/%3E%3Cpath d='m90 130 4 4 4-4m-4 4v7m-9 5c6 5 12 5 18 0M73 134l-26-5m27 13-26 6m67-14 26-5m-27 13 26 6'/%3E%3Cpath d='M353 277c-12-6-24 3-21 16 3 12 15 21 24 21s21-9 24-21c3-13-9-22-21-16l-3 3-3-3Z'/%3E%3Cpath d='M329 269c-7 0-12-5-12-12s5-12 12-12 12 5 12 12-5 12-12 12Zm24-13c-7 0-12-6-12-13s5-13 12-13 12 6 12 13-5 13-12 13Zm27 8c-7 0-12-5-12-12s5-12 12-12 12 5 12 12-5 12-12 12Zm19 20c-7 0-12-5-12-12s5-12 12-12 12 5 12 12-5 12-12 12Z'/%3E%3C/g%3E%3C/svg%3E"),
     radial-gradient(circle at 14% 12%,rgba(255,255,255,.86) 0 2px,transparent 3px),
     radial-gradient(circle at 86% 19%,rgba(220,157,155,.18) 0 4px,transparent 5px),
     repeating-linear-gradient(90deg,rgba(174,132,112,.035) 0 1px,transparent 1px 54px),
     linear-gradient(180deg,#fbf5ef 0%,var(--room-wall) 67%,#e3c8aa 67%,#d8b693 100%);
-  background-size:560px 440px,auto,auto,54px 100%,auto;
-  background-position:58px 46px,0 0,0 0,0 0,0 0;
+  background-size:auto,auto,54px 100%,auto;
+  background-position:0 0,0 0,0 0,0 0;
   color:var(--text);
 }
 body::before{
@@ -62,13 +61,51 @@ body::after{
   pointer-events:none;
   border:1px solid rgba(185,116,123,.18);
   border-radius:50%;
-  background:
-    radial-gradient(circle at 20% 51%,rgba(183,105,119,.62) 0 8px,rgba(248,215,210,.9) 9px 11px,transparent 12px),
-    linear-gradient(24deg,transparent 0 19%,rgba(168,105,97,.28) 19.4% 20%,transparent 20.4%),
-    radial-gradient(ellipse at center,rgba(232,174,176,.48),rgba(235,193,179,.28) 58%,transparent 70%);
+  background:radial-gradient(ellipse at center,rgba(232,174,176,.48),rgba(235,193,179,.28) 58%,transparent 70%);
 }
 
 .app{position:relative;z-index:1}
+.app::before,
+.app::after{
+  content:"";
+  position:fixed;
+  z-index:-1;
+  pointer-events:none;
+  background-repeat:no-repeat;
+  background-position:center;
+  background-size:contain;
+}
+.app::before{
+  left:max(26px,calc(50% - 510px));
+  top:118px;
+  width:176px;
+  aspect-ratio:260/180;
+  background-image:url("./assets/decor/cat-face-silhouette-white-eyes.svg");
+  opacity:.10;
+}
+.app::after{
+  right:max(-34px,calc(50% - 604px));
+  top:310px;
+  width:350px;
+  aspect-ratio:720/320;
+  background-image:url("./assets/decor/paw-heart-wide-trail.svg");
+  opacity:.075;
+  transform:rotate(-8deg);
+  transform-origin:center;
+}
+@media(min-width:541px){
+  .quick-save::before{
+    content:"";
+    position:fixed;
+    z-index:2;
+    right:max(40px,calc(50% - 505px));
+    bottom:132px;
+    width:80px;
+    aspect-ratio:160/140;
+    pointer-events:none;
+    background:url("./assets/decor/yarn-y2.svg") center/contain no-repeat;
+  }
+}
 .app>header{
   position:relative;
   overflow:hidden;
@@ -89,36 +126,8 @@ body::after{
   background:rgba(190,127,128,.16);
   clip-path:polygon(0 100%,12% 12%,39% 67%,61% 67%,88% 12%,100% 100%);
 }
-.app>header::after{
-  content:"";
-  position:absolute;
-  right:14px;
-  top:10px;
-  color:var(--room-rose);
-  width:28px;
-  height:25px;
-  background:radial-gradient(circle at 50% 68%,currentColor 0 7px,transparent 7.7px),radial-gradient(circle at 15% 25%,currentColor 0 3px,transparent 3.6px),radial-gradient(circle at 39% 8%,currentColor 0 3px,transparent 3.6px),radial-gradient(circle at 65% 8%,currentColor 0 3px,transparent 3.6px),radial-gradient(circle at 87% 28%,currentColor 0 3px,transparent 3.6px);
-  opacity:.17;
-  transform:rotate(14deg);
-}
 .eyebrow{color:#9a6741}.sub{color:var(--muted)}
 h1,h2,h3,h4{color:#3f342f}
-
-#home .section-title h2::before,
-#settings>h2::before,
-.collection-summary::before,
-.cat-life-view-heading h2::before,
-.cat-gallery-heading h3::before{
-  content:"";
-  display:inline-block;
-  width:16px;
-  height:14px;
-  margin-right:.42em;
-  color:#b9757c;
-  background:radial-gradient(circle at 50% 70%,currentColor 0 4px,transparent 4.5px),radial-gradient(circle at 16% 22%,currentColor 0 2px,transparent 2.5px),radial-gradient(circle at 50% 8%,currentColor 0 2px,transparent 2.5px),radial-gradient(circle at 84% 22%,currentColor 0 2px,transparent 2.5px);
-  opacity:.72;
-  transform:rotate(-9deg);
-}
 
 /* Shared surfaces */
 :is(.hero-card,.stat,.total,.setting,.record,.cat-coin-card,.home-calendar-link,.goal-home-empty,.goal-home-open,.home-daily-note,.home-cat-life-view,.home-collection-progress,.onboarding-settings-link,.cat-gallery,.collection-summary,.calendar-summary div,.calendar-day,.calendar-day-detail,.daily-note-calendar-section,.badge-next,.badge-card,.badge-settings-link,.cat-life-activation,.cat-life-view-card,.cat-life-view-detail-card,.cat-life-events,.cat-life-financial-activation,.cat-life-goal-progression-activation,.cat-life-progression-summary,.goal-hero,.goal-numbers div,.goal-memo,.goal-recent,.goal-deadline,.goal-missing){
@@ -180,19 +189,6 @@ input[role=switch]:checked{background:#5d9d97}
 .home-daily-note{border-color:#d9c1d2;background:linear-gradient(135deg,#fffaf7,#f1e4ec)}
 .home-collection-progress{color:#594a42}.home-collection-progress b{color:#9b6267}
 .home-cat-life-view,.home-collection-progress,.collection-summary,.cat-life-view-card,.cat-life-events,.cat-life-financial-activation,.cat-life-goal-progression-activation{position:relative;overflow:hidden}
-:is(.home-cat-life-view,.home-collection-progress,.collection-summary,.cat-life-view-card,.cat-life-events,.cat-life-financial-activation,.cat-life-goal-progression-activation)::after{
-  content:"";
-  position:absolute;
-  right:10px;
-  bottom:5px;
-  color:#b77b7e;
-  width:24px;
-  height:20px;
-  background:radial-gradient(circle at 50% 70%,currentColor 0 6px,transparent 6.6px),radial-gradient(circle at 16% 22%,currentColor 0 2.6px,transparent 3.2px),radial-gradient(circle at 50% 8%,currentColor 0 2.6px,transparent 3.2px),radial-gradient(circle at 84% 22%,currentColor 0 2.6px,transparent 3.2px);
-  opacity:.08;
-  transform:rotate(-17deg);
-  pointer-events:none;
-}
 .home-cat-life-view::before,.cat-life-financial-activation::before,.cat-life-goal-progression-activation::before{
   content:"";
   position:absolute;
@@ -214,20 +210,6 @@ input[role=switch]:checked{background:#5d9d97}
 }
 .bottom-nav button{color:#74665e}
 .bottom-nav button{position:relative;border-radius:16px;transition:transform .15s ease,background-color .15s ease,color .15s ease}
-.bottom-nav button::after{
-  content:"";
-  position:absolute;
-  left:50%;
-  bottom:3px;
-  width:15px;
-  height:9px;
-  transform:translateX(-50%) scale(.7);
-  border-radius:50%;
-  background:radial-gradient(circle at 50% 70%,currentColor 0 3px,transparent 3.5px),radial-gradient(circle at 18% 22%,currentColor 0 1.5px,transparent 2px),radial-gradient(circle at 50% 8%,currentColor 0 1.5px,transparent 2px),radial-gradient(circle at 82% 22%,currentColor 0 1.5px,transparent 2px);
-  opacity:0;
-  transition:opacity .15s ease,transform .15s ease;
-}
-.bottom-nav button:is(:hover,:focus-visible)::after{opacity:.22;transform:translateX(-50%) scale(1)}
 .bottom-nav button:active{transform:translateY(1px)}
 .bottom-nav .action-save{background:#f2e1c8;color:#8a5a29}
 .bottom-nav .action-spend{background:#f3dfe2;color:#a34251}
@@ -361,18 +343,6 @@ menu button{background:#eaded6;color:#55473f}.danger{background:#b84d5b!importan
   background:linear-gradient(145deg,rgba(255,253,249,.98),rgba(244,231,222,.96));
   box-shadow:0 10px 26px var(--room-shadow),inset 0 1px rgba(255,255,255,.95);
 }
-.effect-preview::before{
-  content:"";
-  position:absolute;
-  right:12px;
-  top:8px;
-  color:#b9757c;
-  width:25px;
-  height:22px;
-  background:radial-gradient(circle at 50% 70%,currentColor 0 6px,transparent 6.7px),radial-gradient(circle at 16% 22%,currentColor 0 2.8px,transparent 3.4px),radial-gradient(circle at 50% 8%,currentColor 0 2.8px,transparent 3.4px),radial-gradient(circle at 84% 22%,currentColor 0 2.8px,transparent 3.4px);
-  opacity:.13;
-  transform:rotate(12deg);
-}
 .effect-preview h3{margin:0 34px 5px 0;color:#714d3f;font-size:17px}
 .effect-preview h3::before{content:"";display:inline-block;width:10px;height:10px;margin-right:.48em;background:#c27d82;clip-path:polygon(50% 0,61% 38%,100% 50%,61% 62%,50% 100%,39% 62%,0 50%,39% 38%)}
 .effect-preview>p{margin:0 28px 13px 0;color:#75655d;font-size:12px;line-height:1.55}
@@ -394,17 +364,6 @@ menu button{background:#eaded6;color:#55473f}.danger{background:#b84d5b!importan
   text-align:left;
   cursor:pointer;
   transition:transform .15s ease,border-color .15s ease,box-shadow .15s ease;
-}
-.preview-button::before{
-  content:"";
-  position:absolute;
-  right:12px;
-  top:12px;
-  width:21px;
-  height:21px;
-  border-radius:50%;
-  background:radial-gradient(circle at 50% 65%,#bd777e 0 5px,transparent 5.5px),radial-gradient(circle at 19% 24%,#bd777e 0 2.2px,transparent 2.7px),radial-gradient(circle at 50% 9%,#bd777e 0 2.2px,transparent 2.7px),radial-gradient(circle at 81% 24%,#bd777e 0 2.2px,transparent 2.7px);
-  opacity:.58;
 }
 .preview-button::after{
   content:"";
@@ -436,7 +395,31 @@ menu button{background:#eaded6;color:#55473f}.danger{background:#b84d5b!importan
 @media(max-width:540px){
   .app{padding-left:14px;padding-right:14px}
   .app>header{padding:15px 16px;border-radius:19px}
-  body::after{bottom:-62px;height:150px}
+  body::after{
+    bottom:-62px;
+    height:150px;
+    background-image:radial-gradient(ellipse at center,rgba(232,174,176,.48),rgba(235,193,179,.28) 58%,transparent 70%);
+    background-position:center;
+    background-size:auto;
+    background-repeat:no-repeat;
+  }
+  .app::before{position:absolute;z-index:2;left:auto;right:18px;top:25px;width:72px;opacity:.085}
+  .app::after{display:none}
+  .quick-save{position:relative;isolation:isolate}
+  .quick-save::after{
+    content:"";
+    position:absolute;
+    z-index:0;
+    right:0;
+    top:-16px;
+    width:135px;
+    height:52px;
+    pointer-events:none;
+    background:url("./assets/decor/paw-heart-wide-trail.svg") right 15%/200px auto no-repeat;
+    opacity:.09;
+    mix-blend-mode:multiply;
+  }
+  .quick-save>.section-title,.quick-save>.quick-grid{position:relative;z-index:1}
 }
 @media(max-width:390px){
   .app{padding-left:12px;padding-right:12px}

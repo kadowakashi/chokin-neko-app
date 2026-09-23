@@ -6,10 +6,11 @@ const RUNTIME_CACHE = 'chokin-v100-runtime-assets-r1';
 const SHELL_ASSETS = [
   './', './index.html', './app-release.js?v=1', './favicon.svg', './manifest.webmanifest',
   './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-512.png', './icons/apple-touch-icon.png',
+  './assets/decor/cat-face-silhouette-white-eyes.svg', './assets/decor/paw-heart-wide-trail.svg', './assets/decor/yarn-y2.svg',
   './styles.css', './fixes.css', './v021-quick.css', './v03-scenes.css', './v04-canvas.css', './v05-fever.css',
   './v05-controls.css', './v051-polish.css', './v06-cats.css', './v08-collection.css', './v092-save-spectacle.css',
   './v093-assets.css', './v097-calendar.css', './v098-goal.css', './v099-goal-history.css', './v0910-badges.css',
-  './v0911-restore-preview.css', './v0912-onboarding.css', './v0913-daily-note.css', './v0916-capsule-gacha.css', './v10-room-theme.css?v=3',
+  './v0911-restore-preview.css', './v0912-onboarding.css', './v0913-daily-note.css', './v0916-capsule-gacha.css', './v10-room-theme.css?v=5',
   './visual-assets.js', './cat-image-processor.js', './onboarding.js', './gacha-transaction.js', './cat-collection.js',
   './cat-coins.js', './daily-note.js', './cat-characters.js', './game-effects.js', './asset-loader.js',
   './canvas-effects.js', './capsule-gacha-animation.js', './goal-history.js', './savings-goal.js', './badges.js',
