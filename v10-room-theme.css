@@ -1,4 +1,4 @@
-/* r21: calm cat-room theme with approved decor assets. Visual overrides only. */
+/* r22: calm cat-room theme with a responsive hero banner. Visual overrides only. */
 :root{
   color-scheme:light;
   --bg:#f4e9df;
@@ -110,23 +110,25 @@ body::after{
   position:relative;
   overflow:hidden;
   margin-bottom:18px;
-  padding:17px 18px;
+  min-height:190px;
+  padding:25px 22px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
   border:1px solid rgba(211,183,166,.78);
   border-radius:22px;
-  background:rgba(255,250,246,.84);
+  background:
+    linear-gradient(90deg,rgba(255,250,246,.98) 0%,rgba(255,250,246,.92) 29%,rgba(255,250,246,.68) 48%,rgba(255,250,246,.08) 72%),
+    url("./assets/hero/hero-banner-cat-room-v1.webp") 68% center/cover no-repeat;
   box-shadow:0 12px 28px var(--room-shadow),inset 0 1px rgba(255,255,255,.95);
 }
 .app>header::before{
-  content:"";
-  position:absolute;
-  right:55px;
-  top:9px;
-  width:37px;
-  height:22px;
-  background:rgba(190,127,128,.16);
-  clip-path:polygon(0 100%,12% 12%,39% 67%,61% 67%,88% 12%,100% 100%);
+  content:none;
 }
-.eyebrow{color:#9a6741}.sub{color:var(--muted)}
+.app>header>*{position:relative;z-index:1;max-width:61%}
+.app>header h1{font-size:clamp(25px,6vw,30px);line-height:1.22;text-shadow:0 1px rgba(255,255,255,.9)}
+.app>header .home-cat{display:block;margin-top:7px;color:#9a6741;font-size:14px;letter-spacing:.02em}
+.eyebrow{color:#845b3d;text-shadow:0 1px rgba(255,255,255,.92)}.sub{color:var(--muted)}
 h1,h2,h3,h4{color:#3f342f}
 
 /* Shared surfaces */
@@ -394,7 +396,16 @@ menu button{background:#eaded6;color:#55473f}.danger{background:#b84d5b!importan
 
 @media(max-width:540px){
   .app{padding-left:14px;padding-right:14px}
-  .app>header{padding:15px 16px;border-radius:19px}
+  .app>header{
+    min-height:178px;
+    padding:20px 17px;
+    border-radius:19px;
+    background:
+      linear-gradient(90deg,rgba(255,250,246,.98) 0%,rgba(255,250,246,.92) 35%,rgba(255,250,246,.58) 55%,rgba(255,250,246,.04) 77%),
+      url("./assets/hero/hero-banner-cat-room-v1.webp") 70% center/cover no-repeat;
+  }
+  .app>header>*{max-width:58%}
+  .app>header h1{font-size:25px}
   body::after{
     bottom:-62px;
     height:150px;
@@ -403,7 +414,7 @@ menu button{background:#eaded6;color:#55473f}.danger{background:#b84d5b!importan
     background-size:auto;
     background-repeat:no-repeat;
   }
-  .app::before{position:absolute;z-index:2;left:auto;right:18px;top:25px;width:72px;opacity:.085}
+  .app::before{display:none}
   .app::after{display:none}
   .quick-save{position:relative;isolation:isolate}
   .quick-save::after{

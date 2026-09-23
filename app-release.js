@@ -1,6 +1,6 @@
 (function (root) {
   'use strict';
-  const revision = 'r21';
+  const revision = 'r22';
   root.ChokinRelease = Object.freeze({
     revision,
     shellCache: `chokin-v100-shell-${revision}`
